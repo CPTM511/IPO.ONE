@@ -279,6 +279,10 @@ export function createTenantHttpServer({
       return json(response, 200, result, requestId);
     } catch (error) {
       const problem = createProblemDetails(error, { requestId });
+      if (problem.status === 500 && environment === "development" && credentialSource === "local_test") {
+        console.error(JSON.stringify({event:"local_tenant_unexpected_error",requestId,errorType:error?.name,
+          frames:String(error?.stack ?? "").split("\n").filter(line=>/^\s+at /.test(line)).slice(0,8)}));
+      }
       return json(response, problem.status, problem, requestId);
     } finally {
       active -= 1;
