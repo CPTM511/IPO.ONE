@@ -101,7 +101,7 @@ try{
  const c=await propose("pilotRestructureSandboxObligation",plans.writeoff);await approveAndExecute(c,"restructured");
  const d=await propose("pilotWriteOffSandboxObligation",plans.writeoff,c.proposal.approvalProposalId);await approveAndExecute(d,"written_off");
  const restart=spawnSync("limactl",["shell","--workdir","/Users/cptmao/Documents/IPO.ONE","ipo-one-local","docker","restart","ipo-one-web027-candidate","ipo-one-web027-candidate-worker"],{encoding:"utf8"});assert.equal(restart.status,0);
- await until(async()=>{try{return(await fetch("http://localhost:8942/livez")).ok;}catch{return false;}},"restart ready",30000);
+ await until(async()=>{try{return(await fetch("http://localhost:8942/tenant/v1/healthz")).ok;}catch{return false;}},"restart ready",30000);
  for(const [p,status]of[[a,"restructured"],[b,"repurchased"],[d,"written_off"]]){const current=await review(8939,p.proposal.approvalProposalId);assert.equal(current.currentPlan.obligation.status,status);}
  await click(page.getByRole("button",{name:"Sign out",exact:true}));await login();await mfa();await review(8939,d.proposal.approvalProposalId);
  results.push({name:"four exact servicing executions and durable recovery",pass:true});

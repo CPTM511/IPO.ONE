@@ -1192,12 +1192,14 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0079_local_human_sandbox_activation",
         "0080_local_risk_passkeys",
         "0081_local_passkey_bounds",
-        "0082_local_special_role_enrollment"
+        "0082_local_special_role_enrollment",
+        "0083_local_operations_reviewer_origin"
       ]);
       const firstStatus = await migrationStatus({ pool });
       assert.equal(firstStatus.every((migration) => migration.applied && migration.checksum.length === 64), true);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 82 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 83 }), [
+        "0083_local_operations_reviewer_origin",
         "0082_local_special_role_enrollment",
         "0081_local_passkey_bounds",
         "0080_local_risk_passkeys",
@@ -1363,10 +1365,12 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0079_local_human_sandbox_activation",
         "0080_local_risk_passkeys",
         "0081_local_passkey_bounds",
-        "0082_local_special_role_enrollment"
+        "0082_local_special_role_enrollment",
+        "0083_local_operations_reviewer_origin"
       ]);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 80 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 81 }), [
+        "0083_local_operations_reviewer_origin",
         "0082_local_special_role_enrollment",
         "0081_local_passkey_bounds",
         "0080_local_risk_passkeys",
@@ -1541,7 +1545,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0079_local_human_sandbox_activation",
         "0080_local_risk_passkeys",
         "0081_local_passkey_bounds",
-        "0082_local_special_role_enrollment"
+        "0082_local_special_role_enrollment",
+        "0083_local_operations_reviewer_origin"
       ]);
       assert.equal(
         (await pool.query("SELECT primary_principal_id FROM subjects WHERE id = 'subject_legacy_upgrade'"))
@@ -5220,7 +5225,7 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         (error) => error.code === "23514"
       );
       await assert.rejects(
-        () => migrateDown({ pool, steps: 25 }),
+        () => migrateDown({ pool, steps: 26 }),
         (error) => error.code === "23514"
       );
       assert.equal(
@@ -5313,7 +5318,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0079_local_human_sandbox_activation",
         "0080_local_risk_passkeys",
         "0081_local_passkey_bounds",
-        "0082_local_special_role_enrollment"
+        "0082_local_special_role_enrollment",
+        "0083_local_operations_reviewer_origin"
       ]);
 
       const subjectContribution = contributeTradingSubjectCollateral(

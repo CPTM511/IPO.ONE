@@ -3,7 +3,8 @@ import test from "node:test";
 import { hashId } from "../../../packages/domain/src/index.js";
 import { authorizationCommandPayloadHash } from "../src/local-approval-runtime.js";
 import { createLocalReviewHandlers } from "../src/local-review-handlers.js";
-import { isTenantProtocolRequest } from "../../../packages/api-contract/src/index.js";
+import { readFile } from "node:fs/promises";
+import { isTenantProtocolResult, isTenantProtocolRequest } from "../../../packages/api-contract/src/index.js";
 
 test("the authorization payload stays bound to the proposed command when its approval artifact is attached", () => {
   const command={operationId:"pilotRestructureSandboxObligation",schemaVersion:"tenant_protocol_request.v1",
@@ -32,4 +33,15 @@ test("local review adapters fail closed when no exact local runtime was composed
   for(const handler of createLocalReviewHandlers()) await assert.rejects(
     handler.kind==="query" ? handler.execute({payload:{}}) : handler.plan({payload:{}}),
     error=>error.code==="local_approval_unavailable");
+});
+
+test("the versioned servicing queue accepts the domain's zero-day grace state", async () => {
+  const fixtures=JSON.parse(await readFile(new URL("../../../api/tenant-protocol/conformance/tenant-protocol.v1.fixtures.json",import.meta.url)));
+  const result=structuredClone(fixtures.validResults.find(r=>r.operationId==="pilotReadServicingQueue"));
+  const item=result.response.cases[0];
+  Object.assign(item,{status:"delinquent",servicingClassification:"grace_period",daysPastDue:0,priority:"monitor",reviewCode:"grace_monitor"});
+  delete item.latestServicingAction;
+  result.response.filters.classifications=["grace_period"];
+  assert.equal(isTenantProtocolResult(result),true);
+  item.daysPastDue=-1;assert.equal(isTenantProtocolResult(result),false);
 });
