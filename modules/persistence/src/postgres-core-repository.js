@@ -3019,7 +3019,9 @@ export class PostgresCoreRepository {
       dpd_61_89: (value) => value >= 61 && value <= 89,
       dpd_31_60: (value) => value >= 31 && value <= 60,
       dpd_1_30: (value) => value >= 4 && value <= 30,
-      grace_period: (value) => value >= 1 && value <= 3
+      // The domain starts grace immediately after a missed due time; DPD is
+      // whole elapsed days and remains zero for the first 24 hours.
+      grace_period: (value) => value >= 0 && value <= 3
     };
     return result.rows.map((row) => {
       const daysPastDue = safeInteger(row.days_past_due, "Servicing queue DPD");
