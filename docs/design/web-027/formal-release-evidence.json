@@ -1,0 +1,195 @@
+{
+  "schemaVersion": "web027_formal_release_evidence.v1",
+  "recordedAt": "2026-09-08T13:51:29.391Z",
+  "verdict": "BLOCKED — NOT COMPLETE",
+  "release": {
+    "source": "7e83916eb9e18153f59b9aa86d8df4c6e74bdb5e",
+    "deployment": "dpl_4uUW4vPiME7BU3dsNZTz37RegP1k",
+    "url": "https://ipo.one",
+    "profile": "public_authenticated_no_funds_beta",
+    "schemaMigrations": 75,
+    "databaseMutation": false,
+    "localCredentialsPublished": false
+  },
+  "ci": [
+    "https://github.com/CPTM511/IPO.ONE/actions/runs/34232604089",
+    "https://github.com/CPTM511/IPO.ONE/actions/runs/34232611164"
+  ],
+  "verified": {
+    "walletLogin": "Same formal Human wallet was stuck after successful SIWE on 7ce4b95; 7e83916 opens the authorized workspace automatically.",
+    "humanLifecycle": "Subject, Consent, explainable Offer, explicit acceptance, synthetic execution, full repayment, owner Evidence",
+    "humanRecovery": [
+      {
+        "phase": "login",
+        "visible": true,
+        "lifecycle": "Fully Repaid",
+        "repaid": "$24.50",
+        "evidence": "9 Owner/controller-authorized Evidence events loaded from the complete bounded server timeline. Latest events are shown first; digests are not blockchain transactions."
+      },
+      {
+        "phase": "refresh",
+        "visible": true,
+        "lifecycle": "Fully Repaid",
+        "repaid": "$24.50",
+        "evidence": "9 Owner/controller-authorized Evidence events loaded from the complete bounded server timeline. Latest events are shown first; digests are not blockchain transactions."
+      },
+      {
+        "phase": "relogin",
+        "visible": true,
+        "lifecycle": "Fully Repaid",
+        "repaid": "$24.50",
+        "evidence": "9 Owner/controller-authorized Evidence events loaded from the complete bounded server timeline. Latest events are shown first; digests are not blockchain transactions."
+      }
+    ],
+    "canonicalObligation": {
+      "obligation": {
+        "obligationId": "obligation_e46c25fb-5e8a-4b00-b98d-328516c7f0c0",
+        "obligationHash": "0xcbb32554178520a8ddea3d4a0592d7e8d00b1dcbbadf18e9610569e64cc4e5b4",
+        "subjectId": "subject_b5323f08-62e1-4ca9-adbb-b593891a850f",
+        "principalId": "principal_4b3b362d-011b-4caa-8129-f0ce17a360d0",
+        "creditIntentId": "credit_intent_e8883932-4405-4eb7-968f-b5c373a28afc",
+        "riskDecisionId": "risk_decision_8890fd3bb2368ad923303152e65c3b1ace14e35924423d3d40e697cf60c6c3b1",
+        "creditOfferId": "credit_offer_0f550bcefba21e611e5d00b6e164cce3efddda858259f1db925f13cb1cd8c83f",
+        "creditOfferAcceptanceId": "credit_offer_acceptance_beff5ad976484eb77a8be29ea7c1a55c8b1165c18d01aea6d98c2a0ea549c5e6",
+        "authorityType": "consent",
+        "authorityId": "consent_5eae7764-f115-425a-b0fd-9871f2f951b9",
+        "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+        "originalPrincipalMinor": "2450",
+        "outstandingPrincipalMinor": "0",
+        "annualRateBps": 900,
+        "originationFeeMinor": "0",
+        "accruedInterestMinor": "0",
+        "outstandingInterestMinor": "0",
+        "accruedFeesMinor": "0",
+        "outstandingFeesMinor": "0",
+        "totalRepaidMinor": "2450",
+        "repaymentFrequency": "monthly",
+        "installmentCount": 2,
+        "firstPaymentAt": "2026-10-08T13:47:12.030Z",
+        "maturityAt": "2026-11-07T13:47:12.030Z",
+        "scheduleVersion": "obligation_schedule.v1",
+        "scheduleHash": "0xd986715c34615df0f1b00bdc94a5a4351fffb708364a7ca97153bb8a8f07c4a1",
+        "scheduleSequence": 1,
+        "installments": [
+          {
+            "installmentId": "obligation_installment_43b30241d9eb40c8555005e056071c5d90a3ad3c3b32d4772efa5b85d6d13d08",
+            "obligationId": "obligation_e46c25fb-5e8a-4b00-b98d-328516c7f0c0",
+            "installmentNumber": 1,
+            "dueAt": "2026-10-08T13:47:12.030Z",
+            "scheduledPrincipalMinor": "1225",
+            "scheduledInterestMinor": "0",
+            "scheduledFeeMinor": "0",
+            "paidPrincipalMinor": "1225",
+            "paidInterestMinor": "0",
+            "paidFeeMinor": "0",
+            "status": "paid",
+            "scheduleVersion": "obligation_schedule.v1",
+            "scheduleSequence": 1,
+            "schemaVersion": "obligation_installment.v1"
+          },
+          {
+            "installmentId": "obligation_installment_4d3616955395fb7f5c6a930a084996d192e44eeca460f2a713d3064726ade330",
+            "obligationId": "obligation_e46c25fb-5e8a-4b00-b98d-328516c7f0c0",
+            "installmentNumber": 2,
+            "dueAt": "2026-11-07T13:47:12.030Z",
+            "scheduledPrincipalMinor": "1225",
+            "scheduledInterestMinor": "0",
+            "scheduledFeeMinor": "0",
+            "paidPrincipalMinor": "1225",
+            "paidInterestMinor": "0",
+            "paidFeeMinor": "0",
+            "status": "paid",
+            "scheduleVersion": "obligation_schedule.v1",
+            "scheduleSequence": 1,
+            "schemaVersion": "obligation_installment.v1"
+          }
+        ],
+        "executionStatus": "executed",
+        "sandboxExecutionReceiptId": "sandbox_execution_receipt_a6126a49edde1628f722703a7d7d8630818cb6685988195e321619d2661e4892",
+        "executedAt": "2026-09-08T13:47:18.124Z",
+        "lastAccruedAt": "2026-09-08T13:47:18.124Z",
+        "interestAccrualRemainder": "0",
+        "withdrawable": false,
+        "sandboxOnly": true,
+        "productionFundsMoved": false,
+        "status": "fully_repaid",
+        "servicingClassification": "current",
+        "daysPastDue": 0,
+        "oldestUnpaidInstallmentId": null,
+        "servicingEffectiveAt": "2026-09-08T13:47:20.397Z",
+        "servicingReasonCode": "servicing_current",
+        "servicingPolicyVersion": "sandbox-servicing-policy.v1",
+        "servicingOwnerCode": "sandbox_platform",
+        "writtenOffPrincipalMinor": "0",
+        "writtenOffInterestMinor": "0",
+        "writtenOffFeesMinor": "0",
+        "acceptedAt": "2026-09-08T13:47:13.415Z",
+        "createdAt": "2026-09-08T13:47:13.415Z",
+        "updatedAt": "2026-09-08T13:47:20.397Z",
+        "schemaVersion": "obligation.v2"
+      },
+      "latestServicingAction": {
+        "servicingActionId": "sandbox_servicing_action_548c8ed4dfc2c9e0ef9df0af67794564b4484673ceabe1647f873152c4f86e44",
+        "servicingActionHash": "0x548c8ed4dfc2c9e0ef9df0af67794564b4484673ceabe1647f873152c4f86e44",
+        "obligationId": "obligation_e46c25fb-5e8a-4b00-b98d-328516c7f0c0",
+        "subjectId": "subject_b5323f08-62e1-4ca9-adbb-b593891a850f",
+        "actionType": "advance",
+        "previousStatus": "active",
+        "nextStatus": "fully_repaid",
+        "previousClassification": "current",
+        "nextClassification": "current",
+        "daysPastDue": 0,
+        "oldestUnpaidInstallmentId": null,
+        "reasonCode": "servicing_current",
+        "source": "repayment",
+        "policyVersion": "sandbox-servicing-policy.v1",
+        "scheduleSequenceBefore": 1,
+        "scheduleSequenceAfter": 1,
+        "balancesBefore": {
+          "totalRepaidMinor": "0",
+          "outstandingFeesMinor": "0",
+          "outstandingInterestMinor": "0",
+          "outstandingPrincipalMinor": "2450"
+        },
+        "balancesAfter": {
+          "totalRepaidMinor": "2450",
+          "outstandingFeesMinor": "0",
+          "outstandingInterestMinor": "0",
+          "outstandingPrincipalMinor": "0"
+        },
+        "effectiveAt": "2026-09-08T13:47:20.397Z",
+        "sandboxOnly": true,
+        "productionFundsMoved": false,
+        "schemaVersion": "sandbox_servicing_action.v1"
+      },
+      "asOf": "2026-09-08T13:49:43.797Z",
+      "sandboxOnly": true,
+      "productionFundsMoved": false,
+      "withdrawable": false,
+      "schemaVersion": "tenant_owned_obligation_view.v1"
+    }
+  },
+  "notVerified": [
+    "Full hosted Agent execution: the new authenticated Principal has no server-assigned Agent or authorized machine connection. An existing approved connection is requested; no production enrollment or key was created."
+  ],
+  "localEvidence": "docs/design/web-027/n-verification-evidence.json",
+  "rollback": {
+    "deployment": "dpl_Dj6MLKDAecHecFJmnRzX7sqS21L2",
+    "source": "7ce4b9500ea98744afd9df4087e6a2f203c8b36c",
+    "databaseRollbackRequired": false
+  },
+  "artifacts": [
+    {
+      "path": "output/playwright/web-027/formal/baseline.json",
+      "sha256": "4e907361da23871ef2cbb504872f898ce14ee3795d229e7731cf1d73befb7915"
+    },
+    {
+      "path": "output/playwright/web-027/formal/human-recovery.json",
+      "sha256": "a844bc3a4eea20be2097697f2c49a23b128e4b0ef38e9829c7a6d403b919817a"
+    },
+    {
+      "path": "output/playwright/web-027/formal/principal.json",
+      "sha256": "4b4c553fa24a14d448bdb257917f2427d695518970e6f08a213416b72af452a4"
+    }
+  ]
+}
