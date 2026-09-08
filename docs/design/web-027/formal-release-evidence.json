@@ -1,19 +1,22 @@
 {
   "schemaVersion": "web027_formal_release_evidence.v1",
-  "recordedAt": "2026-09-08T13:51:29.391Z",
+  "recordedAt": "2026-09-08T16:15:41.687Z",
   "verdict": "BLOCKED — NOT COMPLETE",
   "release": {
-    "source": "7e83916eb9e18153f59b9aa86d8df4c6e74bdb5e",
-    "deployment": "dpl_4uUW4vPiME7BU3dsNZTz37RegP1k",
+    "source": "f4b883f2799fa8b22d708cc0dadaa24966c464fe",
+    "deployment": "dpl_8a3mueaSiCnnxNThJnVuh1nGi3MZ",
     "url": "https://ipo.one",
     "profile": "public_authenticated_no_funds_beta",
     "schemaMigrations": 75,
-    "databaseMutation": false,
-    "localCredentialsPublished": false
+    "schemaMutation": false,
+    "sandboxBusinessWrites": true,
+    "temporaryExistingAgentCredentialOnly": true,
+    "localCredentialsPublished": false,
+    "defaultProductionEnvironmentRestored": true
   },
   "ci": [
-    "https://github.com/CPTM511/IPO.ONE/actions/runs/34232604089",
-    "https://github.com/CPTM511/IPO.ONE/actions/runs/34232611164"
+    "https://github.com/CPTM511/IPO.ONE/actions/runs/34247071263",
+    "https://github.com/CPTM511/IPO.ONE/actions/runs/34247076892"
   ],
   "verified": {
     "walletLogin": "Same formal Human wallet was stuck after successful SIWE on 7ce4b95; 7e83916 opens the authorized workspace automatically.",
@@ -24,21 +27,21 @@
         "visible": true,
         "lifecycle": "Fully Repaid",
         "repaid": "$24.50",
-        "evidence": "9 Owner/controller-authorized Evidence events loaded from the complete bounded server timeline. Latest events are shown first; digests are not blockchain transactions."
+        "evidence": "10 Owner/controller-authorized Evidence events loaded from the complete bounded server timeline. Latest events are shown first; digests are not blockchain transactions."
       },
       {
         "phase": "refresh",
         "visible": true,
         "lifecycle": "Fully Repaid",
         "repaid": "$24.50",
-        "evidence": "9 Owner/controller-authorized Evidence events loaded from the complete bounded server timeline. Latest events are shown first; digests are not blockchain transactions."
+        "evidence": "10 Owner/controller-authorized Evidence events loaded from the complete bounded server timeline. Latest events are shown first; digests are not blockchain transactions."
       },
       {
         "phase": "relogin",
         "visible": true,
         "lifecycle": "Fully Repaid",
         "repaid": "$24.50",
-        "evidence": "9 Owner/controller-authorized Evidence events loaded from the complete bounded server timeline. Latest events are shown first; digests are not blockchain transactions."
+        "evidence": "10 Owner/controller-authorized Evidence events loaded from the complete bounded server timeline. Latest events are shown first; digests are not blockchain transactions."
       }
     ],
     "canonicalObligation": {
@@ -162,20 +165,45 @@
         "productionFundsMoved": false,
         "schemaVersion": "sandbox_servicing_action.v1"
       },
-      "asOf": "2026-09-08T13:49:43.797Z",
+      "asOf": "2026-09-08T16:14:01.750Z",
       "sandboxOnly": true,
       "productionFundsMoved": false,
       "withdrawable": false,
       "schemaVersion": "tenant_owned_obligation_view.v1"
+    },
+    "agent": {
+      "source": "f4b883f2799fa8b22d708cc0dadaa24966c464fe",
+      "verificationDeployment": "dpl_FekWn6uuhUPNq1Qc7z5AHBXx4jwy",
+      "origin": "https://ipo.one",
+      "transport": "Real HTTPS with signed ES256 access tokens and request-bound DPoP; MCP wrapper uses the same deployed service.",
+      "existingObligationId": "obligation_870106db-af9f-49bf-b331-e803c4fda321",
+      "originalPrincipalMinor": "10000",
+      "totalRepaidMinor": "10008",
+      "quantity": "250",
+      "chargeMinor": "500",
+      "status": "fully_repaid_with_evidence",
+      "duplicateRepaymentReplayed": true,
+      "evidenceCount": 24,
+      "freshProcessTerminalRecovery": true,
+      "worker": {
+        "claimed": 16,
+        "published": 16,
+        "outcomeMaterialized": 1,
+        "creditStateUpdated": 1,
+        "reconciliation": "passed"
+      },
+      "sandboxOnly": true,
+      "productionFundsMoved": false
     }
   },
   "notVerified": [
-    "Full hosted Agent execution: the new authenticated Principal has no server-assigned Agent or authorized machine connection. An existing approved connection is requested; no production enrollment or key was created."
+    "Original controller Principal workspace visible-click acceptance on the final hosted deployment. The original wallet login has not been made available to browser automation. No Actor ownership or authorization was bypassed."
   ],
   "localEvidence": "docs/design/web-027/n-verification-evidence.json",
   "rollback": {
-    "deployment": "dpl_Dj6MLKDAecHecFJmnRzX7sqS21L2",
-    "source": "7ce4b9500ea98744afd9df4087e6a2f203c8b36c",
+    "deployment": "dpl_4uUW4vPiME7BU3dsNZTz37RegP1k",
+    "source": "7e83916eb9e18153f59b9aa86d8df4c6e74bdb5e",
+    "olderDeployment": "dpl_Dj6MLKDAecHecFJmnRzX7sqS21L2",
     "databaseRollbackRequired": false
   },
   "artifacts": [
@@ -185,11 +213,67 @@
     },
     {
       "path": "output/playwright/web-027/formal/human-recovery.json",
-      "sha256": "a844bc3a4eea20be2097697f2c49a23b128e4b0ef38e9829c7a6d403b919817a"
+      "sha256": "a5afece40835869681681f8853abd219e648bc42aa4922e94759d39c6810cf79"
+    },
+    {
+      "path": "output/playwright/web-027/formal/human-recovery-before-wait-correction.json",
+      "sha256": "8ae24f533657983040be07deacb512cb1e792a40321c8f2fc448cbe51444c797"
     },
     {
       "path": "output/playwright/web-027/formal/principal.json",
       "sha256": "4b4c553fa24a14d448bdb257917f2427d695518970e6f08a213416b72af452a4"
+    },
+    {
+      "path": "output/playwright/web-027/formal/agent-read.json",
+      "sha256": "bb96d651ff1245073c106f50a8d5a4f93a82617b9a1fc6efee3a2c147fe27cf3"
+    },
+    {
+      "path": "output/playwright/web-027/formal/agent-runtime.json",
+      "sha256": "28a7f086e13e3a0e4eadfb0336f8af2bdad7b13953e9a446492cf3847d187a0e"
+    },
+    {
+      "path": "output/playwright/web-027/formal/agent-recovery.json",
+      "sha256": "703ac76678f2c7dcd5397c94588a9330d66b6c34578009da5710c25fc96f27b1"
+    },
+    {
+      "path": "output/playwright/web-027/formal/agent-worker.json",
+      "sha256": "b58c20031e960676fa496e8e34e03a29c0ab3f2a94eb732793cfde7f6285d208"
+    },
+    {
+      "path": "output/playwright/web-027/formal/agent-credential-revocation.json",
+      "sha256": "7878173ea7762e12bc3756b49d1f394eb9f80acb14d101fc5ca59bd643aadb56"
+    },
+    {
+      "path": "output/playwright/web-027/formal/agent-credential-rejection.json",
+      "sha256": "607e26781f7b9267ccd888de97bbf5dad7d7e19a0d3db00ceb5ca62f6a409122"
+    },
+    {
+      "path": "output/playwright/web-027/formal/final-health.json",
+      "sha256": "3ca52c506c8b24ee412b548d70cc36565d1e5545896662c1d948a4d75b7f513c"
+    },
+    {
+      "path": "output/playwright/web-027/formal/cleanup.json",
+      "sha256": "66a2044f4dde99e50581b972404aa54380468511284e51af2494825aef1f1b0c"
     }
+  ],
+  "cleanup": {
+    "completedAt": "2026-09-08T16:12:25.481Z",
+    "temporaryCredentialRevoked": true,
+    "temporaryPrivateKeyDestroyed": true,
+    "temporaryCronSecretDestroyed": true,
+    "temporaryDeploymentIdsRemoved": [
+      "dpl_4PwkEkrLrhaMpJ8f8ifoSDm68wDJ",
+      "dpl_3YgRb55mCTJLcfoF89nZMDqq2WXA",
+      "dpl_FekWn6uuhUPNq1Qc7z5AHBXx4jwy"
+    ],
+    "originalCredentialAndMembershipsUnchanged": true,
+    "projectEnvironmentUnchanged": true,
+    "disposablePostgresDatabaseAndRunnerRemoved": true,
+    "localReviewRuntimesRetained": true
+  },
+  "verificationLimits": [
+    "Human original lifecycle was executed on 7e83916; current f4b883f source was verified by visible login, refresh, logout/login and owner Evidence recovery.",
+    "Agent acceptance used a temporary existing-identity credential and deployment-specific public trust; both were removed after successful execution/recovery and revocation-negative verification. The final same-SHA deployment retains original project trust. No permanent Agent runner was installed.",
+    "Local privileged-role and servicing results remain local evidence, with the unchanged hosted configuration and capability scope evaluated separately."
   ]
 }
