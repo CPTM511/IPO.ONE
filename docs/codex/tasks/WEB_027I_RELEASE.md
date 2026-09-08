@@ -1,6 +1,6 @@
 # WEB-027I — 满足条件后正式发布与复验
 
-Status: BLOCKED — NOT COMPLETE
+Status: IN PROGRESS — staged candidate verified; formal acceptance pending
 
 ## Context and scope
 
@@ -28,10 +28,10 @@ No credentials in output; no client-derived authority; role and tenant isolation
 
 ## Migration impact and rollback
 
-No new schema migration planned. Preserve previously approved migrations from main. Existing runtime/data remain untouched during candidate work. Revert issue commit or restore prior compatible image without erasing data.
+The hosted bundle retains the exact 75 approved migrations from formal baseline 7ce4b95. Eight separately approved local-only migrations remain excluded from the hosted profile; no production schema mutation is planned. Existing runtime/data remain untouched during candidate work. Revert issue commit or restore prior compatible image without erasing data.
 
 ## Completion evidence
 
-No push, PR, merge, production deployment, provider/permission activation or funds operation occurred. Await full capability acceptance and Founder local experience confirmation. Use existing canonical Vercel/Neon topology only, exact source binding and post-deploy visible browser acceptance.
+Founder approval and delegated local acceptance are recorded in the parent directive and local review. PR #87 is open; the Primary candidate has been staged and returns ready against existing hosted services. Formal domain remains at 7ce4b95 pending required CI and promotion. Preserve rollback deployment dpl_Dj6MLKDAecHecFJmnRzX7sqS21L2. The staged build contains no local enrollment configuration, new credentials or local Passkey dependency. No production database mutation or funds operation occurred.
 
 References: `docs/design/WEB_027_CAPABILITY_AND_ROUTE_MATRIX.md`, `docs/design/WEB_027_LOCAL_REVIEW.md`, `docs/codex/tasks/WEB_027J_LOCAL_ACCESS_REPAIR_REVIEW.md`. Runtime source and individual evidence are explicit; no formal five-state PASS is implied.

@@ -44,3 +44,5 @@ WEB-027M 已按批准范围安装并验收三名本地角色。现有 `modules/a
 非目标：正式网站发布、公开特权注册、真实资金、链交易、Provider/venue 启用、经济或风险规则调整、自动批准、削弱双人控制。M 的其他测试、现有工作台和服务继续保留。
 
 实施发现（2026-09-08）：正常到期后原本地 worker 没有调用现有偿付时钟，三笔计划仍为 current。补齐该连接：仅此候选库和三笔计划，沿用已存在且拥有 servicing.advance.sandbox 的 actor_local_authentication_system；每次校验现行 membership、服务器时间、现有 live policy 和共享 workerAdvanceSandboxServicing handler，并在同一锁定事务持久化事件、投影和幂等回执。不新增身份、凭证或 capability，不改变到期时间和风险阈值。完成后停止扩展本轮 scope。
+
+本地验收完成（2026-09-08）：独立 N 身份已安装；四项处置、两人审批、只读 Auditor、三个 Human 结果与 Evidence、刷新/重登/服务重启恢复已验证。核销仍保留余额和历史，不显示为还清。见 `docs/design/web-027/n-verification-evidence.json`。正式网站继续沿用既有 Primary profile，不激活任何本地邀请或 Passkey 配置。

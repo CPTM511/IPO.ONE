@@ -1,0 +1,664 @@
+{
+  "schemaVersion": "web027_n_verification_evidence.v1",
+  "verifiedAt": "2026-09-08T13:28:32.174Z",
+  "verdict": "LOCAL VERIFIED; FORMAL ACCEPTANCE PENDING",
+  "installedSource": "bbda1de9249d0862010bb23b3b26b591a4fc5b34",
+  "scope": "Approved WEB-027M/N local dual-controlled servicing and baseline recovery; formal release preserves the existing hosted profile.",
+  "runtime": {
+    "database": "ipo_one_web027_candidate",
+    "migrations": 83,
+    "roles": [
+      "human",
+      "principal",
+      "capital",
+      "risk",
+      "operations",
+      "auditor",
+      "risk_reviewer",
+      "operations_reviewer"
+    ],
+    "noRealFunds": true
+  },
+  "verified": {
+    "operations": [
+      {
+        "name": "server denial",
+        "port": "8939",
+        "operationId": "pilotReadApprovalInbox",
+        "status": 404,
+        "code": "authorization_denied"
+      },
+      {
+        "name": "server denial",
+        "port": "8940",
+        "operationId": "pilotReadApprovalInbox",
+        "status": 404,
+        "code": "authorization_denied"
+      },
+      {
+        "name": "server denial",
+        "port": "8941",
+        "operationId": "pilotReadApprovalInbox",
+        "status": 404,
+        "code": "authorization_denied"
+      },
+      {
+        "name": "server denial",
+        "port": "8942",
+        "operationId": "pilotReadApprovalInbox",
+        "status": 404,
+        "code": "authorization_denied"
+      },
+      {
+        "name": "four exact servicing executions and durable recovery",
+        "pass": true
+      },
+      {
+        "name": "separate sessions survive Operations re-login and process restart",
+        "pass": true
+      }
+    ],
+    "humanOwnerRecovery": [
+      {
+        "name": "restructure",
+        "phase": "first"
+      },
+      {
+        "name": "restructure",
+        "phase": "refresh"
+      },
+      {
+        "name": "restructure",
+        "phase": "relogin"
+      },
+      {
+        "name": "repurchase",
+        "phase": "first"
+      },
+      {
+        "name": "repurchase",
+        "phase": "refresh"
+      },
+      {
+        "name": "repurchase",
+        "phase": "relogin"
+      },
+      {
+        "name": "writeoff",
+        "phase": "first"
+      },
+      {
+        "name": "writeoff",
+        "phase": "refresh"
+      },
+      {
+        "name": "writeoff",
+        "phase": "relogin"
+      }
+    ],
+    "visibleClicks": {
+      "operations": 44,
+      "human": 51
+    },
+    "executions": [
+      {
+        "stage": "executed",
+        "source": "53dbea106b503491ce9ea7618f3da29b364651bf",
+        "response": {
+          "obligation": {
+            "obligationId": "obligation_ad6fb93d-d18a-479a-8e58-f56a328be9a9",
+            "obligationHash": "0x02291c1d056c795a8c282a1e1c398a3b427045224d7e81f86541a18a0efea8c0",
+            "subjectId": "subject_70b38f50-a177-487c-96fe-5749967c87c1",
+            "principalId": "principal_404461c0-55bd-44b9-b4ae-75be274e722c",
+            "creditIntentId": "credit_intent_3a5d23cf-e044-4340-9f53-ea4aa21e3946",
+            "riskDecisionId": "risk_decision_b8670fee84ee5af2bc99e98a4b1304ec6ebe68c6f753fe0a801855a18c4439c2",
+            "creditOfferId": "credit_offer_a871a1ccd375ec15048ac9fa747c46d0cc3f6ab8dc9465c6deaf47953ad78721",
+            "creditOfferAcceptanceId": "credit_offer_acceptance_1fd9fd089f4af79503e46155093e1ffc8def2752906a9cc158ca5a12febb87f4",
+            "authorityType": "consent",
+            "authorityId": "consent_27211f0f-7985-4263-b30c-04ae41c53c47",
+            "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+            "originalPrincipalMinor": "100",
+            "outstandingPrincipalMinor": "100",
+            "annualRateBps": 600,
+            "originationFeeMinor": "0",
+            "accruedInterestMinor": "0",
+            "outstandingInterestMinor": "0",
+            "accruedFeesMinor": "0",
+            "outstandingFeesMinor": "0",
+            "totalRepaidMinor": "0",
+            "repaymentFrequency": "monthly",
+            "installmentCount": 1,
+            "firstPaymentAt": "2026-09-15T12:54:29.282Z",
+            "maturityAt": "2026-09-15T12:54:29.282Z",
+            "scheduleVersion": "obligation_schedule.v1",
+            "scheduleHash": "0x11d297e1e7a626ac848d5d4928bb20939612800da9cf2d91f82023098708552a",
+            "scheduleSequence": 2,
+            "installments": [
+              {
+                "installmentId": "obligation_installment_68e5632428823e8fe648402e945579c3de39f383718cb17e3c83697af5e095ba",
+                "obligationId": "obligation_ad6fb93d-d18a-479a-8e58-f56a328be9a9",
+                "installmentNumber": 1,
+                "dueAt": "2026-09-15T12:54:29.282Z",
+                "scheduledPrincipalMinor": "100",
+                "scheduledInterestMinor": "0",
+                "scheduledFeeMinor": "0",
+                "paidPrincipalMinor": "0",
+                "paidInterestMinor": "0",
+                "paidFeeMinor": "0",
+                "status": "scheduled",
+                "scheduleVersion": "obligation_schedule.v1",
+                "scheduleSequence": 2,
+                "schemaVersion": "obligation_installment.v1"
+              }
+            ],
+            "executionStatus": "executed",
+            "sandboxExecutionReceiptId": "sandbox_execution_receipt_81be2ec9b425f5f3134013490685ce003edbd0b2a8d9c29cd11604c4f5140b60",
+            "executedAt": "2026-09-07T09:35:31.394Z",
+            "lastAccruedAt": "2026-09-07T09:35:31.394Z",
+            "interestAccrualRemainder": "0",
+            "withdrawable": false,
+            "sandboxOnly": true,
+            "productionFundsMoved": false,
+            "status": "restructured",
+            "servicingClassification": "restructured",
+            "daysPastDue": 0,
+            "oldestUnpaidInstallmentId": "obligation_installment_68e5632428823e8fe648402e945579c3de39f383718cb17e3c83697af5e095ba",
+            "servicingEffectiveAt": "2026-09-08T12:54:29.282Z",
+            "servicingReasonCode": "sandbox_hardship_restructure",
+            "servicingPolicyVersion": "sandbox-servicing-policy.v1",
+            "servicingOwnerCode": "sandbox_platform",
+            "resolutionType": "restructure",
+            "resolutionReasonCode": "sandbox_hardship_restructure",
+            "resolutionAt": "2026-09-08T12:54:29.282Z",
+            "writtenOffPrincipalMinor": "0",
+            "writtenOffInterestMinor": "0",
+            "writtenOffFeesMinor": "0",
+            "acceptedAt": "2026-09-07T09:35:31.086Z",
+            "createdAt": "2026-09-07T09:35:31.086Z",
+            "updatedAt": "2026-09-08T12:54:29.282Z",
+            "schemaVersion": "obligation.v2"
+          },
+          "servicingStateHash": "0xffca6ecd2793226ab1f3ca2ee7023aecb356f7fa272c30570da1be038d43c0fd",
+          "servicingAction": {
+            "servicingActionId": "sandbox_servicing_action_ae99e6961729623edb2dc36123f792245d47ece7ad3436d3cc7057968777667d",
+            "servicingActionHash": "0xae99e6961729623edb2dc36123f792245d47ece7ad3436d3cc7057968777667d",
+            "obligationId": "obligation_ad6fb93d-d18a-479a-8e58-f56a328be9a9",
+            "subjectId": "subject_70b38f50-a177-487c-96fe-5749967c87c1",
+            "actionType": "restructure",
+            "previousStatus": "delinquent",
+            "nextStatus": "restructured",
+            "previousClassification": "grace_period",
+            "nextClassification": "restructured",
+            "daysPastDue": 0,
+            "oldestUnpaidInstallmentId": "obligation_installment_68e5632428823e8fe648402e945579c3de39f383718cb17e3c83697af5e095ba",
+            "reasonCode": "sandbox_hardship_restructure",
+            "source": "dual_control",
+            "policyVersion": "sandbox-servicing-policy.v1",
+            "scheduleSequenceBefore": 1,
+            "scheduleSequenceAfter": 2,
+            "balancesBefore": {
+              "outstandingPrincipalMinor": "100",
+              "outstandingInterestMinor": "0",
+              "outstandingFeesMinor": "0",
+              "totalRepaidMinor": "0"
+            },
+            "balancesAfter": {
+              "outstandingPrincipalMinor": "100",
+              "outstandingInterestMinor": "0",
+              "outstandingFeesMinor": "0",
+              "totalRepaidMinor": "0"
+            },
+            "approvalProposalId": "approval_proposal_4847c0d3-5a8d-4f9a-a62c-aa497130693a",
+            "approvalExecutionId": "approval_execution_021e56bb-98f6-4105-948c-6baaf125de3e",
+            "effectiveAt": "2026-09-08T12:54:29.282Z",
+            "sandboxOnly": true,
+            "productionFundsMoved": false,
+            "schemaVersion": "sandbox_servicing_action.v1"
+          },
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "schemaVersion": "tenant_sandbox_obligation_restructured.v1",
+          "approvalExecutionId": "approval_execution_021e56bb-98f6-4105-948c-6baaf125de3e",
+          "approvalExecutionHash": "0xbbc4271c6a96a1a1b1949b8a5038d9b055ddd05bbbb9b976195bcddbf24f2cac"
+        }
+      },
+      {
+        "stage": "executed",
+        "source": "495f95b4cfe72ec998788fbe18d6fcfda8843644",
+        "response": {
+          "obligation": {
+            "obligationId": "obligation_355d2cf4-4c17-41e5-adc1-e0ae5236a33a",
+            "obligationHash": "0x3f0d4a9c8dc988fa231bac9a8855133f39416aac36065cc2eefd6e539e9ee618",
+            "subjectId": "subject_2e5a515d-1145-4d9f-8b6d-932d56294a1a",
+            "principalId": "principal_f24c1dbc-b486-4f2c-aeb1-425ac74e9593",
+            "creditIntentId": "credit_intent_6c03243e-7b31-4e71-8303-19046c714043",
+            "riskDecisionId": "risk_decision_99db8abfea3f0b3ba2b0c143e753e33f8606766d9fb6249618b25d41689cfc70",
+            "creditOfferId": "credit_offer_11a76a325ad9cf88909972508c1832a101ad1200e05381a05d86abd7844897a6",
+            "creditOfferAcceptanceId": "credit_offer_acceptance_63a1d70cc81b2231e9e442f988f7831c35f4adbe20122c23d71f66a2e00fef44",
+            "authorityType": "consent",
+            "authorityId": "consent_6f76eca0-aed9-443f-87af-78ba6aa115df",
+            "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+            "originalPrincipalMinor": "100",
+            "outstandingPrincipalMinor": "100",
+            "annualRateBps": 600,
+            "originationFeeMinor": "0",
+            "accruedInterestMinor": "0",
+            "outstandingInterestMinor": "0",
+            "accruedFeesMinor": "0",
+            "outstandingFeesMinor": "0",
+            "totalRepaidMinor": "0",
+            "repaymentFrequency": "monthly",
+            "installmentCount": 1,
+            "firstPaymentAt": "2026-09-08T09:35:34.204Z",
+            "maturityAt": "2026-09-08T09:35:34.204Z",
+            "scheduleVersion": "obligation_schedule.v1",
+            "scheduleHash": "0x9214498440aa56ddeb66e1d42fd8e2581a5a511891e4e2fad50ce4bd0ce97438",
+            "scheduleSequence": 1,
+            "installments": [
+              {
+                "dueAt": "2026-09-08T09:35:34.204Z",
+                "status": "scheduled",
+                "obligationId": "obligation_355d2cf4-4c17-41e5-adc1-e0ae5236a33a",
+                "paidFeeMinor": "0",
+                "installmentId": "obligation_installment_9808a493cb180c1cb65d6fdd9e9b24eda7cad6ec691948637dd1a6050258a504",
+                "schemaVersion": "obligation_installment.v1",
+                "scheduleVersion": "obligation_schedule.v1",
+                "scheduleSequence": 1,
+                "installmentNumber": 1,
+                "paidInterestMinor": "0",
+                "scheduledFeeMinor": "0",
+                "paidPrincipalMinor": "0",
+                "scheduledInterestMinor": "0",
+                "scheduledPrincipalMinor": "100"
+              }
+            ],
+            "executionStatus": "executed",
+            "sandboxExecutionReceiptId": "sandbox_execution_receipt_2e12201c876a1db3cec9dd6d362541c4f4786d901ba5944e041fdeae362555b0",
+            "executedAt": "2026-09-07T09:35:34.816Z",
+            "lastAccruedAt": "2026-09-07T09:35:34.816Z",
+            "interestAccrualRemainder": "0",
+            "withdrawable": false,
+            "sandboxOnly": true,
+            "productionFundsMoved": false,
+            "status": "repurchased",
+            "servicingClassification": "repurchased",
+            "daysPastDue": 0,
+            "oldestUnpaidInstallmentId": "obligation_installment_9808a493cb180c1cb65d6fdd9e9b24eda7cad6ec691948637dd1a6050258a504",
+            "servicingEffectiveAt": "2026-09-08T12:57:05.663Z",
+            "servicingReasonCode": "sandbox_contractual_repurchase",
+            "servicingPolicyVersion": "sandbox-servicing-policy.v1",
+            "servicingOwnerCode": "sandbox_originator",
+            "resolutionType": "repurchase",
+            "resolutionReasonCode": "sandbox_contractual_repurchase",
+            "resolutionAt": "2026-09-08T12:57:05.663Z",
+            "writtenOffPrincipalMinor": "0",
+            "writtenOffInterestMinor": "0",
+            "writtenOffFeesMinor": "0",
+            "acceptedAt": "2026-09-07T09:35:34.520Z",
+            "createdAt": "2026-09-07T09:35:34.520Z",
+            "updatedAt": "2026-09-08T12:57:05.663Z",
+            "schemaVersion": "obligation.v2"
+          },
+          "servicingStateHash": "0x3b539343467808914c6d484e6237bb1776420725ba8754e6e1409c12ff1cd163",
+          "servicingAction": {
+            "servicingActionId": "sandbox_servicing_action_636db46940450d249f6253b9512cf2e24ff24600cefaabb69751a51a3bd27f94",
+            "servicingActionHash": "0x636db46940450d249f6253b9512cf2e24ff24600cefaabb69751a51a3bd27f94",
+            "obligationId": "obligation_355d2cf4-4c17-41e5-adc1-e0ae5236a33a",
+            "subjectId": "subject_2e5a515d-1145-4d9f-8b6d-932d56294a1a",
+            "actionType": "repurchase",
+            "previousStatus": "delinquent",
+            "nextStatus": "repurchased",
+            "previousClassification": "grace_period",
+            "nextClassification": "repurchased",
+            "daysPastDue": 0,
+            "oldestUnpaidInstallmentId": "obligation_installment_9808a493cb180c1cb65d6fdd9e9b24eda7cad6ec691948637dd1a6050258a504",
+            "reasonCode": "sandbox_contractual_repurchase",
+            "source": "dual_control",
+            "policyVersion": "sandbox-servicing-policy.v1",
+            "scheduleSequenceBefore": 1,
+            "scheduleSequenceAfter": 1,
+            "balancesBefore": {
+              "outstandingPrincipalMinor": "100",
+              "outstandingInterestMinor": "0",
+              "outstandingFeesMinor": "0",
+              "totalRepaidMinor": "0"
+            },
+            "balancesAfter": {
+              "outstandingPrincipalMinor": "100",
+              "outstandingInterestMinor": "0",
+              "outstandingFeesMinor": "0",
+              "totalRepaidMinor": "0"
+            },
+            "approvalProposalId": "approval_proposal_27135f10-8730-44ff-8b0c-c5896afbcf86",
+            "approvalExecutionId": "approval_execution_463f9004-309f-4bc7-9d31-003949263851",
+            "effectiveAt": "2026-09-08T12:57:05.663Z",
+            "sandboxOnly": true,
+            "productionFundsMoved": false,
+            "schemaVersion": "sandbox_servicing_action.v1"
+          },
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "schemaVersion": "tenant_sandbox_obligation_repurchased.v1",
+          "approvalExecutionId": "approval_execution_463f9004-309f-4bc7-9d31-003949263851",
+          "approvalExecutionHash": "0xf742a8d11b017c951260815b432bdc818ca296c74156bcd2ca40a52b7265e620"
+        }
+      },
+      {
+        "stage": "executed",
+        "source": "495f95b4cfe72ec998788fbe18d6fcfda8843644",
+        "response": {
+          "obligation": {
+            "obligationId": "obligation_c3746224-101c-4de6-a512-54cba5c7fc51",
+            "obligationHash": "0x7c77ab4e9692fcfb020584161fda23c024e90aa0099b82b4e207b0adf822ab48",
+            "subjectId": "subject_d7a7ca9e-8f0b-4cc7-b599-d8828eeee395",
+            "principalId": "principal_9a28920a-c284-4f5a-b94a-87484987c3a0",
+            "creditIntentId": "credit_intent_b17191a1-fde6-46dd-8e19-96a1f66e8bf2",
+            "riskDecisionId": "risk_decision_f76b03b627a02b2b1b52b4036a9fa6c9330e0953903ce27202cfacda94ec7dc2",
+            "creditOfferId": "credit_offer_d5294167aa4463b4aaf2955b3bea5e0a668410dc8a453fcf28ad13299f3efa95",
+            "creditOfferAcceptanceId": "credit_offer_acceptance_5a8a45e37d4c8be4b4b203304eae19e9f77526ef1abb1e9e7f60a14b8c591fb3",
+            "authorityType": "consent",
+            "authorityId": "consent_e55a17dd-789e-48f1-84be-8b6120a70034",
+            "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+            "originalPrincipalMinor": "100",
+            "outstandingPrincipalMinor": "100",
+            "annualRateBps": 600,
+            "originationFeeMinor": "0",
+            "accruedInterestMinor": "0",
+            "outstandingInterestMinor": "0",
+            "accruedFeesMinor": "0",
+            "outstandingFeesMinor": "0",
+            "totalRepaidMinor": "0",
+            "repaymentFrequency": "monthly",
+            "installmentCount": 1,
+            "firstPaymentAt": "2026-09-15T12:57:07.851Z",
+            "maturityAt": "2026-09-15T12:57:07.851Z",
+            "scheduleVersion": "obligation_schedule.v1",
+            "scheduleHash": "0xb8f4318d21fc71cd545d744727cc8392f328237f68755f173e527f674eb8dbfa",
+            "scheduleSequence": 2,
+            "installments": [
+              {
+                "installmentId": "obligation_installment_51106ff63b17ec2f5b205896f41b80c51cf3397b1229acb62992ba05244bd5c9",
+                "obligationId": "obligation_c3746224-101c-4de6-a512-54cba5c7fc51",
+                "installmentNumber": 1,
+                "dueAt": "2026-09-15T12:57:07.851Z",
+                "scheduledPrincipalMinor": "100",
+                "scheduledInterestMinor": "0",
+                "scheduledFeeMinor": "0",
+                "paidPrincipalMinor": "0",
+                "paidInterestMinor": "0",
+                "paidFeeMinor": "0",
+                "status": "scheduled",
+                "scheduleVersion": "obligation_schedule.v1",
+                "scheduleSequence": 2,
+                "schemaVersion": "obligation_installment.v1"
+              }
+            ],
+            "executionStatus": "executed",
+            "sandboxExecutionReceiptId": "sandbox_execution_receipt_3a71315d6b9675786a83fd265345bd2f7a07a46f31f5f96b6a6c0b1ef5ec085a",
+            "executedAt": "2026-09-07T09:35:38.594Z",
+            "lastAccruedAt": "2026-09-07T09:35:38.594Z",
+            "interestAccrualRemainder": "0",
+            "withdrawable": false,
+            "sandboxOnly": true,
+            "productionFundsMoved": false,
+            "status": "restructured",
+            "servicingClassification": "restructured",
+            "daysPastDue": 0,
+            "oldestUnpaidInstallmentId": "obligation_installment_51106ff63b17ec2f5b205896f41b80c51cf3397b1229acb62992ba05244bd5c9",
+            "servicingEffectiveAt": "2026-09-08T12:57:07.851Z",
+            "servicingReasonCode": "sandbox_hardship_restructure",
+            "servicingPolicyVersion": "sandbox-servicing-policy.v1",
+            "servicingOwnerCode": "sandbox_platform",
+            "resolutionType": "restructure",
+            "resolutionReasonCode": "sandbox_hardship_restructure",
+            "resolutionAt": "2026-09-08T12:57:07.851Z",
+            "writtenOffPrincipalMinor": "0",
+            "writtenOffInterestMinor": "0",
+            "writtenOffFeesMinor": "0",
+            "acceptedAt": "2026-09-07T09:35:38.173Z",
+            "createdAt": "2026-09-07T09:35:38.173Z",
+            "updatedAt": "2026-09-08T12:57:07.851Z",
+            "schemaVersion": "obligation.v2"
+          },
+          "servicingStateHash": "0xcc68435343ed428469f20a8564a33f44340052ba10d7252699b20da3cba48d3c",
+          "servicingAction": {
+            "servicingActionId": "sandbox_servicing_action_969b743a0355ae4bb49d88500415a841fab69f4069e38ba70708a83b9e4d66ae",
+            "servicingActionHash": "0x969b743a0355ae4bb49d88500415a841fab69f4069e38ba70708a83b9e4d66ae",
+            "obligationId": "obligation_c3746224-101c-4de6-a512-54cba5c7fc51",
+            "subjectId": "subject_d7a7ca9e-8f0b-4cc7-b599-d8828eeee395",
+            "actionType": "restructure",
+            "previousStatus": "delinquent",
+            "nextStatus": "restructured",
+            "previousClassification": "grace_period",
+            "nextClassification": "restructured",
+            "daysPastDue": 0,
+            "oldestUnpaidInstallmentId": "obligation_installment_51106ff63b17ec2f5b205896f41b80c51cf3397b1229acb62992ba05244bd5c9",
+            "reasonCode": "sandbox_hardship_restructure",
+            "source": "dual_control",
+            "policyVersion": "sandbox-servicing-policy.v1",
+            "scheduleSequenceBefore": 1,
+            "scheduleSequenceAfter": 2,
+            "balancesBefore": {
+              "outstandingPrincipalMinor": "100",
+              "outstandingInterestMinor": "0",
+              "outstandingFeesMinor": "0",
+              "totalRepaidMinor": "0"
+            },
+            "balancesAfter": {
+              "outstandingPrincipalMinor": "100",
+              "outstandingInterestMinor": "0",
+              "outstandingFeesMinor": "0",
+              "totalRepaidMinor": "0"
+            },
+            "approvalProposalId": "approval_proposal_304cde0a-d222-449c-9ac0-2a96f522bd76",
+            "approvalExecutionId": "approval_execution_df696094-4058-4e48-9cce-ad57121a6a9a",
+            "effectiveAt": "2026-09-08T12:57:07.851Z",
+            "sandboxOnly": true,
+            "productionFundsMoved": false,
+            "schemaVersion": "sandbox_servicing_action.v1"
+          },
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "schemaVersion": "tenant_sandbox_obligation_restructured.v1",
+          "approvalExecutionId": "approval_execution_df696094-4058-4e48-9cce-ad57121a6a9a",
+          "approvalExecutionHash": "0xf87a1b7f197c0284dc05bd3157424e61c6a85a3cebe1f9a19798a9cff84951a4"
+        }
+      },
+      {
+        "stage": "executed",
+        "source": "495f95b4cfe72ec998788fbe18d6fcfda8843644",
+        "response": {
+          "obligation": {
+            "obligationId": "obligation_c3746224-101c-4de6-a512-54cba5c7fc51",
+            "obligationHash": "0x7c77ab4e9692fcfb020584161fda23c024e90aa0099b82b4e207b0adf822ab48",
+            "subjectId": "subject_d7a7ca9e-8f0b-4cc7-b599-d8828eeee395",
+            "principalId": "principal_9a28920a-c284-4f5a-b94a-87484987c3a0",
+            "creditIntentId": "credit_intent_b17191a1-fde6-46dd-8e19-96a1f66e8bf2",
+            "riskDecisionId": "risk_decision_f76b03b627a02b2b1b52b4036a9fa6c9330e0953903ce27202cfacda94ec7dc2",
+            "creditOfferId": "credit_offer_d5294167aa4463b4aaf2955b3bea5e0a668410dc8a453fcf28ad13299f3efa95",
+            "creditOfferAcceptanceId": "credit_offer_acceptance_5a8a45e37d4c8be4b4b203304eae19e9f77526ef1abb1e9e7f60a14b8c591fb3",
+            "authorityType": "consent",
+            "authorityId": "consent_e55a17dd-789e-48f1-84be-8b6120a70034",
+            "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+            "originalPrincipalMinor": "100",
+            "outstandingPrincipalMinor": "100",
+            "annualRateBps": 600,
+            "originationFeeMinor": "0",
+            "accruedInterestMinor": "0",
+            "outstandingInterestMinor": "0",
+            "accruedFeesMinor": "0",
+            "outstandingFeesMinor": "0",
+            "totalRepaidMinor": "0",
+            "repaymentFrequency": "monthly",
+            "installmentCount": 1,
+            "firstPaymentAt": "2026-09-15T12:57:07.851Z",
+            "maturityAt": "2026-09-15T12:57:07.851Z",
+            "scheduleVersion": "obligation_schedule.v1",
+            "scheduleHash": "0xb8f4318d21fc71cd545d744727cc8392f328237f68755f173e527f674eb8dbfa",
+            "scheduleSequence": 2,
+            "installments": [
+              {
+                "dueAt": "2026-09-15T12:57:07.851Z",
+                "status": "scheduled",
+                "obligationId": "obligation_c3746224-101c-4de6-a512-54cba5c7fc51",
+                "paidFeeMinor": "0",
+                "installmentId": "obligation_installment_51106ff63b17ec2f5b205896f41b80c51cf3397b1229acb62992ba05244bd5c9",
+                "schemaVersion": "obligation_installment.v1",
+                "scheduleVersion": "obligation_schedule.v1",
+                "scheduleSequence": 2,
+                "installmentNumber": 1,
+                "paidInterestMinor": "0",
+                "scheduledFeeMinor": "0",
+                "paidPrincipalMinor": "0",
+                "scheduledInterestMinor": "0",
+                "scheduledPrincipalMinor": "100"
+              }
+            ],
+            "executionStatus": "executed",
+            "sandboxExecutionReceiptId": "sandbox_execution_receipt_3a71315d6b9675786a83fd265345bd2f7a07a46f31f5f96b6a6c0b1ef5ec085a",
+            "executedAt": "2026-09-07T09:35:38.594Z",
+            "lastAccruedAt": "2026-09-07T09:35:38.594Z",
+            "interestAccrualRemainder": "0",
+            "withdrawable": false,
+            "sandboxOnly": true,
+            "productionFundsMoved": false,
+            "status": "written_off",
+            "servicingClassification": "written_off",
+            "daysPastDue": 0,
+            "oldestUnpaidInstallmentId": "obligation_installment_51106ff63b17ec2f5b205896f41b80c51cf3397b1229acb62992ba05244bd5c9",
+            "servicingEffectiveAt": "2026-09-08T12:57:10.186Z",
+            "servicingReasonCode": "sandbox_uncollectible_writeoff",
+            "servicingPolicyVersion": "sandbox-servicing-policy.v1",
+            "servicingOwnerCode": "sandbox_platform",
+            "resolutionType": "write_off",
+            "resolutionReasonCode": "sandbox_uncollectible_writeoff",
+            "resolutionAt": "2026-09-08T12:57:10.186Z",
+            "writtenOffPrincipalMinor": "100",
+            "writtenOffInterestMinor": "0",
+            "writtenOffFeesMinor": "0",
+            "acceptedAt": "2026-09-07T09:35:38.173Z",
+            "createdAt": "2026-09-07T09:35:38.173Z",
+            "updatedAt": "2026-09-08T12:57:10.186Z",
+            "schemaVersion": "obligation.v2"
+          },
+          "servicingStateHash": "0x08c4eb3e3c465923a929cc7b5e6af5102e086810ef8ba4741bc1f39a2c6368c5",
+          "servicingAction": {
+            "servicingActionId": "sandbox_servicing_action_92a019cb8d4a5628b578978873097a18faa446289cf593adbcb10dd0520e3da8",
+            "servicingActionHash": "0x92a019cb8d4a5628b578978873097a18faa446289cf593adbcb10dd0520e3da8",
+            "obligationId": "obligation_c3746224-101c-4de6-a512-54cba5c7fc51",
+            "subjectId": "subject_d7a7ca9e-8f0b-4cc7-b599-d8828eeee395",
+            "actionType": "write_off",
+            "previousStatus": "restructured",
+            "nextStatus": "written_off",
+            "previousClassification": "restructured",
+            "nextClassification": "written_off",
+            "daysPastDue": 0,
+            "oldestUnpaidInstallmentId": "obligation_installment_51106ff63b17ec2f5b205896f41b80c51cf3397b1229acb62992ba05244bd5c9",
+            "reasonCode": "sandbox_uncollectible_writeoff",
+            "source": "dual_control",
+            "policyVersion": "sandbox-servicing-policy.v1",
+            "scheduleSequenceBefore": 2,
+            "scheduleSequenceAfter": 2,
+            "balancesBefore": {
+              "outstandingPrincipalMinor": "100",
+              "outstandingInterestMinor": "0",
+              "outstandingFeesMinor": "0",
+              "totalRepaidMinor": "0"
+            },
+            "balancesAfter": {
+              "outstandingPrincipalMinor": "100",
+              "outstandingInterestMinor": "0",
+              "outstandingFeesMinor": "0",
+              "totalRepaidMinor": "0"
+            },
+            "approvalProposalId": "approval_proposal_1c413683-67d0-4851-b77d-80d6cf93d75b",
+            "approvalExecutionId": "approval_execution_462005de-a7a8-41be-9c09-fed0b1a0e855",
+            "effectiveAt": "2026-09-08T12:57:10.186Z",
+            "sandboxOnly": true,
+            "productionFundsMoved": false,
+            "schemaVersion": "sandbox_servicing_action.v1"
+          },
+          "writeOffLedgerTransactionId": "ledger_transaction_ba042e9a-e09f-4e47-aa8e-0610b2c63279",
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "schemaVersion": "tenant_sandbox_obligation_written_off.v1",
+          "approvalExecutionId": "approval_execution_462005de-a7a8-41be-9c09-fed0b1a0e855",
+          "approvalExecutionHash": "0x399f8b7f64509d38b2b5e1dae34cd595caf0e5f8d9584fdc5ee56ae7f54bbc44"
+        }
+      }
+    ]
+  },
+  "tests": {
+    "postgres": {
+      "passed": 99,
+      "source": "f96fe4ffcb366a642098c5d0e51a4f847737153a"
+    },
+    "hostedSchema": {
+      "migrations": 75,
+      "productionRuntimeAndCronTests": 2,
+      "passed": true,
+      "source": "2e8845c46ef23d06a2437acfae1440775f66edc3"
+    },
+    "javascript": {
+      "fullSuitePassed": 1338,
+      "missingBuildArtifactFailures": 4,
+      "afterFoundryBuildRetest": {
+        "passed": 9,
+        "failed": 0
+      }
+    },
+    "finalWeb": {
+      "passed": 205,
+      "source": "bbda1de9249d0862010bb23b3b26b591a4fc5b34"
+    },
+    "browserRoutesAndResponsive": {
+      "passed": 29
+    },
+    "dependencyAudit": "No known vulnerabilities"
+  },
+  "corrections": [
+    "Zero-day grace projections and protocol schema now match the canonical UTC derivation.",
+    "Operations database role has the bounded existing approval INSERT/UPDATE permissions; immutable history and RLS remain enforced.",
+    "Local Passkey verifier is injected only by the local runtime and is absent from the hosted bundle.",
+    "Repurchase preserves debt and transfers servicing ownership; a later clock tick can restore delinquent classification without undoing repurchase.",
+    "Written-off owner pages show the disposition, retain the balance and disable repayment without calling it repaid."
+  ],
+  "boundaries": {
+    "timeOrScheduleTampered": false,
+    "apiMocks": false,
+    "productionCredentialsAdded": false,
+    "productionSchemaChanged": false,
+    "chainTransactions": false,
+    "physicalAuthenticatorClaim": false
+  },
+  "artifacts": [
+    {
+      "path": "output/playwright/web-027/n-acceptance/browser.json",
+      "sha256": "91b5b60fc1eaa40654401270d07bb0094baa4c0592a02fe594d4638a6bcbc84d"
+    },
+    {
+      "path": "output/playwright/web-027/n-acceptance/human-recovery.json",
+      "sha256": "49d54323c8d09220a58a978d013ac43cc61d684afee9dcbb897ecc37764445e8"
+    },
+    {
+      "path": "output/playwright/web-027/n-acceptance/recovery.json",
+      "sha256": "4e638359065ec86b1bb52281f8595750f45d36447edb29c56663ff9637fa35da"
+    },
+    {
+      "path": "output/playwright/web-027/n-acceptance/hosted-schema-postgres.json",
+      "sha256": "ab333f5eaa273d83a8b6d0f14ea75169b7218863215abc5e1571c958badf6fe6"
+    },
+    {
+      "path": "output/playwright/web-027/j4/n-final-2e8845c.json",
+      "sha256": "5c29621d10085e2309069df3a6b2497ae05d6e7c3d2b6268d7826a4c2a2cceeb"
+    },
+    {
+      "path": "output/playwright/web-027/postgres.json",
+      "sha256": "56ebd79c15053c1f50758a7bac1e0eb7f53ac52e269bfe8b0886ae699543707f"
+    },
+    {
+      "path": "output/playwright/web-027/k2/runtime-check.json",
+      "sha256": "5b0d9cfbd7e86c59eb1c9947ad9ba1751421a530bddfec45c7d2c61825c77b28"
+    }
+  ]
+}
