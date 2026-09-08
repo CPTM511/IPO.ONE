@@ -5,6 +5,8 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { build } from "esbuild";
 import { materializeTrackedGitSource } from "./tracked-git-source.mjs";
+import { readMigrationSet } from "./migrate.mjs";
+import { selectVercelMigrations, VERCEL_MIGRATION_PROFILE } from "./vercel-migration-profile.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -104,9 +106,14 @@ try {
       "process.env.IPO_ONE_BUNDLED_RELEASE_ID": JSON.stringify(releaseId)
     }
   });
+  const allMigrations = await readMigrationSet(join(trackedSource, "db/migrations"));
+  const hostedMigrations = selectVercelMigrations(allMigrations);
+  await mkdir(join(output, "db/migrations"), { recursive: true });
+  await Promise.all(hostedMigrations.flatMap(({ name }) => ["up", "down"].map(direction =>
+    cp(join(trackedSource, "db/migrations", `${name}.${direction}.sql`), join(output, "db/migrations", `${name}.${direction}.sql`))
+  )));
   await Promise.all([
     cp(join(trackedSource, "apps/web/src"), join(output, "apps", "web", "src"), { recursive: true }),
-    cp(join(trackedSource, "db/migrations"), join(output, "db", "migrations"), { recursive: true }),
     cp(join(trackedSource, "deploy/vercel/package.m1-b-sandbox.json"), join(output, "package.json")),
     cp(
       join(
@@ -134,6 +141,12 @@ try {
     nodeRuntime: "24.x",
     productProfile: "deployable_sandbox_vertical_slice",
     deploymentRole,
+    migrationProfile: {
+      ...VERCEL_MIGRATION_PROFILE,
+      excludedLocalMigrations: allMigrations.filter(item => VERCEL_MIGRATION_PROFILE.localOnly.includes(item.name)).map(({ name, checksum }) => ({ name, checksum })),
+      runtimeMigrationCheck: "exact_set_and_checksums_unchanged",
+      productionDatabaseMutation: false
+    },
     releaseClaim: false,
     realFundsEnabled: false,
     artifacts
