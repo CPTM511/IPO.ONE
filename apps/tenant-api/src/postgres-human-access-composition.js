@@ -1,4 +1,3 @@
-import { LocalRiskPasskeys } from "../../../modules/authentication/src/local-risk-passkeys.js";
 import { INVITED_WALLET_ROLES, ORDINARY_WALLET_ROLES } from "../../../modules/authentication/src/wallet-workspace-roles.js";
 import {
   ActorType,
@@ -39,6 +38,7 @@ const ROOT_KEYS = new Set([
   "idleTimeoutMs",
   "localInvitedWalletRole",
   "localPasskeys",
+  "localPasskeyFactory",
   "localSpecialRoles",
   "localIndependentOperationsReviewer",
   "legacyReferenceHashKey",
@@ -407,6 +407,9 @@ export async function createPostgresHumanAccessComposition(input) {
     }
   }
   if (input.localPasskeys !== undefined && input.localPasskeys !== true) throw authenticationError("authentication_deployment_gate_closed", "Passkey configuration is invalid");
+  if (input.localPasskeyFactory !== undefined && (typeof input.localPasskeyFactory !== "function" || input.localPasskeys !== true)) {
+    throw authenticationError("authentication_deployment_gate_closed", "The local Passkey factory requires the reviewed local configuration");
+  }
   if (input.localPasskeys) {
     const database = (await input.pool.query("SELECT current_database() AS name")).rows[0]?.name;
     if (!localProfile || !["ipo_one_web027_candidate", "ipo_one_web027_proof"].includes(database)) throw authenticationError("authentication_deployment_gate_closed", "Passkeys require the reviewed isolated database");
@@ -442,8 +445,12 @@ export async function createPostgresHumanAccessComposition(input) {
       ? { publicBetaWalletRoleProfiles: input.publicBetaWalletRoleProfiles }
       : {})
   });
-  const passkeys = input.localPasskeys && (input.localInvitedWalletRole === "risk_operator" || input.localSpecialRoles)
-    ? new LocalRiskPasskeys({ origin: browserOrigin, role: input.localInvitedWalletRole, specialRoles: input.localSpecialRoles === true, independentOperationsReviewer: input.localIndependentOperationsReviewer === true }) : undefined;
+  const passkeysRequired = input.localPasskeys && (input.localInvitedWalletRole === "risk_operator" || input.localSpecialRoles);
+  if (passkeysRequired && typeof input.localPasskeyFactory !== "function") {
+    throw authenticationError("authentication_deployment_gate_closed", "The reviewed local Passkey verifier is unavailable");
+  }
+  const passkeys = passkeysRequired ? input.localPasskeyFactory({ origin: browserOrigin, role: input.localInvitedWalletRole,
+    specialRoles: input.localSpecialRoles === true, independentOperationsReviewer: input.localIndependentOperationsReviewer === true }) : undefined;
   const sessionStore = new PostgresHumanSessionStore({
     ...(passkeys ? { resolveStepUp: (client, session, now) => passkeys.resolveStepUp(client, session, now) } : {}),
     eventRepository,

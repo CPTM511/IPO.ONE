@@ -1,4 +1,4 @@
-import { assertLocalSpecialRoleDatabase, localSpecialRoleSpecs } from "./local-special-role-access.js";
+import { assertLocalSpecialRoleDatabase, localSpecialRoleSpecs, localSpecialRolesEnabled } from "./local-special-role-access.js";
 import { assertLocalAccessDatabase, rotateLocalAccessCredentials } from "./local-access-repair.js";
 import { randomBytes } from "node:crypto";
 import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
@@ -190,6 +190,12 @@ async function provisionApplicationRole(ownerPool, password) {
        reconciliation_runs, reconciliation_discrepancies
      TO ${APP_ROLE}`
   );
+  if (localSpecialRolesEnabled()) {
+    if (database !== "ipo_one_web027_candidate") throw new Error("Local approval writes require the reviewed candidate database");
+    await ownerPool.query(`GRANT INSERT ON approval_proposals, approval_decisions, approval_executions TO ${APP_ROLE}`);
+    await ownerPool.query(`GRANT UPDATE (status, version, approved_at, rejected_at, canceled_at, expired_at,
+      superseded_at, superseded_by_proposal_id, executed_at, execution_id, updated_at) ON approval_proposals TO ${APP_ROLE}`);
+  }
 }
 
 async function provisionAuthenticationRole(ownerPool, password, localPasskeys = false) {

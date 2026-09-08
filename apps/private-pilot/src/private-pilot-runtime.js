@@ -1,6 +1,7 @@
 import { createLocalApprovalRuntimeFactory } from "../../../modules/tenant-command-gateway/src/local-approval-runtime.js";
 import { createLocalApprovalProofVerifier } from "./local-approval-proof.js";
 import { localSpecialRolesEnabled, assertLocalSpecialRoleDatabase, loadLocalSpecialRoleInvitations, localSpecialRoleSpecs } from "./local-special-role-access.js";
+import { LocalRiskPasskeys } from "../../../modules/authentication/src/local-risk-passkeys.js";
 import { createLocalPrincipalAgentRuntime } from "./local-principal-agent-runtime.js";
 import { assertLocalAccessDatabase, localAccessCapabilities, localAccessEnabled } from "./local-access-repair.js";
 import { readFile } from "node:fs/promises";
@@ -201,7 +202,7 @@ async function createLocalHumanAccess({
 
   return createPostgresHumanAccessComposition({
     browserOrigin,
-    ...(localAccessEnabled() ? { localPasskeys: true } : {}),
+    ...(localAccessEnabled() ? { localPasskeys: true, localPasskeyFactory: options => new LocalRiskPasskeys(options) } : {}),
     ...(specialRole ? { localSpecialRoles: true, ...(port === 8942 ? { localIndependentOperationsReviewer: true } : {}) } : {}),
     encryptionKey: authenticationMaterial.encryptionKey,
     encryptionKeyRef: "local-secret://authentication/encryption-key",
