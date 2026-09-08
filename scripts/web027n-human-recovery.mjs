@@ -28,10 +28,21 @@ try{for(const name of ["restructure","repurchase","writeoff"]){
   await navigate(page,"repay-settle");await click(page,"#refreshOwnedPositionsBtn");await expect(page.locator("#ownedPositionList button[data-obligation-id]")).toHaveCount(1);await click(page,"#ownedPositionList button[data-obligation-id]");
   await expect(page.locator("#privatePaymentsRepaid")).toHaveText("$0.00 repaid");
   await expect(page.locator("#privatePaymentsStatus")).toHaveText(name==="restructure"?/restructured/i:name==="writeoff"?/written.off/i:/grace period|delinquent|repurchased/i);
+  if(name==="writeoff"){
+   await expect(page.locator("#privatePaymentsPrimaryBtn")).toHaveText("Review write-off Evidence");
+   await expect(page.locator("#postServicingRepaymentBtn")).toBeDisabled();
+   await expect(page.locator("#servicingRepaymentAmount")).toBeDisabled();
+   await expect(page.locator("#servicingCureSummary")).toContainText("written off, not repaid");
+  }
   const paymentText=await page.locator("#servicingCasePanel").innerText();
   await page.screenshot({path:`${out}/human-${name}-${phase}.png`});
   await click(page,"#openServicingEvidenceBtn");await expect(page.locator("#ownedEvidencePanel")).toBeVisible();
   await expect(page.locator("#ownedEvidenceCount")).not.toHaveText("0");
+  if(name==="writeoff"){
+   await expect(page.locator("#postHumanRepaymentBtn")).toBeDisabled();
+   await expect(page.locator("#humanRepaymentAllocation")).toContainText("not repayment");
+   await expect(page.locator("#humanGuidePrimaryBtn")).toHaveText("Review Evidence");
+  }
   results.push({name,phase,paymentText,evidenceText:await page.locator("#ownedEvidencePanel").innerText()});
  }
  }}catch(e){results.push({error:e.message});const page=contexts.at(-1)?.pages()[0];if(page){await page.screenshot({path:`out/human-recovery-failure.png`.replace('out/',out+'/')});await writeFile(`${out}/human-recovery-failure.txt`,await page.locator("body").innerText());}process.exitCode=1;}

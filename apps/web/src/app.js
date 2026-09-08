@@ -4689,6 +4689,21 @@ function humanGuidePresentation() {
     };
   }
 
+  if (obligation?.status === "written_off") {
+    return {
+      title: "Review the recorded write-off",
+      copy: "Operations and Risk recorded a synthetic loss disposition. The outstanding balance remains in the history; this is not repayment. Open Evidence to review the authorized action.",
+      status: "Written off",
+      action: "verify-evidence",
+      actionLabel: "Review Evidence",
+      secondaryAction: "start-new",
+      secondaryLabel: "Start another request",
+      checkpoints,
+      currentIndex: 4,
+      journey: "Written off · not repaid"
+    };
+  }
+
   if (obligation && executed && !repaid) {
     const nextInstallment = privateNextInstallment(obligation);
     return {
@@ -5519,6 +5534,8 @@ function renderServicingCase({ humanMode, obligation, nextInstallment }) {
     ? `Pay ${usdMinorToMoney(presentation.pastDueMinor)} across every past-due component; cure is confirmed only by the returned Obligation.`
     : presentation.classification === "cured"
       ? "The exact returned Obligation confirms cure. Future scheduled amounts remain repayable through the same waterfall."
+      : presentation.lifecycleStatus === "written_off"
+        ? "This synthetic Obligation is written off, not repaid. Repayment is unavailable for this terminal state; review its retained balance and Evidence."
       : presentation.repaymentAvailable
         ? "Early partial or full repayment is available now; no due-date wait or prepayment penalty applies. Allocation follows fee, interest, then principal."
         : "This Obligation is fully repaid. No balance remains to repay.";
@@ -5544,8 +5561,8 @@ function renderServicingCase({ humanMode, obligation, nextInstallment }) {
     : repayment
       ? `Applied ${usdMinorToMoney(repayment.appliedMinor)} through the deterministic waterfall.`
       : "Fee → interest → principal. Cure is confirmed only by the returned Obligation.";
-  amountInput.disabled = !humanMode || fullyRepaid;
-  sourceInput.disabled = !humanMode || fullyRepaid;
+  amountInput.disabled = !humanMode || !presentation.repaymentAvailable;
+  sourceInput.disabled = !humanMode || !presentation.repaymentAvailable;
   actionButton.disabled = !humanMode || tenantPilot.busy || !tenantPilot.connected ||
     !presentation.repaymentAvailable || !validServicingRepaymentInput();
   actionButton.lastChild.textContent = !humanMode
@@ -6508,10 +6525,17 @@ function renderPrivateProductSurfaces() {
   const fullyRepaidServicingCase = Boolean(
     servicingCase && asBigInt(servicingCase.outstandingMinor) === 0n
   );
+  const writtenOffServicingCase = servicingCase?.lifecycleStatus === "written_off";
+  if (humanMode && writtenOffServicingCase) {
+    el("privatePaymentsTitle").textContent = "Review the recorded write-off.";
+    el("privatePaymentsCopy").textContent = "The original schedule, outstanding balance and authorized disposition remain available. A write-off is not repayment.";
+  }
   setPrivateAction(
     el("privatePaymentsPrimaryBtn"),
     humanMode
-      ? fullyRepaidServicingCase
+      ? writtenOffServicingCase
+        ? "human-evidence"
+        : fullyRepaidServicingCase
         ? "new-human-credit"
         : servicingCase
           ? "servicing-cure"
@@ -6522,7 +6546,9 @@ function renderPrivateProductSurfaces() {
         ? "agent-api"
         : "principal-authority",
     humanMode
-      ? fullyRepaidServicingCase
+      ? writtenOffServicingCase
+        ? "Review write-off Evidence"
+        : fullyRepaidServicingCase
         ? "Start new credit"
         : servicingCase
           ? "Open early repayment"
@@ -8586,6 +8612,7 @@ function renderTenantPilot() {
   const offerAccepted = Boolean(obligation);
   const obligationExecuted = obligation?.executionStatus === "executed";
   const obligationRepaid = obligation?.status === "fully_repaid";
+  const obligationWrittenOff = obligation?.status === "written_off";
   const passportVerified = renderDecisionPassport(decision);
   if (offer && !reviewState.current) el("humanOfferAcknowledge").checked = false;
   el("humanApplicationStatus").textContent = obligationRepaid
@@ -8719,12 +8746,16 @@ function renderTenantPilot() {
   el("humanRepaymentFields").hidden = !obligationExecuted || obligationRepaid;
   el("postHumanRepaymentBtn").hidden = !obligationExecuted || obligationRepaid;
   el("postHumanRepaymentBtn").disabled =
-    privateBusy || !tenantPilot.connected || !obligationExecuted || obligationRepaid;
+    privateBusy || !tenantPilot.connected || !obligationExecuted || obligationRepaid || obligationWrittenOff;
   el("postHumanRepaymentBtn").textContent = tenantPilot.busy
     ? "Confirming sandbox repayment…"
-    : "Confirm early or scheduled repayment";
+    : obligationWrittenOff ? "Repayment unavailable · written off" : "Confirm early or scheduled repayment";
+  el("humanRepaymentAmount").disabled = obligationWrittenOff;
+  el("humanRepaymentSource").disabled = obligationWrittenOff;
   const repayment = tenantPilot.repayment;
-  el("humanRepaymentAllocation").textContent = repayment
+  el("humanRepaymentAllocation").textContent = obligationWrittenOff
+    ? "A synthetic write-off was recorded. It is not repayment; the outstanding balance and original schedule remain in the history. Review the owner Evidence for the exact disposition."
+    : repayment
     ? `Applied ${usdMinorToMoney(repayment.appliedMinor)} · interest ${usdMinorToMoney(repayment.appliedInterestMinor)} · principal ${usdMinorToMoney(repayment.appliedPrincipalMinor)}${BigInt(repayment.surplusMinor) > 0n ? ` · surplus ${usdMinorToMoney(repayment.surplusMinor)} not posted` : ""}`
     : "Early partial or full repayment is available now with no sandbox prepayment penalty. Fee → interest → principal; surplus is not posted.";
   const schedule = el("humanObligationSchedule");
@@ -10480,6 +10511,9 @@ async function postHumanSandboxRepayment({
       const obligation = tenantPilot.obligation;
       if (!obligation || obligation.executionStatus !== "executed") {
         throw new Error("Execute the sandbox Obligation before repayment.");
+      }
+      if (obligation.status === "written_off") {
+        throw new Error("Repayment is unavailable for a written-off Obligation. Review its Evidence.");
       }
       const amount = Number(el(amountInputId).value);
       if (!Number.isFinite(amount) || amount <= 0 || amount > 1000) {
