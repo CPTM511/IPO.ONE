@@ -2715,6 +2715,13 @@ export class PostgresCoreRepository {
     return this.#getOne("ledgerAccountId", ledgerAccountId, "SELECT * FROM ledger_accounts WHERE id = $1", mapLedgerAccount);
   }
 
+  async getLedgerAccountInTransaction(client, ledgerAccountId) {
+    assertQueryable(client);
+    assertString("ledgerAccountId", ledgerAccountId);
+    const result = await client.query("SELECT * FROM ledger_accounts WHERE id = $1", [ledgerAccountId]);
+    return mapLedgerAccount(result.rows[0]);
+  }
+
   async getLedgerTransaction(ledgerTransactionId) {
     assertString("ledgerTransactionId", ledgerTransactionId);
     const [transaction, entries] = await this.eventRepository.withTenantRead((client) => Promise.all([
