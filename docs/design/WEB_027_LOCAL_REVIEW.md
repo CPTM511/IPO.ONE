@@ -1,6 +1,19 @@
 # WEB-027 local candidate and release record
 
-Verdict: **BLOCKED — NOT COMPLETE** for whole-site delivery. WEB-027M is installed at `205fe9b7ef6726e00ce107777c4d73c1041df6b4`. Delegated browser acceptance verifies available Human, Principal/Agent, Capital Partner, Risk, Operations, Auditor and independent Risk Reviewer paths. Dual-controlled servicing execution, configured-path and formal hosted gates remain open.
+Verdict: **BLOCKED — NOT COMPLETE** for whole-site delivery. WEB-027M is installed at `205fe9b7ef6726e00ce107777c4d73c1041df6b4`. Delegated browser acceptance verifies available Human, Principal/Agent, Capital Partner, Risk, Operations, Auditor and independent Risk Reviewer paths. Dual-controlled servicing execution and formal hosted acceptance remain open. Apply the scope assessment below when determining which configured-path checks block this release; an unconfigured capability is not automatically a new implementation requirement.
+
+## Scope and closure assessment — 2026-09-08
+
+The Founder requested an assessment of repeated supplemental plans, not activation of WEB-027N. This assessment corrects task coordination; it changes no product acceptance criterion, runtime permission, approval policy or release profile. Existing approvals and recorded failures remain intact. No new supplementary task is needed for this assessment.
+
+- The approved parent directive §§4/10/12 requires preservation and visible verification of all previously usable capabilities, together with the approved UI scope and subsequently approved repairs. It explicitly prohibits expanding this iteration into implementation of the entire MVP. Every baseline capability still needs evidence; neither a missing test nor an inconvenient dependency may be reclassified as a pass or removed to obtain 100%.
+- M omitted a prerequisite already present in `modules/approval/src/approval-policy.js`: servicing needs both Risk and Operations approvers, neither being the proposer/command actor (`approval-service.js`). Its one Operations actor cannot fill both positions. This is an incomplete dependency assessment, not a newly introduced business requirement. The approved M servicing loop remains unfinished. N preserves the concrete missing grant for review; it is not approved or activated by this assessment. Do not create another numbered plan for the same gap or weaken separation of duties.
+- Prior blanket lists combining Pool, Provider, venue and device gaps are inventories, not proof that all of them require new activation before this UI release. Reconcile each against the recorded baseline, approved task scope, actual target deployment and applicable launch gate. Previously usable paths must remain usable; approved synthetic M3 functionality must not be grouped with an unapproved external Provider. Disabled paths need visible reasons and recovery conditions. Unknown baseline status remains unknown until checked. Do not silently exclude required accessibility or environment checks.
+- The parent directive §§0/11 already grants conditional publication to the existing formal site. M's local-only scope does not revoke that parent authorization or authorize promoting M's local identities/configuration. Founder-delegated software acceptance remains valid; physical-device evidence is not fabricated, and a generic request for the Founder to repeat software QA must not be reintroduced. Deployment still requires the exact compatible candidate, applicable checks, environment/configuration review, rollback and visible acceptance on the actual hosted SHA.
+
+The remaining work is tracked within the existing tasks: G closes the baseline/approved-scope evidence and actual regressions; M retains its unfinished servicing dependency and subsequent execution/recovery acceptance; H/I bind and verify the compatible formal release. Reuse source-bound results where behavior and dependencies are unchanged. Add tests or repairs only for an affected behavior, an actual defect or a required gate. Stop when the agreed acceptance is met; no optional product expansion or new design round is part of closure.
+
+This assessment does not establish current runtime health or a new test result. The dated execution evidence below remains the source for prior local verification. Formal deployment and full acceptance are still unverified.
 
 ## Experience
 
@@ -73,7 +86,7 @@ Prior visual performance evidence remains historical: three paired local runs at
 
 WEB-027K and the exact K2 verifier dependency are explicitly approved. K1 and K2 are installed and locally verified. K2 uses exact localhost origin/RP, invited Risk binding, native Passkeys and durable session evidence. Registration, assertion, cancellation, protected reads, replay/signature/origin rejection, revocation, real challenge expiry, refresh/logout/login/restart and 1440/390 Light/Dark controls passed. A virtual authenticator is repeatable cryptographic evidence, not Founder physical-device acceptance. See `web-027/k2-verification-evidence.json` for the exact source and bounds.
 
-The complete capability matrix also retains open accepted Capital Facility/servicing, special-role dual control, Pool/Provider/venue, device/accessibility and exact formal-deployment checks. No whole-site 100% claim or formal release is justified yet.
+The capability matrix retains exceptional Capital servicing, special-role dual control and exact formal-deployment checks; the ordinary accepted/executed/fully-repaid Capital Facility path was verified in L and repeated in M. Resolve Pool/Provider/venue and device/accessibility entries using the scope assessment above, rather than treating every unconfigured path as an activation prerequisite. No whole-site 100% claim or formal release is justified yet.
 
 ## Rollback and delivery
 
@@ -81,7 +94,7 @@ Previous compatible K2 candidate: `ipo-one-web027-candidate-30bed6fbdcd8`; sourc
 
 Do not revive revoked credentials, delete events or roll back to a pre-K identity model. Stop only the candidate, retain the failed image/container for diagnosis, start the recorded compatible prior K2 image against the same approved state, then retest Human/Principal recovery. Do not modify Founder ports or source DB.
 
-Formal release remains contingent on all capability gates and Founder local experience confirmation. Follow the existing canonical Vercel/Neon release route and repeat visible role journeys on the exact hosted SHA. Local flags, credentials, synthetic QA wallets and this Docker topology must never be promoted to the formal site.
+Formal release remains contingent on the approved directive's applicable capability and release gates, carrying forward the Founder's existing confirmations and delegated software acceptance. Follow the existing canonical Vercel/Neon release route and repeat visible role journeys on the exact hosted SHA. Local flags, credentials, synthetic QA wallets and this Docker topology must never be promoted to the formal site.
 
 
 ## WEB-027K1 acceptance, 2026-09-07

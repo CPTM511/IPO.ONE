@@ -1,11 +1,11 @@
 import { createTenantSecurityContext, setTenantTransactionContext } from "../../../modules/persistence/src/index.js";
-import { LOCAL_SPECIAL_ROLE_SPECS } from "./local-special-role-access.js";
+import { localSpecialRoleSpecs } from "./local-special-role-access.js";
 
 // Verify an immutable recorded decision against the exact currently active
 // invited session and native proof, using the existing authentication DB role.
 export function createLocalApprovalProofVerifier({ pool, tenantId, systemActorId }) {
   return async (decision, now) => {
-    const spec = Object.values(LOCAL_SPECIAL_ROLE_SPECS).find(s => s.actorId === decision.approverActorId);
+    const spec = Object.values(localSpecialRoleSpecs()).find(s => s.actorId === decision.approverActorId);
     if (!spec || decision.tenantId !== tenantId || spec.roleBundle !== decision.approverRoleBundle) return false;
     const client = await pool.connect();
     try {

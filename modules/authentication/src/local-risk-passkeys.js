@@ -11,7 +11,8 @@ export const LOCAL_PASSKEY_BINDINGS = Object.freeze({
   "http://localhost:8947": Object.freeze({ role: "risk_operator" }),
   "http://localhost:8939": Object.freeze({ role: "operations_operator", actorId: "actor_web027m_operations" }),
   "http://localhost:8940": Object.freeze({ role: "auditor", actorId: "actor_web027m_auditor" }),
-  "http://localhost:8941": Object.freeze({ role: "risk_operator", actorId: "actor_web027m_risk_reviewer" })
+  "http://localhost:8941": Object.freeze({ role: "risk_operator", actorId: "actor_web027m_risk_reviewer" }),
+  "http://localhost:8942": Object.freeze({ role: "operations_operator", actorId: "actor_web027n_operations_reviewer" })
 });
 const ORIGINS = new Set(Object.keys(LOCAL_PASSKEY_BINDINGS));
 const TRANSPORTS = new Set(["usb", "nfc", "ble", "internal", "hybrid"]);
@@ -82,8 +83,8 @@ export async function verifyLocalRiskCeremony({ response, challenge, key }) {
 
 // Instantiated only by the exact reviewed loopback composition; no public enrollment.
 export class LocalRiskPasskeys {
-  constructor({ origin, role = "risk_operator", specialRoles = false }) {
-    if (!ORIGINS.has(origin) || LOCAL_PASSKEY_BINDINGS[origin].role !== role || (LOCAL_PASSKEY_BINDINGS[origin].actorId && !specialRoles)) throw authenticationError("authentication_deployment_gate_closed", "Risk Passkey origin is not approved");
+  constructor({ origin, role = "risk_operator", specialRoles = false, independentOperationsReviewer = false }) {
+    if ((origin === "http://localhost:8942" && !independentOperationsReviewer) || !ORIGINS.has(origin) || LOCAL_PASSKEY_BINDINGS[origin].role !== role || (LOCAL_PASSKEY_BINDINGS[origin].actorId && !specialRoles)) throw authenticationError("authentication_deployment_gate_closed", "Risk Passkey origin is not approved");
     this.binding = LOCAL_PASSKEY_BINDINGS[origin];
     this.origin = origin;
     this.rpID = "localhost";

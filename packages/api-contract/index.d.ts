@@ -5113,6 +5113,7 @@ export interface LocalApprovalResponse {
   decisions: LocalApprovalDecision[];
   command: LocalServicingCommand;
   planSnapshot: Record<string, unknown>;
+  currentPlan?: { obligation: Record<string, unknown>; servicingStateHash: string; asOf: string };
   sandboxOnly: true;
   productionFundsMoved: false;
 }

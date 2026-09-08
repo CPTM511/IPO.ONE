@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { assertLocalSpecialRoleDatabase, LOCAL_SPECIAL_ROLE_SPECS } from "../src/local-special-role-access.js";
+import { assertLocalSpecialRoleDatabase, LOCAL_SPECIAL_ROLE_SPECS, LOCAL_OPERATIONS_REVIEWER_SPEC } from "../src/local-special-role-access.js";
 import { createLocalPilotIdentities } from "../src/local-pilot-identities.js";
 import { ROLE_BUNDLE_CAPABILITIES } from "../../../modules/authorization/src/index.js";
 import { LocalRiskPasskeys } from "../../../modules/authentication/src/local-risk-passkeys.js";
@@ -29,6 +29,33 @@ test("special activation rejects every unrelated database, host and port", () =>
     assert.throws(()=>assertLocalSpecialRoleDatabase(url,8935));
   }
   assert.throws(()=>assertLocalSpecialRoleDatabase(exact,8945));
+});
+
+test("independent Operations requires its own switch and preserves the proposer credential", () => {
+  const beforeM=process.env.IPO_ONE_LOCAL_SPECIAL_ROLES, beforeN=process.env.IPO_ONE_LOCAL_OPERATIONS_REVIEWER;
+  try {
+    process.env.IPO_ONE_LOCAL_SPECIAL_ROLES="web027m_v1";
+    delete process.env.IPO_ONE_LOCAL_OPERATIONS_REVIEWER;
+    const baseline=createLocalPilotIdentities({localAccessRepair:true,localSpecialRoles:true});
+    assert.equal(baseline.identities.operationsReviewer,undefined);
+    process.env.IPO_ONE_LOCAL_OPERATIONS_REVIEWER="web027n_v1";
+    const activated=createLocalPilotIdentities({localAccessRepair:true,localSpecialRoles:true});
+    assert.equal(createLocalPilotIdentities({localAccessRepair:true}).identities.operationsReviewer,undefined);
+    for(const [name,identity] of Object.entries(baseline.identities)) {
+      assert.equal(activated.identities[name].clientId,identity.clientId);
+      assert.deepEqual(activated.identities[name].capabilities,identity.capabilities);
+    }
+    assert.equal(activated.identities.operationsReviewer.clientId,LOCAL_OPERATIONS_REVIEWER_SPEC.clientId);
+    assert.deepEqual(activated.identities.operationsReviewer.capabilities,["approval.read","approval.decide","servicing.queue.read"]);
+    const options={origin:"http://localhost:8942",role:"operations_operator",specialRoles:true};
+    assert.throws(()=>new LocalRiskPasskeys(options));
+    assert.doesNotThrow(()=>new LocalRiskPasskeys({...options,independentOperationsReviewer:true}));
+    assert.throws(()=>new LocalRiskPasskeys({...options,independentOperationsReviewer:true,role:"risk_operator"}));
+  } finally {
+    for(const [name,value] of [["IPO_ONE_LOCAL_SPECIAL_ROLES",beforeM],["IPO_ONE_LOCAL_OPERATIONS_REVIEWER",beforeN]]) {
+      if(value===undefined)delete process.env[name];else process.env[name]=value;
+    }
+  }
 });
 
 test("native Passkeys bind the exact invited actor and role at each special origin", async () => {

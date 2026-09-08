@@ -80,6 +80,7 @@ export const WORKSPACE_NAVIGATION_MANIFEST = Object.freeze({
     operations: workspace("risk-operations", [entry("risk-operations", "primary")]),
     auditor: workspace("risk-operations", [entry("risk-operations", "primary")]),
     riskReviewer: workspace("risk-operations", [entry("risk-operations", "primary")]),
+    operationsReviewer: workspace("risk-operations", [entry("risk-operations", "primary")]),
     risk: workspace("risk-operations", [
       entry("risk-operations", "primary")
     ]),

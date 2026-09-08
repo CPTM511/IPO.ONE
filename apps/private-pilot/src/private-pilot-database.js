@@ -1,4 +1,4 @@
-import { assertLocalSpecialRoleDatabase, LOCAL_SPECIAL_ROLE_SPECS } from "./local-special-role-access.js";
+import { assertLocalSpecialRoleDatabase, localSpecialRoleSpecs } from "./local-special-role-access.js";
 import { assertLocalAccessDatabase, rotateLocalAccessCredentials } from "./local-access-repair.js";
 import { randomBytes } from "node:crypto";
 import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
@@ -825,7 +825,7 @@ export async function provisionPrivatePilotAuthentication({
     });
     await withTenantTransaction(ownerPool, context, async (client) => {
       const hostBindings = ["borrower", "controller", "risk", "capitalPartner"].map((name, index) => ({ name, port: basePort + index, walletAddress: invitation.walletAddress }));
-      if (specialRoleInvitations) hostBindings.push(...Object.entries(LOCAL_SPECIAL_ROLE_SPECS).map(([name, spec]) => ({ name, port: spec.port, walletAddress: specialRoleInvitations[name] })));
+      if (specialRoleInvitations) hostBindings.push(...Object.entries(localSpecialRoleSpecs()).map(([name, spec]) => ({ name, port: spec.port, walletAddress: specialRoleInvitations[name] })));
       for (const { name, port, walletAddress } of hostBindings) {
         const actor = identities[name];
         const issuer = `https://127.0.0.1:${port}`;

@@ -9,6 +9,9 @@ test("installed interfaces cannot expose writes to read-only or independent revi
   assert.equal(localReviewOperationAvailable("auditor","pilotReadApprovalInbox",installed),true);
   for(const op of operations.slice(1)) assert.equal(localReviewOperationAvailable("auditor",op,installed),false);
   assert.equal(localReviewOperationAvailable("riskReviewer","pilotDecideApproval",installed),true);
+  assert.equal(localReviewOperationAvailable("operationsReviewer","pilotDecideApproval",installed),true);
+  for(const op of ["pilotProposeApproval","pilotCancelApproval","pilotWriteOffSandboxObligation"])
+    assert.equal(localReviewOperationAvailable("operationsReviewer",op,installed),false);
   for(const op of ["pilotProposeApproval","pilotCancelApproval","pilotWriteOffSandboxObligation"]) assert.equal(localReviewOperationAvailable("riskReviewer",op,installed),false);
   assert.equal(localReviewOperationAvailable("operations","pilotProposeApproval",installed),true);
   assert.equal(localReviewOperationAvailable("operations","pilotDecideApproval",installed),false);

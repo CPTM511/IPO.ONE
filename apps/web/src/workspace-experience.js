@@ -17,6 +17,7 @@ const labels = {
   operations: { "risk-operations": ["Servicing & approvals", "Operations workspace"] },
   auditor: { "risk-operations": ["Portfolio & audit", "Auditor workspace"] },
   riskReviewer: { "risk-operations": ["Independent review", "Risk reviewer workspace"] },
+  operationsReviewer: { "risk-operations": ["Independent review", "Operations reviewer workspace"] },
   risk: { "risk-operations": ["Queue & controls", "Risk workspace"] }
 };
 

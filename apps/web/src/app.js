@@ -2051,7 +2051,7 @@ function localPilotAgentAccount() {
   return /^0x[a-fA-F0-9]{40}$/.test(account) ? account : undefined;
 }
 
-function isReviewWorkspace() { return ["risk", "operations", "auditor", "riskReviewer"].includes(currentWorkspaceName()); }
+function isReviewWorkspace() { return ["risk", "operations", "auditor", "riskReviewer", "operationsReviewer"].includes(currentWorkspaceName()); }
 
 function currentWorkspaceName() {
   const configuredWorkspaceName = document.querySelector(
@@ -9862,7 +9862,7 @@ async function runTenantPilotProbe(probeOwner) {
     pilotFeedback.catalogAvailable = available.has("pilotSubmitPilotFeedback");
     pilotCases.fileAvailable = available.has("pilotFileCase");
     pilotCases.listAvailable = available.has("pilotListOwnCases");
-    const riskAvailable = ["operations", "auditor", "riskReviewer"].includes(currentWorkspaceName())
+    const riskAvailable = ["operations", "auditor", "riskReviewer", "operationsReviewer"].includes(currentWorkspaceName())
       ? new Set([...available].filter(op => localReviewOperationAvailable(currentWorkspaceName(), op, available)))
       : available;
     riskOperations.readCatalogAvailable = riskAvailable.has("pilotReadTenantRisk");
@@ -12248,6 +12248,7 @@ function renderRiskOperations() {
   const reviewHeading = {
     operations: ["Servicing, with independent review.", "Prepare an exact servicing proposal and track its independent approvals. Execution remains a separate explicit action."],
     auditor: ["Records, ready for review.", "Read the tenant portfolio, case records and servicing approvals. This workspace has no authority to change them."],
+    operationsReviewer: ["Independent operations review.", "Review the exact plan and its current state before approving or rejecting. This workspace cannot propose or execute servicing."],
     riskReviewer: ["Independent risk review.", "Review the exact plan, impact and expiry before recording your approval or rejection. This workspace cannot propose or execute servicing."]
   }[currentWorkspaceName()];
   if (reviewHeading) {

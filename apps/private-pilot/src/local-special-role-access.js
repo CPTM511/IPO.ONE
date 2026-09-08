@@ -18,6 +18,22 @@ export const LOCAL_SPECIAL_ROLE_SPECS = Object.freeze({
     capabilities: Object.freeze([C.APPROVAL_READ, C.APPROVAL_DECIDE, C.SERVICING_QUEUE_READ]) })
 });
 
+export const localIndependentOperationsEnabled = () => localSpecialRolesEnabled() &&
+  process.env.IPO_ONE_LOCAL_OPERATIONS_REVIEWER === "web027n_v1";
+export const LOCAL_OPERATIONS_REVIEWER_SPEC = Object.freeze({
+  actorId: "actor_web027n_operations_reviewer",
+  durableCredentialId: "credential_864bfa21-8e96-4ff9-b633-aa1542f38698",
+  clientId: "client_web027n_actor_web027n_operations_reviewer",
+  actorType: ActorType.OPERATIONS_OPERATOR, roleBundle: R.OPERATIONS_OPERATOR,
+  port: 8942, hash: "#risk-operations",
+  capabilities: Object.freeze([C.APPROVAL_READ, C.APPROVAL_DECIDE, C.SERVICING_QUEUE_READ])
+});
+export function localSpecialRoleSpecs() {
+  return localIndependentOperationsEnabled()
+    ? { ...LOCAL_SPECIAL_ROLE_SPECS, operationsReviewer: LOCAL_OPERATIONS_REVIEWER_SPEC }
+    : LOCAL_SPECIAL_ROLE_SPECS;
+}
+
 export function assertLocalSpecialRoleDatabase(connectionString, basePort) {
   const url = new URL(connectionString);
   if (url.hostname !== "127.0.0.2" || url.port !== "55435" ||
@@ -35,6 +51,16 @@ export async function loadLocalSpecialRoleInvitations() {
     typeof bindings[name] !== "string" || !/^0x[0-9a-f]{40}$/.test(bindings[name])) ||
     new Set(Object.values(bindings)).size !== names.length) {
     throw new Error("WEB-027M requires three distinct exact invited wallets");
+  }
+  if (localIndependentOperationsEnabled()) {
+    const reviewerPath = process.env.IPO_ONE_LOCAL_OPERATIONS_REVIEWER_INVITATION_FILE;
+    if (!reviewerPath) throw new Error("WEB-027N exact invited wallet binding is required");
+    const reviewer = JSON.parse(await readFile(reviewerPath, "utf8"));
+    if (Object.keys(reviewer).length !== 1 || !/^0x[0-9a-f]{40}$/.test(reviewer.operationsReviewer ?? "") ||
+        Object.values(bindings).includes(reviewer.operationsReviewer)) {
+      throw new Error("WEB-027N requires one distinct exact invited wallet");
+    }
+    bindings.operationsReviewer = reviewer.operationsReviewer;
   }
   return Object.freeze(bindings);
 }

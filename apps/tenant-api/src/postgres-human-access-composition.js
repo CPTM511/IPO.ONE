@@ -40,6 +40,7 @@ const ROOT_KEYS = new Set([
   "localInvitedWalletRole",
   "localPasskeys",
   "localSpecialRoles",
+  "localIndependentOperationsReviewer",
   "legacyReferenceHashKey",
   "legacyReferenceHashKeyRef",
   "maximumSessions",
@@ -119,7 +120,7 @@ function exactBrowserOrigin(value, { allowLoopback = false, allowRiskLocalhost =
   const approvedLoopback =
     allowLoopback &&
     parsed.protocol === "http:" &&
-    (parsed.hostname === "127.0.0.1" || (allowRiskLocalhost && parsed.hostname === "localhost" && ["8937", "8947", "8939", "8940", "8941"].includes(parsed.port))) &&
+    (parsed.hostname === "127.0.0.1" || (allowRiskLocalhost && parsed.hostname === "localhost" && ["8937", "8947", "8939", "8940", "8941", "8942"].includes(parsed.port))) &&
     parsed.port !== "";
   if (
     (parsed.protocol !== "https:" && !approvedLoopback) ||
@@ -390,8 +391,12 @@ export async function createPostgresHumanAccessComposition(input) {
   const specialBindings = {
     "http://localhost:8939": ["operations_operator", "client_web027m_actor_web027m_operations"],
     "http://localhost:8940": ["auditor", "client_web027m_actor_web027m_auditor"],
-    "http://localhost:8941": ["risk_operator", "client_web027m_actor_web027m_risk_reviewer"]
+    "http://localhost:8941": ["risk_operator", "client_web027m_actor_web027m_risk_reviewer"],
+    "http://localhost:8942": ["operations_operator", "client_web027n_actor_web027n_operations_reviewer"]
   };
+  if (input.localIndependentOperationsReviewer !== undefined &&
+      (input.localIndependentOperationsReviewer !== true || browserOrigin !== "http://localhost:8942" || input.localSpecialRoles !== true)) throw authenticationError("authentication_deployment_gate_closed", "Independent reviewer requires its exact local configuration");
+  if (browserOrigin === "http://localhost:8942" && input.localIndependentOperationsReviewer !== true) throw authenticationError("authentication_deployment_gate_closed", "Independent reviewer is not enabled");
   if (specialBindings[browserOrigin] && input.localSpecialRoles !== true) throw authenticationError("authentication_deployment_gate_closed", "Special origin requires the exact local gate");
   if (input.localSpecialRoles) {
     const binding = specialBindings[browserOrigin];
@@ -438,7 +443,7 @@ export async function createPostgresHumanAccessComposition(input) {
       : {})
   });
   const passkeys = input.localPasskeys && (input.localInvitedWalletRole === "risk_operator" || input.localSpecialRoles)
-    ? new LocalRiskPasskeys({ origin: browserOrigin, role: input.localInvitedWalletRole, specialRoles: input.localSpecialRoles === true }) : undefined;
+    ? new LocalRiskPasskeys({ origin: browserOrigin, role: input.localInvitedWalletRole, specialRoles: input.localSpecialRoles === true, independentOperationsReviewer: input.localIndependentOperationsReviewer === true }) : undefined;
   const sessionStore = new PostgresHumanSessionStore({
     ...(passkeys ? { resolveStepUp: (client, session, now) => passkeys.resolveStepUp(client, session, now) } : {}),
     eventRepository,

@@ -1741,6 +1741,15 @@
         "productionFundsMoved"
       ],
       "properties": {
+        "currentPlan": {
+          "type":"object", "additionalProperties":false,
+          "required":["obligation","servicingStateHash","asOf"],
+          "properties": {
+            "obligation":{"$ref":"#/$defs/sharedObligation"},
+            "servicingStateHash":{"$ref":"#/$defs/hash"},
+            "asOf":{"$ref":"#/$defs/timestamp"}
+          }
+        },
         "planSnapshot": {"$ref": "#/$defs/sharedObligation"},
         "schemaVersion": {
           "const": "tenant_approval_view.v1"

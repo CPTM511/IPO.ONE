@@ -1,6 +1,6 @@
 import { createLocalApprovalRuntimeFactory } from "../../../modules/tenant-command-gateway/src/local-approval-runtime.js";
 import { createLocalApprovalProofVerifier } from "./local-approval-proof.js";
-import { localSpecialRolesEnabled, assertLocalSpecialRoleDatabase, loadLocalSpecialRoleInvitations, LOCAL_SPECIAL_ROLE_SPECS } from "./local-special-role-access.js";
+import { localSpecialRolesEnabled, assertLocalSpecialRoleDatabase, loadLocalSpecialRoleInvitations, localSpecialRoleSpecs } from "./local-special-role-access.js";
 import { createLocalPrincipalAgentRuntime } from "./local-principal-agent-runtime.js";
 import { assertLocalAccessDatabase, localAccessCapabilities, localAccessEnabled } from "./local-access-repair.js";
 import { readFile } from "node:fs/promises";
@@ -184,7 +184,7 @@ async function createLocalHumanAccess({
   port,
   profile
 }) {
-  const specialRole = localSpecialRolesEnabled() && Object.values(LOCAL_SPECIAL_ROLE_SPECS).some(spec => spec.port === port && spec.actorId === identity.actorId && spec.roleBundle === identity.roleBundle);
+  const specialRole = localSpecialRolesEnabled() && Object.values(localSpecialRoleSpecs()).some(spec => spec.port === port && spec.actorId === identity.actorId && spec.roleBundle === identity.roleBundle);
   const riskPasskey = specialRole || (localAccessEnabled() && identity.roleBundle === "risk_operator" && [8937, 8947].includes(port));
   const browserOrigin = `http://${riskPasskey ? "localhost" : "127.0.0.1"}:${port}`;
   const secureOrigin = `https://127.0.0.1:${port}`;
@@ -202,7 +202,7 @@ async function createLocalHumanAccess({
   return createPostgresHumanAccessComposition({
     browserOrigin,
     ...(localAccessEnabled() ? { localPasskeys: true } : {}),
-    ...(specialRole ? { localSpecialRoles: true } : {}),
+    ...(specialRole ? { localSpecialRoles: true, ...(port === 8942 ? { localIndependentOperationsReviewer: true } : {}) } : {}),
     encryptionKey: authenticationMaterial.encryptionKey,
     encryptionKeyRef: "local-secret://authentication/encryption-key",
     oidcProviders: [],
@@ -314,7 +314,7 @@ export async function createPrivatePilotRuntime({
       hash: "#capital-partners"
     }
   ];
-  if (localSpecialRolesEnabled()) profiles.push(...Object.entries(LOCAL_SPECIAL_ROLE_SPECS).map(([name, spec]) => ({ name, identity: authentication.identities[name], port: spec.port, hash: spec.hash })));
+  if (localSpecialRolesEnabled()) profiles.push(...Object.entries(localSpecialRoleSpecs()).map(([name, spec]) => ({ name, identity: authentication.identities[name], port: spec.port, hash: spec.hash })));
   const hosts = [];
   let gateway;
   let principalAgentRuntime;
@@ -494,7 +494,7 @@ export async function createPrivatePilotRuntime({
           })
         : undefined;
       const host = createTenantPilotHost({
-        localRiskHostname: localAccessEnabled() && ([8937, 8947].includes(profile.port) || (localSpecialRolesEnabled() && Object.hasOwn(LOCAL_SPECIAL_ROLE_SPECS, profile.name))),
+        localRiskHostname: localAccessEnabled() && ([8937, 8947].includes(profile.port) || (localSpecialRolesEnabled() && Object.hasOwn(localSpecialRoleSpecs(), profile.name))),
         gateway,
         humanBff: humanAccess.humanSessionBff,
         machineAuthenticator: {

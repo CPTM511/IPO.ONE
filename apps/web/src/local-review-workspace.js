@@ -8,6 +8,7 @@ const money = value => `$${(Number(value ?? 0)/100).toFixed(2)}`;
 const date = value => new Date(value).toLocaleString();
 const roleOperations = Object.freeze({
   operations: new Set(["pilotProposeApproval","pilotReadApproval","pilotCancelApproval","pilotReadApprovalInbox","pilotReadServicingQueueReference","pilotReadServicingQueue",...Object.keys(actions)]),
+  operationsReviewer: new Set(["pilotReadApproval","pilotDecideApproval","pilotReadApprovalInbox","pilotReadServicingQueueReference","pilotReadServicingQueue"]),
   riskReviewer: new Set(["pilotReadApproval","pilotDecideApproval","pilotReadApprovalInbox","pilotReadServicingQueueReference","pilotReadServicingQueue"]),
   auditor: new Set(["pilotReadApproval","pilotReadApprovalInbox","pilotReadTenantRisk","pilotReadTenantRiskPortfolioReference","pilotReadCaseQueue"]),
   risk: new Set(["pilotReadRiskAgentDirectory"])
@@ -26,7 +27,7 @@ export function createLocalReviewWorkspace({ api, getState, selectAgent }) {
   function clearSelection() { selected = null; el("localApprovalDetail").hidden = true; el("localApprovalAcknowledge").checked = false; }
   function render() {
     const state = getState();
-    panel.hidden = !state.signedIn || !["operations","riskReviewer","auditor"].includes(state.workspace);
+    panel.hidden = !state.signedIn || !["operations","riskReviewer","operationsReviewer","auditor"].includes(state.workspace);
     directory.hidden = !state.signedIn || state.workspace !== "risk";
     el("loadLocalAgentsBtn").disabled = busy || !has("pilotReadRiskAgentDirectory");
     el("refreshLocalApprovalsBtn").disabled = busy || !has("pilotReadApprovalInbox");
@@ -44,6 +45,8 @@ export function createLocalReviewWorkspace({ api, getState, selectAgent }) {
     el("rejectLocalProposalBtn").disabled = el("approveLocalProposalBtn").disabled;
     el("cancelLocalProposalBtn").disabled = busy || !acknowledged || !has("pilotCancelApproval") || !["pending","approved"].includes(proposal?.status);
     el("executeLocalProposalBtn").disabled = busy || !acknowledged || !has(proposal?.operationId) || proposal?.status !== "approved" || expired;
+    el("selectCurrentServicingPlanBtn").hidden = !has("pilotProposeApproval") || !selected?.currentPlan;
+    el("selectCurrentServicingPlanBtn").disabled = busy;
   }
   async function run(action) {
     if (busy) return;
@@ -63,8 +66,12 @@ export function createLocalReviewWorkspace({ api, getState, selectAgent }) {
       : p.operationId === "pilotRepurchaseSandboxObligation" ? `Transfer servicing to ${value.command.payload.servicingOwnerCode === "sandbox_originator" ? "the originator" : "the platform"}. This does not record a payment.`
         : "Write off the outstanding balance. This is not a repayment and remains visible in the credit history.";
     const approved = new Set(value.decisions.filter(d => d.decision === "approve").map(d => d.approverRoleBundle));
-    el("localApprovalProgress").textContent = `Independent Risk: ${approved.has("risk_operator") ? "approved" : "required"} · Independent Operations: ${approved.has("operations_operator") ? "approved" : "required"}. Neither approver can be the proposer. Current local enrollment has no separate Operations approver.`;
+    el("localApprovalProgress").textContent = `Independent Risk: ${approved.has("risk_operator") ? "approved" : "required"} · Independent Operations: ${approved.has("operations_operator") ? "approved" : "required"}. Neither approver can be the proposer.`;
     el("localApprovalTechnical").textContent = JSON.stringify({ proposalId:p.approvalProposalId,version:p.version,commandHash:p.commandHash,reason:p.reasonCode,planSnapshot:plan },null,2);
+    const current = value.currentPlan?.obligation;
+    el("localApprovalCurrentPlan").textContent = current
+      ? `Current plan: ${current.status} · Principal ${money(current.outstandingPrincipalMinor)} · Repaid ${money(current.totalRepaidMinor)} · Schedule ${current.scheduleSequence}. Verified ${date(value.currentPlan.asOf)}.`
+      : "The terms above are the immutable proposal snapshot. Open the recorded proposal again to query the current plan.";
     render();
   }
   async function readProposal(id) { return (await api("pilotReadApproval", { resource:{resourceType:"approval_proposal",resourceId:id},payload:{},idempotent:false })).response; }
@@ -82,6 +89,21 @@ export function createLocalReviewWorkspace({ api, getState, selectAgent }) {
     message(`Approval inbox verified ${date(result.asOf)}${result.hasMore ? " · Showing the latest 25 proposals" : ""}. Reads do not approve or execute a command.`);
   }
   el("refreshLocalApprovalsBtn").addEventListener("click",()=>run(inbox));
+  el("selectCurrentServicingPlanBtn").addEventListener("click",()=>run(async current=>{
+    if (!selected || !has("pilotProposeApproval")) return;
+    const latest = await readProposal(selected.proposal.approvalProposalId);
+    if (!current()) return;
+    showReview(latest);
+    if (!latest.currentPlan) throw new Error("Refresh the servicing queue to find an authorized current plan.");
+    const p = latest.currentPlan.obligation;
+    cases = [{ ...p, servicingStateHash:latest.currentPlan.servicingStateHash,
+      outstandingTotalMinor:p.outstandingPrincipalMinor+p.outstandingInterestMinor+p.outstandingFeesMinor }];
+    const option=document.createElement("option"); option.value="0";
+    option.textContent=`Reviewed plan · ${p.status} · ${money(cases[0].outstandingTotalMinor)} outstanding · Schedule ${p.scheduleSequence}`;
+    el("localServicingPosition").replaceChildren(option); draft=null; el("localServicingAcknowledge").checked=false;
+    message("Current plan selected. Choose and acknowledge a new proposal explicitly; no servicing action has occurred.");
+    el("localServicingAction").focus();
+  }));
   el("loadLocalServicingBtn").addEventListener("click",()=>run(async current=>{
     const reference=(await api("pilotReadServicingQueueReference",{payload:{},idempotent:false})).response.resource;
     if (!reference) throw new Error("No authorized servicing queue is configured.");

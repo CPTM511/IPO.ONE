@@ -106,7 +106,7 @@ export function createTenantHttpServer({
   serveWebAsset
 }) {
   assertConfig({ host, trustProxy, environment, credentialSource });
-  if (localRiskHostname && (![8937, 8947, 8939, 8940, 8941].includes(port) || environment !== "development" || credentialSource !== "local_test")) throw new DomainError("invalid_tenant_transport_config", "Risk hostname is restricted to the reviewed local listener");
+  if (localRiskHostname && (![8937, 8947, 8939, 8940, 8941, 8942].includes(port) || environment !== "development" || credentialSource !== "local_test")) throw new DomainError("invalid_tenant_transport_config", "Risk hostname is restricted to the reviewed local listener");
   if (
     !gateway?.execute ||
     typeof resolveAuthenticationContext !== "function" ||

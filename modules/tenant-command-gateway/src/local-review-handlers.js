@@ -13,6 +13,25 @@ function response(version, proposal, decisions, draft) {
   return { schemaVersion:version, proposal, decisions, command:draft.command, planSnapshot:draft.planSnapshot, sandboxOnly:true, productionFundsMoved:false };
 }
 
+const REVIEWED_SERVICING_PLANS = new Set([
+  "obligation_ad6fb93d-d18a-479a-8e58-f56a328be9a9",
+  "obligation_355d2cf4-4c17-41e5-adc1-e0ae5236a33a",
+  "obligation_c3746224-101c-4de6-a512-54cba5c7fc51"
+]);
+
+async function currentReviewedPlan(input, proposal) {
+  if (process.env.IPO_ONE_LOCAL_OPERATIONS_REVIEWER !== "web027n_v1" ||
+      !REVIEWED_SERVICING_PLANS.has(proposal.resourceId)) return {};
+  const obligation = await input.coreRepository.getProjectionInTransaction(
+    input.client, CoreProjectionType.OBLIGATION, proposal.resourceId);
+  if (!obligation || obligation.obligationId !== proposal.resourceId ||
+      obligation.sandboxOnly !== true || obligation.productionFundsMoved !== false) {
+    throw new DomainError("tenant_resource_unavailable", "The current plan is unavailable.");
+  }
+  return { currentPlan: { obligation: summarizeSharedObligation(obligation),
+    servicingStateHash: hashId("sandbox_servicing_state", obligation), asOf: input.now.toISOString() } };
+}
+
 export function createLocalReviewHandlers() {
   return Object.freeze([
     {
@@ -52,7 +71,8 @@ export function createLocalReviewHandlers() {
         empty(input.payload);
         const r = runtime(input.approvalRuntime);
         const proposal = await r.repository.getApprovalProposal(input.authorizationDecision.resourceId);
-        return response("tenant_approval_view.v1",proposal,await r.repository.listApprovalDecisions(proposal.approvalProposalId),await r.readCommand(proposal));
+        return { ...response("tenant_approval_view.v1",proposal,await r.repository.listApprovalDecisions(proposal.approvalProposalId),await r.readCommand(proposal)),
+          ...await currentReviewedPlan(input, proposal) };
       }
     },
     {
