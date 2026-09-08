@@ -90,10 +90,18 @@ async function approveAndExecute(proposed,expected){
  receipts.push({stage:"current",response:result});await shot(expected+"-"+id.slice(-8));
  return result;
 }
+function assertRecovered(current,expected){
+ const p=current.currentPlan.obligation;
+ if(expected==="repurchased"){
+  assert.equal(current.proposal.status,"executed");assert.equal(current.command.operationId,"pilotRepurchaseSandboxObligation");
+  assert.equal(p.servicingOwnerCode,"sandbox_originator");assert.equal(p.outstandingPrincipalMinor,"100");assert.equal(p.totalRepaidMinor,"0");
+  assert.ok(["repurchased","delinquent"].includes(p.status));
+ } else assert.ok([expected,...(expected==="restructured"?["written_off"]:[])].includes(p.status));
+}
 async function completeStep(kind,id,expected,prior){
  const old=[...receipts].reverse().find(r=>r.stage==="proposed"&&r.response.command.operationId===kind&&r.response.command.resource.resourceId===id);
  if(old){const current=await review(8939,old.response.proposal.approvalProposalId);
-  if(current.proposal.status==="executed"){assert.ok([expected,"written_off"].includes(current.currentPlan.obligation.status));receipts.push({stage:"current",source,response:current});return old.response;}
+  if(current.proposal.status==="executed"){assertRecovered(current,expected);receipts.push({stage:"current",source,response:current});return old.response;}
   if(["pending","approved"].includes(current.proposal.status)){await approveAndExecute(old.response,expected);return old.response;}
  }
  const next=await propose(kind,id,prior);await approveAndExecute(next,expected);return next;
@@ -111,7 +119,7 @@ try{
  const d=await completeStep("pilotWriteOffSandboxObligation",plans.writeoff,"written_off",c.proposal.approvalProposalId);
  const restart=spawnSync("limactl",["shell","--workdir","/Users/cptmao/Documents/IPO.ONE","ipo-one-local","docker","restart","ipo-one-web027-candidate","ipo-one-web027-candidate-worker"],{encoding:"utf8"});assert.equal(restart.status,0);
  await until(async()=>{try{return(await fetch("http://localhost:8942/tenant/v1/healthz")).ok;}catch{return false;}},"restart ready",30000);
- for(const [p,status]of[[a,"restructured"],[b,"repurchased"],[d,"written_off"]]){const current=await review(8939,p.proposal.approvalProposalId);assert.equal(current.currentPlan.obligation.status,status);}
+ for(const [p,status]of[[a,"restructured"],[b,"repurchased"],[d,"written_off"]]){const current=await review(8939,p.proposal.approvalProposalId);assertRecovered(current,status);}
  await click(page.getByRole("button",{name:"Sign out",exact:true}));await login();await mfa();await review(8939,d.proposal.approvalProposalId);
  results.push({name:"four exact servicing executions and durable recovery",pass:true});
  for(const port of [8940,8941,8942]){await workspace(port);await opClick("#refreshLocalApprovalsBtn","pilotReadApprovalInbox");}results.push({name:"separate sessions survive Operations re-login and process restart",pass:true});

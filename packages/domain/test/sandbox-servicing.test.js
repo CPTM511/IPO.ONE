@@ -183,3 +183,14 @@ test("write-off posts a balanced synthetic loss but does not mark the Obligation
   assert.equal(transaction.debitTotalMinor, transaction.creditTotalMinor);
   assert.equal(transaction.transactionType, "sandbox_write_off");
 });
+
+test("servicing time after repurchase preserves ownership and unpaid debt", () => {
+  const original=executedObligation(),now=atDaysAfterFirstDue(original,1);
+  const overdue=advanceSandboxServicing(original,{actorId:"worker_servicing",now}).obligation;
+  const purchase=repurchaseSandboxObligation(overdue,{servicingOwnerCode:"sandbox_originator",reasonCode:"sandbox_contractual_repurchase",
+    actorId:"operator_servicing",approvalProposalId:"approval_proposal_clock",approvalExecutionId:"approval_execution_clock",now});
+  const continued=advanceSandboxServicing(purchase.obligation,{actorId:"worker_servicing",now:new Date(now.getTime()+1000)}).obligation;
+  assert.equal(continued.status,"delinquent");assert.equal(continued.servicingOwnerCode,"sandbox_originator");
+  assert.equal(continued.outstandingPrincipalMinor,original.outstandingPrincipalMinor);assert.equal(continued.totalRepaidMinor,"0");
+  assert.equal(purchase.servicingAction.nextStatus,"repurchased");
+});

@@ -70,7 +70,7 @@ export function createLocalReviewWorkspace({ api, getState, selectAgent }) {
     el("localApprovalTechnical").textContent = JSON.stringify({ proposalId:p.approvalProposalId,version:p.version,commandHash:p.commandHash,reason:p.reasonCode,planSnapshot:plan },null,2);
     const current = value.currentPlan?.obligation;
     el("localApprovalCurrentPlan").textContent = current
-      ? `Current plan: ${current.status} · Principal ${money(current.outstandingPrincipalMinor)} · Repaid ${money(current.totalRepaidMinor)} · Schedule ${current.scheduleSequence}. Verified ${date(value.currentPlan.asOf)}.`
+      ? `Current plan: ${current.status} · Servicing owner: ${current.servicingOwnerCode === "sandbox_originator" ? "Originator" : "Platform"} · Principal ${money(current.outstandingPrincipalMinor)} · Repaid ${money(current.totalRepaidMinor)} · Schedule ${current.scheduleSequence}. Verified ${date(value.currentPlan.asOf)}. Completed actions remain in the approval history.`
       : "The terms above are the immutable proposal snapshot. Open the recorded proposal again to query the current plan.";
     render();
   }
