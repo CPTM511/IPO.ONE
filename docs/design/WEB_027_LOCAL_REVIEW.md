@@ -1,6 +1,8 @@
 # WEB-027 local candidate and release record
 
-Verdict: **BLOCKED — NOT COMPLETE** for whole-site delivery. Current local API/worker and formal runtime source is `f4b883f2799fa8b22d708cc0dadaa24966c464fe`. Local N dual-controlled servicing passed; formal Human recovery and the existing Agent machine lifecycle passed. Original Principal visible-click acceptance remains. Earlier dated sections below retain their historical scope and results.
+Verdict: **BLOCKED — NOT COMPLETE** for whole-site delivery. Current local API/worker and formal runtime source is `d2b62728dc4238a004cac388e3efb0b2e877c37e`. The September 9 repair restores expired ordinary wallet access only after verified SIWE, retaining the original identity, authority and Agent ownership. Formal Human login/refresh/relogin and owned records passed on this source; original Principal/OKX visible acceptance remains pending. Local N servicing and the earlier Agent machine lifecycle retain their original source-bound evidence below.
+
+Current experience: https://ipo.one. Deployment `dpl_6C4nXHCG4P5QUhVdJ755xd88ZShK` uses the original environment and exactly 76 hosted migrations (prior 75 plus guarded recovery 0084); local-only 0076–0083 remain excluded. Both required CI runs and 100 isolated PostgreSQL tests passed. The 89-file local runtime check and visible Human/Capital recovery passed. Full details and the pending original-wallet check are in [the existing release task](../codex/tasks/WEB_027I_RELEASE.md). Earlier dated sections describe historical checkpoints, not the current release status.
 
 ## Scope and closure assessment — 2026-09-08
 

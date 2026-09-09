@@ -28,7 +28,7 @@ No credentials in output; no client-derived authority; role and tenant isolation
 
 ## Migration impact and rollback
 
-The hosted bundle retains the exact 75 approved migrations from formal baseline 7ce4b95. Eight separately approved local-only migrations remain excluded from the hosted profile; no production schema mutation is planned. Existing runtime/data remain untouched during candidate work. Revert issue commit or restore prior compatible image without erasing data.
+The hosted bundle retains the exact 75 approved migrations from formal baseline 7ce4b95 plus the narrowly guarded wallet recovery migration 0084. Local-only 0076–0083 remain excluded. Migration 0084 changes no account data or privileges. To roll back this repair, run its down migration and restore the compatible 75-migration deployment `dpl_8a3mueaSiCnnxNThJnVuh1nGi3MZ`; preserve recovered identities, business history and audit records.
 
 ## Completion evidence
 
@@ -40,7 +40,13 @@ Under DEC-PUBLIC-NO-FUNDS-BETA-001, fresh valid SIWE for an ordinary workspace m
 
 Implementation includes the wallet BFF/registry, focused browser and durable authentication regression, and migration `0084_verified_ordinary_wallet_expiry_recovery`. The hosted profile becomes exactly the existing 75 migrations plus 0084; local 0076–0083 remain excluded. Migration changes the guarded renewal path only and performs no data update or new privilege grant. Verify invalid signatures and revoked/disabled identities cannot renew, successful renewal keeps original ownership, concurrent login does not duplicate rotation, old sessions fail, and both ordinary workspaces recover after visible sign-in/refresh. Build and CI precede hosted migration/promotion. Rollback restores the original guard and compatible 75-migration release after migration rollback, preserving all user and audit records.
 
-Founder approval and delegated local acceptance are recorded in the parent directive and local review. PR #87 remains open. The current formal and local API/worker source is `f4b883f2799fa8b22d708cc0dadaa24966c464fe`. Formal deployment `dpl_8a3mueaSiCnnxNThJnVuh1nGi3MZ` serves https://ipo.one, retaining the existing production environment, 75-migration profile and default scheduler secret. No local enrollment configuration or local Passkey dependency was published. Synthetic business writes and one temporary existing-Agent credential lifecycle occurred; no schema, membership, ownership, Mandate, real funds or chain transaction changed.
+The repair source `d2b62728dc4238a004cac388e3efb0b2e877c37e` is running locally and on https://ipo.one through deployment `dpl_6C4nXHCG4P5QUhVdJ755xd88ZShK`. Both required CI runs passed (34370933134 / 34370928578), including the real browser gate. Focused authentication/profile checks passed 9/9 and the full isolated PostgreSQL suite passed 100/100. Initial migration-test failures were corrected by including 0084 in explicit migration lists and keeping their original rollback targets; behavioral assertions were retained. The two disposable test databases and runners were removed, and all local product runtimes remain available.
+
+Normal hosted migration applied only 0084 on 2026-09-09, bringing the exact selected profile from 75 to 76. Staged readiness passed before promotion; formal readiness identifies the exact repair SHA and unauthenticated Cron remains rejected. Production environment values, scheduler secret and workload trust remain unchanged. No manual account update, local enrollment configuration, Passkey dependency, real funds or chain transaction was published.
+
+On the actual new hosted SHA, visible Human login, modal dismissal, refresh, logout/login, the original fully-repaid $24.50 record and owner Evidence all passed without API mocks. Original Principal/OKX visible acceptance is still pending: native Chrome automation encountered concurrent user interaction before the signing step. The requested handoff is only to leave the original wallet page available and unlock OKX if prompted. Never substitute a QA identity or issue a test signature for the Founder. PR #87 remains open until the required original Principal browser evidence is available.
+
+Founder approval and delegated acceptance remain recorded in the parent directive and local review. The earlier Agent lifecycle and cleanup below are evidence from `f4b883f`, not a claim that a permanent Agent runner was installed or that its complete lifecycle was rerun on this authentication repair.
 
 References: `docs/design/WEB_027_CAPABILITY_AND_ROUTE_MATRIX.md`, `docs/design/WEB_027_LOCAL_REVIEW.md`, `docs/codex/tasks/WEB_027J_LOCAL_ACCESS_REPAIR_REVIEW.md`. Runtime source and individual evidence are explicit; no formal five-state PASS is implied.
 

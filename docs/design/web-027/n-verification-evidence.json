@@ -642,7 +642,10 @@
     },
     {
       "path": "output/playwright/web-027/n-acceptance/recovery.json",
-      "sha256": "4e638359065ec86b1bb52281f8595750f45d36447edb29c56663ff9637fa35da"
+      "sha256": "31c640b0ee7039fef3f44a790278f637cd6903340eadb27cf313ca53ebbbf17e",
+      "previousArtifactSha256": "4e638359065ec86b1bb52281f8595750f45d36447edb29c56663ff9637fa35da",
+      "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
+      "note": "Reverification of this subset on September 9 replaced the generated artifact at the same path; historical parent scope and other evidence retain their original source."
     },
     {
       "path": "output/playwright/web-027/n-acceptance/hosted-schema-postgres.json",
@@ -654,11 +657,27 @@
     },
     {
       "path": "output/playwright/web-027/postgres.json",
-      "sha256": "56ebd79c15053c1f50758a7bac1e0eb7f53ac52e269bfe8b0886ae699543707f"
+      "sha256": "0e61120e258b198cb798a593e6ab6cea38a9ef96362c46e274a04bdd4248d099",
+      "previousArtifactSha256": "56ebd79c15053c1f50758a7bac1e0eb7f53ac52e269bfe8b0886ae699543707f",
+      "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
+      "note": "Reverification of this subset on September 9 replaced the generated artifact at the same path; historical parent scope and other evidence retain their original source."
     },
     {
       "path": "output/playwright/web-027/k2/runtime-check.json",
-      "sha256": "5b0d9cfbd7e86c59eb1c9947ad9ba1751421a530bddfec45c7d2c61825c77b28"
+      "sha256": "716b331578b4e08e30f12d41d45d73dfa5a3abb5e23593b85123d0b3683de439",
+      "previousArtifactSha256": "5b0d9cfbd7e86c59eb1c9947ad9ba1751421a530bddfec45c7d2c61825c77b28",
+      "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
+      "note": "Reverification of this subset on September 9 replaced the generated artifact at the same path; historical parent scope and other evidence retain their original source."
     }
-  ]
+  ],
+  "reverification": {
+    "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
+    "at": "2026-09-09T15:52:20.552Z",
+    "scope": "Local runtime file/port checks, visible Human/Capital recovery and isolated PostgreSQL suite only; does not re-date historical servicing or Agent execution.",
+    "artifacts": [
+      "output/playwright/web-027/n-acceptance/recovery.json",
+      "output/playwright/web-027/postgres.json",
+      "output/playwright/web-027/k2/runtime-check.json"
+    ]
+  }
 }
