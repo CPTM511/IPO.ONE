@@ -923,6 +923,7 @@ export class PostgresCredentialRegistry {
     tenantId: requestedTenantId,
     externalSubject,
     clientId,
+    requestedRole,
     now = new Date()
   }) {
     if (!this.publicBetaWalletRoleProfiles) {
@@ -982,7 +983,11 @@ export class PostgresCredentialRegistry {
         "SELECT id FROM authentication_credentials WHERE tenant_id=$1 AND issuer=$2 AND client_id=$3 AND subject_ref_hash=ANY($4::text[]) ORDER BY reference_hash_key_version DESC LIMIT 1 FOR UPDATE",
         [this.tenantId, normalizedIssuer, normalizedClientId, knownHashes]
       );
-      if (known.rowCount) return this.#activeInTransaction(client, known.rows[0].id, now);
+      if (known.rowCount) {
+        return this.#recoverVerifiedPublicBetaWallet(
+          client, known.rows[0].id, requestedRole, now
+        );
+      }
       const result = await client.query(
         `SELECT provision_public_beta_human_wallet_identity(
            $1, $2, $3, $4, $5, $6, $7, $8, $9,
@@ -1021,6 +1026,91 @@ export class PostgresCredentialRegistry {
         now
       );
     });
+  }
+
+  // Called only after fresh SIWE verification, through the ordinary public-Beta
+  // fallback. Expiration of a legacy invitation is not an account suspension.
+  // Keep the same identity; never recreate it or revive revoked authority.
+  async #recoverVerifiedPublicBetaWallet(client, credentialId, requestedRole, now) {
+    const selected = await client.query(
+      `SELECT c.*, t.status AS tenant_status, a.status AS actor_status,
+              m.status AS membership_status, m.valid_from, m.expires_at AS membership_expires_at,
+              m.role_bundle, m.policy_version AS membership_policy_version,
+              m.capabilities AS membership_capabilities, m.client_ids AS membership_client_ids
+         FROM authentication_credentials c
+         JOIN tenants t ON t.id=c.tenant_id
+         JOIN actors a ON a.id=c.actor_id
+         JOIN memberships m ON m.tenant_id=c.tenant_id AND m.actor_id=c.actor_id
+        WHERE c.tenant_id=$1 AND c.id=$2 FOR UPDATE OF c`,
+      [this.tenantId, credentialId]
+    );
+    const row = selected.rows[0];
+    if (!row?.expires_at || new Date(row.expires_at) > now) {
+      return this.#activeInTransaction(client, credentialId, now);
+    }
+    const reject = () => {
+      throw authenticationError("authentication_credential_rejected", "credential is not active");
+    };
+    const allowed = this.publicBetaWalletRoleProfiles[row.role_bundle];
+    if (
+      selected.rowCount !== 1 || !PUBLIC_BETA_ROLE_PROFILE_KEYS.has(requestedRole) ||
+      ![CredentialStatus.ACTIVE, CredentialStatus.EXPIRED].includes(row.status) ||
+      row.actor_type !== ActorType.HUMAN ||
+      row.client_authentication_method !== ClientAuthenticationMethod.SIWE ||
+      row.sender_constraint_method !== SenderConstraintMethod.HOST_SESSION ||
+      row.reference_hash_key_version !== "v2" || !allowed ||
+      row.tenant_status !== "active" || row.actor_status !== "active" ||
+      row.membership_status !== "active" || new Date(row.valid_from) > now ||
+      (row.membership_expires_at && new Date(row.membership_expires_at) <= now) ||
+      row.policy_version !== row.membership_policy_version ||
+      !sameValues(row.roles, [row.role_bundle]) ||
+      !row.membership_client_ids.includes(row.client_id) ||
+      row.allowed_capabilities.some(value => !allowed.includes(value) ||
+        !row.membership_capabilities.includes(value))
+    ) reject();
+    const enrollments = await client.query(
+      `SELECT * FROM authentication_role_enrollments
+        WHERE tenant_id=$1 AND credential_id=$2 ORDER BY id FOR UPDATE`,
+      [this.tenantId, credentialId]
+    );
+    const ordinary = enrollments.rows.filter(entry => entry.status === "active");
+    const role = ordinary.find(entry => entry.role_bundle === requestedRole);
+    const expiry = new Date(row.expires_at).getTime();
+    if (!role || ordinary.some(entry => {
+      const capabilities = this.publicBetaWalletRoleProfiles[entry.role_bundle];
+      return !capabilities || entry.actor_id !== row.actor_id ||
+        entry.policy_version !== row.policy_version ||
+        !entry.client_ids.includes(row.client_id) ||
+        entry.capabilities.some(value => !capabilities.includes(value));
+    }) || new Date(role.valid_from) > now ||
+      (role.expires_at && new Date(role.expires_at) <= now &&
+        new Date(role.expires_at).getTime() !== expiry)
+    ) reject();
+    const rotated = await client.query(
+      `UPDATE authentication_credentials
+          SET status='active', expires_at=NULL, version=version+1,
+              sender_constraint_ref_hash=$3, updated_at=$4
+        WHERE tenant_id=$1 AND id=$2 RETURNING *`,
+      [this.tenantId, credentialId,
+        this.referenceHasher.hash("sender.constraint", `public-beta-wallet-recovery\0${createOperationalId("recovery")}`), now]
+    );
+    // Only remove the same historical invitation expiry. Independent role
+    // expiry/revocation remains authoritative, including every special role.
+    await client.query(
+      `UPDATE authentication_role_enrollments
+          SET expires_at=NULL, version=version+1, updated_at=$4
+        WHERE tenant_id=$1 AND credential_id=$2 AND expires_at=$3
+          AND status='active' AND role_bundle IN ('human_borrower','principal_controller')`,
+      [this.tenantId, credentialId, row.expires_at, now]
+    );
+    await appendEvent(client, {
+      eventType: AuthenticationEventType.CREDENTIAL_ROTATED,
+      tenantId: this.tenantId, actorId: this.systemActorId, credentialId,
+      reasonCode: "public_beta_wallet_expiry_recovered", occurredAt: now,
+      payload: { senderConstraintMethod: SenderConstraintMethod.HOST_SESSION,
+        referenceHashKeyVersion: "v2", version: safeVersion(rotated.rows[0].version, "credential version") }
+    });
+    return this.#activeInTransaction(client, credentialId, now);
   }
 
   async register(input) {

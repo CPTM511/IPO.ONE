@@ -295,3 +295,30 @@ test("ordinary wallet host rejects invited roles before issuing a challenge", as
       error=>error.code==="authentication_role_rejected");
   }
 });
+
+test("ordinary expiry recovery requires a fresh valid signature and the selected role", async () => {
+  const fixture = createFixture({ role: "principal_controller" });
+  const calls = [];
+  fixture.credentialRegistry.findBySubject = () => {
+    throw Object.assign(new Error("credential is not active"), { code: "authentication_credential_rejected" });
+  };
+  fixture.credentialRegistry.provisionVerifiedPublicBetaHumanSubject = input => {
+    calls.push(input);
+    return fixture.credential;
+  };
+  const begin = () => fixture.bff.beginLogin({ address: fixture.account.address,
+    chainId: 84532, requestedRole: "principal_controller", now: NOW });
+  const invalid = await begin();
+  const stranger = privateKeyToAccount(generatePrivateKey());
+  await assert.rejects(fixture.bff.completeLogin({ transactionHandle: invalid.handle,
+    signature: await stranger.signMessage({ message: invalid.message }), now: NOW }),
+  error => error.code === "wallet_signature_rejected");
+  assert.equal(calls.length, 0);
+  const valid = await begin();
+  const result = await fixture.bff.completeLogin({ transactionHandle: valid.handle,
+    signature: await fixture.account.signMessage({ message: valid.message }), now: NOW });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].requestedRole, "principal_controller");
+  assert.equal(calls[0].externalSubject, `eip155:84532:${fixture.account.address.toLowerCase()}`);
+  assert.equal(result.session.actorId, fixture.credential.actorId);
+});

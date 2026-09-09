@@ -542,6 +542,93 @@ test("durable Human authentication is restart-safe, one-use, hash-only, and Tena
       assert.equal(leaked.rowCount, 0);
     });
 
+    await t.test("verified ordinary wallet recovery preserves legacy identity and rejects denied authority", async () => {
+      const profiles = { human_borrower: PRODUCTION_BOOTSTRAP_PROFILES.human_borrower.capabilities,
+        principal_controller: PRODUCTION_BOOTSTRAP_PROFILES.principal_controller.capabilities };
+      const hasher = createReferenceHashKeyring({ mode: "single_v2",
+        primary: { keyVersion: "v2", secret: randomBytes(32) } });
+      const recoveryRegistry = new PostgresCredentialRegistry({ eventRepository: repository,
+        tenantId: TENANT_ID, referenceHasher: hasher, systemActorId: SYSTEM_ACTOR_ID,
+        publicBetaWalletRoleProfiles: profiles });
+      const expires = new Date(NOW.getTime() + 60_000), later = new Date(NOW.getTime() + 120_000);
+      async function legacy(label) {
+        const actorId = `actor_recovery_${label}_${RUN_ID}`;
+        await seedIdentity(ownerPool, { tenantId: TENANT_ID, actorId, actorType: ActorType.HUMAN,
+          roleBundle: "principal_controller", capabilities: profiles.principal_controller, clientIds: [WALLET_CLIENT_ID] });
+        const externalSubject = `eip155:84532:0x${randomBytes(20).toString("hex")}`;
+        const credential = await recoveryRegistry.register({ tenantId: TENANT_ID, actorId,
+          actorType: ActorType.HUMAN, issuer: ORIGIN, externalSubject, clientId: WALLET_CLIENT_ID,
+          clientAuthenticationMethod: ClientAuthenticationMethod.SIWE,
+          senderConstraint: { method: SenderConstraintMethod.HOST_SESSION, thumbprint: "r".repeat(43) },
+          roles: ["principal_controller"], allowedCapabilities: profiles.principal_controller,
+          policyVersion: "security_001.v1", performedByActorId: SYSTEM_ACTOR_ID,
+          reasonCode: "legacy_recovery_fixture", expiresAt: expires.toISOString(), now: NOW });
+        for (const roleBundle of ["human_borrower", "principal_controller"]) {
+          await enrollHumanRole(ownerPool, context, { actorId, credentialId: credential.credentialId,
+            roleBundle, capabilities: profiles[roleBundle], clientId: WALLET_CLIENT_ID });
+        }
+        await withTenantTransaction(ownerPool, context, client => client.query(
+          "UPDATE authentication_role_enrollments SET expires_at=$2 WHERE credential_id=$1",
+          [credential.credentialId, expires]));
+        return { credential, actorId, recover: (requestedRole = "principal_controller") =>
+          recoveryRegistry.provisionVerifiedPublicBetaHumanSubject({ tenantId: TENANT_ID,
+            issuer: ORIGIN, clientId: WALLET_CLIENT_ID, externalSubject, requestedRole, now: later }) };
+      }
+      const valid = await legacy("valid");
+      const sessions = new PostgresHumanSessionStore({ eventRepository: repository,
+        tenantId: TENANT_ID, referenceHasher: hasher, origin: ORIGIN });
+      const oldSession = await sessions.create({ ...sessionInput(valid.credential),
+        acr: "urn:ipo.one:acr:wallet", amr: ["wallet", "siwe", "eip191_eoa_v1"] });
+      await assert.rejects(() => recoveryRegistry.assertActive(valid.credential.credentialId, later),
+        error => error.code === "authentication_credential_rejected");
+      const [first, replay] = await Promise.all([valid.recover(), valid.recover()]);
+      for (const recovered of [first, replay]) {
+        assert.equal(recovered.credentialId, valid.credential.credentialId);
+        assert.equal(recovered.actorId, valid.actorId);
+        assert.equal(recovered.version, 2);
+        assert.equal(recovered.expiresAt, undefined);
+        assert.deepEqual(recovered.allowedCapabilities, valid.credential.allowedCapabilities);
+      }
+      assert.notEqual(first.senderConstraint.thumbprint, valid.credential.senderConstraint.thumbprint);
+      for (const roleBundle of ["human_borrower", "principal_controller"]) {
+        const selected = await recoveryRegistry.resolveHumanRole({ credentialId: first.credentialId,
+          roleBundle, clientId: WALLET_CLIENT_ID, now: later });
+        assert.deepEqual(selected.capabilities, profiles[roleBundle]);
+      }
+      await assert.rejects(() => sessions.authenticate({ sessionHandle: oldSession.cookie.value,
+        requestMethod: "GET", now: later }), error => error.code === "authentication_session_rejected");
+      const events = await repository.withTenantRead(client => client.query(
+        "SELECT id FROM authentication_events WHERE credential_id=$1 AND reason_code='public_beta_wallet_expiry_recovered'", [first.credentialId]));
+      assert.equal(events.rowCount, 1);
+
+      for (const kind of ["revoked", "suspended", "actor_disabled", "role_revoked", "independent_expiry", "special_role", "missing_role"]) {
+        const denied = await legacy(kind);
+        await withTenantTransaction(ownerPool, context, async client => {
+          if (["revoked", "suspended"].includes(kind)) await client.query(
+            "UPDATE authentication_credentials SET status=$2 WHERE id=$1", [denied.credential.credentialId, kind]);
+          if (kind === "actor_disabled") await client.query("UPDATE actors SET status='suspended' WHERE id=$1", [denied.actorId]);
+          if (kind === "role_revoked") await client.query(
+            "UPDATE authentication_role_enrollments SET status='revoked' WHERE credential_id=$1 AND role_bundle='principal_controller'", [denied.credential.credentialId]);
+          if (kind === "independent_expiry") await client.query(
+            "UPDATE authentication_role_enrollments SET expires_at=$2 WHERE credential_id=$1 AND role_bundle='principal_controller'", [denied.credential.credentialId, new Date(expires.getTime()-1000)]);
+        });
+        if (kind === "special_role") await enrollHumanRole(ownerPool, context, { actorId: denied.actorId,
+          credentialId: denied.credential.credentialId, roleBundle: "capital_partner_operator",
+          capabilities: ["subject.read"], clientId: WALLET_CLIENT_ID });
+        await assert.rejects(() => denied.recover(kind === "missing_role" ? "risk_operator" : "principal_controller"),
+          error => error.code === "authentication_credential_rejected");
+        const unchanged = await recoveryRegistry.get(denied.credential.credentialId);
+        assert.equal(unchanged.version, 1);
+        assert.equal(unchanged.expiresAt, expires.toISOString());
+        // The database guard also refuses a direct attempt to revive a denied credential.
+        if (["revoked", "suspended", "actor_disabled", "special_role"].includes(kind)) {
+          await assert.rejects(() => repository.withTenantWrite(client => client.query(
+            "UPDATE authentication_credentials SET expires_at=NULL,status='active',version=version+1,sender_constraint_ref_hash=$2,updated_at=$3 WHERE id=$1",
+            [denied.credential.credentialId, "z".repeat(43), later])), error => error.code === "23514");
+        }
+      }
+    });
+
     const oidcCredential = await registry.register({
       tenantId: TENANT_ID,
       actorId: HUMAN_ACTOR_ID,

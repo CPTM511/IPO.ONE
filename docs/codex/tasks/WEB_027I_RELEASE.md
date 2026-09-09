@@ -32,6 +32,14 @@ The hosted bundle retains the exact 75 approved migrations from formal baseline 
 
 ## Completion evidence
 
+### Current repair — expired original Principal login (2026-09-09)
+
+The Founder reported a connected OKX wallet remaining at login with `credential is not active`. Read-only hosted inspection found the original Principal's active v2 SIWE credential and its two ordinary role enrollments still carried the obsolete 2026-09-04 pilot expiry; the Actor and Membership remain active. This is an authentication recovery defect, not missing browser access.
+
+Under DEC-PUBLIC-NO-FUNDS-BETA-001, fresh valid SIWE for an ordinary workspace may remove that same historical invitation expiry while preserving the credential ID, Actor, permissions and all Agent/financial records. Rotate the sender binding and version to invalidate old sessions; retain an authentication audit event. Revoked/suspended credentials, inactive Actors/Memberships, independent role expiries, and special roles must still fail closed. No direct production account edit or test signature on behalf of the Founder is authorized or needed.
+
+Implementation includes the wallet BFF/registry, focused browser and durable authentication regression, and migration `0084_verified_ordinary_wallet_expiry_recovery`. The hosted profile becomes exactly the existing 75 migrations plus 0084; local 0076–0083 remain excluded. Migration changes the guarded renewal path only and performs no data update or new privilege grant. Verify invalid signatures and revoked/disabled identities cannot renew, successful renewal keeps original ownership, concurrent login does not duplicate rotation, old sessions fail, and both ordinary workspaces recover after visible sign-in/refresh. Build and CI precede hosted migration/promotion. Rollback restores the original guard and compatible 75-migration release after migration rollback, preserving all user and audit records.
+
 Founder approval and delegated local acceptance are recorded in the parent directive and local review. PR #87 remains open. The current formal and local API/worker source is `f4b883f2799fa8b22d708cc0dadaa24966c464fe`. Formal deployment `dpl_8a3mueaSiCnnxNThJnVuh1nGi3MZ` serves https://ipo.one, retaining the existing production environment, 75-migration profile and default scheduler secret. No local enrollment configuration or local Passkey dependency was published. Synthetic business writes and one temporary existing-Agent credential lifecycle occurred; no schema, membership, ownership, Mandate, real funds or chain transaction changed.
 
 References: `docs/design/WEB_027_CAPABILITY_AND_ROUTE_MATRIX.md`, `docs/design/WEB_027_LOCAL_REVIEW.md`, `docs/codex/tasks/WEB_027J_LOCAL_ACCESS_REPAIR_REVIEW.md`. Runtime source and individual evidence are explicit; no formal five-state PASS is implied.

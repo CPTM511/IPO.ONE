@@ -139,7 +139,7 @@ if (action === "build") {
   const appliedRows = sql("SELECT name,checksum FROM schema_migrations ORDER BY name").split("\n").map(row => row.split("|"));
   appliedRows.forEach(([name, recordedChecksum], i) => assert.ok(name === migrationSet[i].name && migrationChecksumMatches({name,recordedChecksum,releaseChecksum:migrationSet[i].checksum})));
   const pendingNames = migrationSet.slice(appliedRows.length).map(m => m.name);
-  assert.ok(pendingNames.every(name => ["0076_invited_wallet_role_enrollment","0077_local_ordinary_wallet_access","0078_local_principal_agent_runtime","0079_local_human_sandbox_activation","0080_local_risk_passkeys","0081_local_passkey_bounds","0082_local_special_role_enrollment","0083_local_operations_reviewer_origin"].includes(name)), "Only reviewed WEB-027J/K/M/N migrations may activate");
+  assert.ok(pendingNames.every(name => ["0076_invited_wallet_role_enrollment","0077_local_ordinary_wallet_access","0078_local_principal_agent_runtime","0079_local_human_sandbox_activation","0080_local_risk_passkeys","0081_local_passkey_bounds","0082_local_special_role_enrollment","0083_local_operations_reviewer_origin","0084_verified_ordinary_wallet_expiry_recovery"].includes(name)), "Only reviewed WEB-027 access and ordinary-wallet recovery migrations may activate");
   env.IPO_ONE_LOCAL_ACCESS_REPAIR = "web027j_v1";
   if (profile === "candidate") {
     const manifest = JSON.parse(await readFile("docs/design/web-027/m-activation-manifest.json"));

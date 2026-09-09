@@ -1,12 +1,12 @@
 import { createHash } from "node:crypto";
 
-// WEB-027 retains the formal site's approved database. Local invitation,
+// WEB-027 retains the formal baseline plus verified ordinary-wallet recovery. Local invitation,
 // runtime enrollment and Passkey migrations are not production migrations.
 export const VERCEL_MIGRATION_PROFILE = Object.freeze({
-  id: "web027_existing_hosted_schema_v1",
+  id: "web027_wallet_expiry_recovery_v2",
   baselineCommit: "7ce4b9500ea98744afd9df4087e6a2f203c8b36c",
-  count: 75,
-  setSha256: "a76b984081c4bd309fe265023a9184a28fb57ff4602185dc704a6a54ed56b89d",
+  count: 76,
+  setSha256: "3f986af76fe361af50a3a8401a55277f8e80903c9277d27255592ab84e33e15f",
   localOnly: Object.freeze([
     "0076_invited_wallet_role_enrollment",
     "0077_local_ordinary_wallet_access",

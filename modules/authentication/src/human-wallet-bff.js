@@ -163,7 +163,10 @@ export class HumanWalletBff {
           "function"
       ) throw error;
       credential = await this.credentialRegistry
-        .provisionVerifiedPublicBetaHumanSubject(verifiedSubject);
+        .provisionVerifiedPublicBetaHumanSubject({
+          ...verifiedSubject,
+          requestedRole: transaction.requestedRole
+        });
     }
     if (
       !HUMAN_ACTOR_TYPES.has(credential.actorType) ||
