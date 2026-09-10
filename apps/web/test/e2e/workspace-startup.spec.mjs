@@ -8,6 +8,34 @@ function holdRequest(page, pattern) {
     .then(() => release);
 }
 
+for (const [mode,port,heldResource] of [['public',4178,'**/workspace-experience.js'],['authenticated',4179,'**/auth/v1/options']]) {
+  test(`${mode} startup ignores unrelated script failures and still reaches the workspace`, async ({page}) => {
+    await page.addInitScript(() => localStorage.setItem('ipo-one-theme','dark'));
+    const release=await holdRequest(page,heldResource);
+    await page.route('**/optional-wallet-resource.js',route=>route.abort('failed'));
+    try {
+      await page.goto(`http://127.0.0.1:${port}/#overview`,{waitUntil:'commit'});
+      await expect(page.locator('#appStartup')).toBeVisible();
+      for(const src of ['/optional-wallet-resource.js','https://wallet-resource.invalid/optional-wallet-resource.js']) {
+        // Exercise actual browser resource errors, as an extension or optional
+        // integration can produce, while the real application is still loading.
+        await page.evaluate(src=>new Promise(resolve=>{
+          const script=document.createElement('script');
+          script.src=src;script.onerror=()=>resolve();document.head.append(script);
+        }),src);
+        await expect(page.locator('html')).not.toHaveAttribute('data-ipo-startup','failed');
+        await expect(page.locator('#appStartupTitle')).toBeHidden();
+        await expect(page.locator('#appStartupReload')).toBeHidden();
+      }
+      await expect(page.locator('.app-shell')).toBeHidden();
+    } finally { release(); }
+    await expect(page.locator('html')).toHaveAttribute('data-ipo-startup','ready');
+    if(mode==='public')await expect(page.locator('#web009HeroTitle')).toBeVisible();
+    else await expect(page.locator('#sidebarApiStatus')).toHaveText('Authenticated');
+    await expect(page.locator('#appStartup')).toBeHidden();
+  });
+}
+
 for (const theme of ['light', 'dark']) {
   test(`fast ${theme} entry reveals the current page without a loading interstitial`, async ({page}) => {
     await page.clock.install();
@@ -79,17 +107,20 @@ for (const theme of ['light', 'dark']) {
   });
 }
 
-test('failed module loading exposes a working reload control and never reveals legacy UI', async ({page}) => {
-  await page.route('**/workspace-experience.js', route => route.abort('failed'));
+for(const resource of ['app.js','workspace-experience.js']) {
+test(`failed ${resource} loading exposes a working reload control and never reveals legacy UI`, async ({page}) => {
+  const pattern=`**/${resource}*`;
+  await page.route(pattern, route => route.abort('failed'));
   await page.goto('http://127.0.0.1:4178/');
   await expect(page.locator('#appStartupStatus')).toContainText('could not finish loading');
   await expect(page.getByRole('button',{name:'Reload IPO.ONE',exact:true})).toBeVisible();
   await expect(page.locator('.app-shell')).toBeHidden();
-  await page.unroute('**/workspace-experience.js');
+  await page.unroute(pattern);
   await page.getByRole('button',{name:'Reload IPO.ONE',exact:true}).click();
   await expect(page.locator('#web009HeroTitle')).toBeVisible();
   await expect(page.locator('#appStartup')).toBeHidden();
 });
+}
 
 test('disabled JavaScript has a visible explanation instead of a legacy or blank page', async ({browser}) => {
   const context=await browser.newContext({javaScriptEnabled:false});
@@ -106,8 +137,15 @@ test('disabled JavaScript has a visible explanation instead of a legacy or blank
 
 test('a stalled module offers retry while keeping the legacy shell hidden', async ({page}) => {
   const release = await holdRequest(page, '**/workspace-experience.js');
+  await page.route('**/optional-wallet-resource.js',route=>route.abort('failed'));
   try {
     await page.goto('http://127.0.0.1:4178/', {waitUntil:'commit'});
+    await expect(page.locator('#appStartup')).toBeVisible();
+    await page.evaluate(()=>new Promise(resolve=>{
+      const script=document.createElement('script');script.src='/optional-wallet-resource.js';
+      script.onerror=()=>resolve();document.head.append(script);
+    }));
+    await expect(page.locator('#appStartupTitle')).toBeHidden();
     await expect(page.locator('#appStartupStatus')).toContainText('taking longer than expected', {timeout:25000});
     await expect(page.getByRole('button',{name:'Reload IPO.ONE',exact:true})).toBeVisible();
     await expect(page.locator('.app-shell')).toBeHidden();

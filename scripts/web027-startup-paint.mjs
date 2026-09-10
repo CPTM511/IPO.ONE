@@ -2,8 +2,10 @@
 import {chromium, expect} from '@playwright/test';
 import {mkdir, writeFile} from 'node:fs/promises';
 import assert from 'node:assert/strict';
+import {installOptionalScriptFailureProbe} from '../apps/web/test/support/startup-optional-script-probe.mjs';
 const origin = process.env.WEB027_PAINT_ORIGIN || 'https://ipo.one';
 const out = process.env.WEB027_PAINT_OUTPUT || 'output/playwright/web-027/formal/startup-paint';
+const optionalScriptProbe=process.env.WEB027_STARTUP_OPTIONAL_SCRIPT_FAILURE==='1';
 await mkdir(out, {recursive:true});
 const ready = await (await fetch(`${origin}/readyz`)).json();
 assert.match(ready.releaseId || '', /^[a-f0-9]{40}$/, 'Hosted readiness must identify the deployed source');
@@ -12,6 +14,7 @@ const results = [];
 try {
   for (const width of [1440, 390]) for (const theme of ['light', 'dark']) {
     const context = await browser.newContext({viewport:{width,height:1000},colorScheme:theme});
+    if(optionalScriptProbe)await context.addInitScript(installOptionalScriptFailureProbe);
     await context.addInitScript(() => {
       const frames = []; window.__startupPaint = frames; let previous = '';
       const visible = selector => {const n = document.querySelector(selector); return Boolean(n?.getClientRects().length && getComputedStyle(n).visibility !== 'hidden');};
@@ -42,6 +45,7 @@ try {
       else await page.reload({waitUntil:'domcontentloaded'});
       await expect(page.locator('#web009HeroTitle')).toBeVisible({timeout:45000});
       await expect(page.locator('html')).toHaveAttribute('data-ipo-startup','ready');
+      if(optionalScriptProbe)await expect.poll(()=>page.evaluate(()=>window.__ipoOptionalScriptFailures.length)).toBe(1);
       const entry = width < 600
         ? page.locator('#web009Product').getByRole('button',{name:'Open IPO.ONE',exact:true})
         : page.getByRole('button',{name:'Log in',exact:true});
@@ -51,6 +55,9 @@ try {
       await expect(page.locator('#accessLayer')).toBeHidden();
       await cdp.send('Page.stopScreencast'); cdp.off('Page.screencastFrame',capture); await Promise.all(writes);
       const frames = await page.evaluate(()=>window.__startupPaint);
+      const optionalScriptFailures=await page.evaluate(()=>window.__ipoOptionalScriptFailures??[]);
+      await writeFile(`${out}/${name}-observation.json`,JSON.stringify({source:ready.releaseId,frames,optionalScriptFailures,images},null,2));
+      assert(optionalScriptFailures.every(f=>f.stage!=='failed'),'Optional script failed the startup');
       const painted = frames.filter(f => f.stage && f.canvas);
       assert(painted.length > 0 && images.length > 0);
       assert(!painted.some(f => f.title), 'Full-screen startup title was painted');
@@ -58,7 +65,7 @@ try {
       assert(!painted.some(f => f.stage === 'loading' && f.hint), 'Fast-load feedback flashed');
       assert(!painted.some(f => f.canvas !== (theme === 'dark' ? 'rgb(9, 13, 18)' : 'rgb(245, 244, 239)')), 'Public canvas changed during startup');
       assert(!painted.some(f => f.theme !== theme || f.stage === 'failed'));
-      const result = {name,frames,images,loginOpenedAndDismissed:true,passed:true};
+      const result = {name,frames,images,optionalScriptFailures,loginOpenedAndDismissed:true,passed:true};
       results.push(result);await writeFile(`${out}/${name}.json`,JSON.stringify(result,null,2));
       console.log(JSON.stringify({name,frames,images:images.length,passed:true}));
     }
@@ -68,5 +75,5 @@ try {
   assert.equal(finalReady.releaseId,ready.releaseId, 'Deployment changed during acceptance');
 } finally {
   await browser.close();
-  await writeFile(`${out}/result.json`,JSON.stringify({source:ready.releaseId,origin,results,apiMocks:false,assetMocks:false},null,2));
+  await writeFile(`${out}/result.json`,JSON.stringify({source:ready.releaseId,origin,results,optionalScriptProbe,apiMocks:false,assetMocks:false},null,2));
 }

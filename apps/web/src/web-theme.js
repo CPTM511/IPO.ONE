@@ -43,7 +43,10 @@
       failed("IPO.ONE could not finish loading. Reload to try again.");
     }, { once: true });
     window.addEventListener("error", event => {
-      if (event.target instanceof HTMLScriptElement) {
+      // The browser reports a failed module graph on its entry script. Wallet
+      // extensions and optional scripts must not fail the workspace or cancel
+      // its stalled-load recovery while the application is still starting.
+      if (event.target instanceof HTMLScriptElement && event.target === document.getElementById("ipoWorkspaceEntry")) {
         clearTimeout(timer);
         failed("IPO.ONE could not finish loading. Reload to try again.");
       }

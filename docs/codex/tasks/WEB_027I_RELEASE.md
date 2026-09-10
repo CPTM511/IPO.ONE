@@ -1,6 +1,6 @@
 # WEB-027I — 满足条件后正式发布与复验
 
-Status: dark-mode readability repair PASS — DEPLOYED AND USER-VERIFIED; whole-site delivery BLOCKED — NOT COMPLETE (original Principal owned-Agent visible acceptance remains).
+Status: false startup error repair in verification; previous dark-mode readability repair PASS — DEPLOYED AND USER-VERIFIED; whole-site delivery BLOCKED — NOT COMPLETE (original Principal owned-Agent visible acceptance remains).
 
 ## Context and scope
 
@@ -32,7 +32,15 @@ The hosted bundle retains the exact 75 approved migrations from formal baseline 
 
 ## Completion evidence
 
-### Current repair — dark-mode text and surface contrast (2026-09-10)
+### Current repair — unrelated script errors flash a startup failure (2026-09-10)
+
+The Founder observes “Unable to open IPO.ONE” briefly on initial entry and after wallet login. The global resource-error listener classifies every HTML script failure as fatal to the workspace. A failed optional or wallet-injected script can therefore show an error while the real application continues and subsequently becomes ready. Controlled public/authenticated browser cases reproduce this; an actual hosted optional-resource failure on `9b388b2` records `failed` with the title visible, then `ready`. The precise optional script in the Founder's browser is not identified or inferred.
+
+Scope: identify the application-owned module entry in index.html and limit fatal resource-error handling in web-theme.js to that entry and its module graph. Keep explicit boot-failure handling, the delayed loading hint, the existing stalled-load deadline and visible retry. No auth, API, authority, data, dependency, funds or production configuration changes. Tests cover ignored same-origin/external optional resource failures, real entry/import failures, timeout after an unrelated error, both themes, public entry and authenticated recovery. Hosted frame capture and real wallet recovery also exercise a deliberately unavailable optional resource without mocking API or asset responses. This probe is fault-injection evidence, distinct from normal browsing.
+
+Use the existing release contract and authorization. Verify web tests, source/bundle checks, required CI, local runtime, exact hosted assets, visible public entry and wallet/record recovery. Files: the two startup source files, focused startup tests/support and existing paint/recovery acceptance scripts. No migration or credential changes. Rollback to compatible deployment `dpl_9Thjh3YJCzr9YR29fTZJc3qe6gqh` (`9b388b2`, 76 migrations) without changing durable records. Evidence is under `output/playwright/web-027/startup-error/`; final acceptance remains pending.
+
+### Previous repair — dark-mode text and surface contrast (2026-09-10)
 
 The Founder reports unreadable text in Dark mode, including borrowing shortcuts, product cards, workspace details and activity rows. Existing light-only component backgrounds and fixed text colors conflict with the active workspace palette. Scope: repair the affected shared component styles across Human, Principal/Agent, Capital and Risk role-allowed views, including secondary text, status surfaces, forms, expandable details and hover/focus states. Keep the approved Precision Terminal palette and meaningful status colors; no new design direction or functional changes.
 

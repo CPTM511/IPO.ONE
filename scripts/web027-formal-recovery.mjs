@@ -4,12 +4,17 @@ import {chromium,expect} from "@playwright/test";
 import {privateKeyToAccount,generatePrivateKey} from "viem/accounts";
 import {readFile,writeFile,mkdir} from "node:fs/promises";
 import assert from "node:assert/strict";
-const state="/Users/cptmao/Documents/IPO.ONE/.ipo-one/web027-runtime",out="output/playwright/web-027/formal";
+import {installOptionalScriptFailureProbe} from '../apps/web/test/support/startup-optional-script-probe.mjs';
+const state="/Users/cptmao/Documents/IPO.ONE/.ipo-one/web027-runtime",out=process.env.WEB027_RECOVERY_OUTPUT||"output/playwright/web-027/formal";
+const optionalScriptProbe=process.env.WEB027_STARTUP_OPTIONAL_SCRIPT_FAILURE==='1';
 await mkdir(out,{recursive:true});const source=(await(await fetch("https://ipo.one/readyz")).json()).releaseId;
 const browser=await chromium.launch({headless:true,proxy:{server:"http://127.0.0.1:7890",bypass:"127.0.0.1,localhost"}}),results=[],actions=[],contexts=[],startup=[];
 async function captureStartup(page,phase){
+ if(optionalScriptProbe)await expect.poll(()=>page.evaluate(()=>window.__ipoOptionalScriptFailures.length)).toBe(1);
  const frames=await page.evaluate(()=>window.__web027StartupFrames??[]);
- startup.push({phase,frames});
+ const optionalScriptFailures=await page.evaluate(()=>window.__ipoOptionalScriptFailures??[]);
+ startup.push({phase,frames,optionalScriptFailures});
+ assert(optionalScriptFailures.every(f=>f.stage!=='failed'),'Optional script failed the startup');
  assert(frames.length>0,'Startup frame observation is required');
  assert(!frames.some(f=>f.shell&&(!f.currentDesign||f.legacy)), 'Legacy UI was visible during startup');
  assert(!frames.some(f=>f.sessionBootstrap&&f.publicPage), 'Authenticated reload exposed the public page');
@@ -20,6 +25,7 @@ async function captureStartup(page,phase){
 async function click(page,selector){const button=page.locator(selector);await expect(button).toBeVisible();await expect(button).toBeEnabled();actions.push({label:await button.innerText(),at:new Date().toISOString()});await button.click();}
 async function walletPage(name){const path=`${state}/web027-formal-${name}-wallet.json`;let wallet;try{wallet=JSON.parse(await readFile(path));}catch(e){if(e.code!=="ENOENT")throw e;wallet={privateKey:generatePrivateKey()};await writeFile(path,JSON.stringify(wallet),{mode:0o600});}
  const account=privateKeyToAccount(wallet.privateKey),context=await browser.newContext({viewport:{width:1440,height:1000},reducedMotion:"reduce"});contexts.push(context);
+ if(optionalScriptProbe)await context.addInitScript(installOptionalScriptFailureProbe);
  await context.addInitScript(()=>{
   const frames=[];window.__web027StartupFrames=frames;let previous='';
   const shown=selector=>{const node=document.querySelector(selector);return Boolean(node&&node.getClientRects().length&&getComputedStyle(node).visibility!=='hidden');};
@@ -91,4 +97,4 @@ try{
   await click(page,"#loadOwnedEvidenceBtn");await expect(page.locator("#ownedEvidencePanel")).toBeVisible();await expect(page.locator("#ownedEvidenceCount")).not.toHaveText("0");await page.locator("#humanObligationCard").scrollIntoViewIfNeeded();await captureStartup(page,phase);await page.screenshot({path:out+`/human-recovery-${phase}.png`});results.push({phase,visible:true,lifecycle:await page.locator("#humanObligationStatus").innerText(),repaid:await page.locator("#humanObligationRepaid").innerText(),evidence:await page.locator("#ownedEvidenceHelper").innerText()});
  }
 }catch(e){results.push({error:e.message});const page=contexts.at(-1)?.pages()[0];if(page)await writeFile(out+"/human-recovery-failure.txt",await page.locator("body").innerText());process.exitCode=1;}
-finally{await writeFile(out+"/human-recovery.json",JSON.stringify({source,results,receipts,actions,startup,footer,apiMocks:false},null,2));await browser.close();console.log(JSON.stringify({source,results,footer}));}
+finally{await writeFile(out+"/human-recovery.json",JSON.stringify({source,results,receipts,actions,startup,footer,optionalScriptProbe,apiMocks:false,assetMocks:false},null,2));await browser.close();console.log(JSON.stringify({source,results,footer}));}
