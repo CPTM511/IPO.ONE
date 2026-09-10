@@ -1,6 +1,26 @@
 import {expect, test} from '@playwright/test';
 import {mkdir} from 'node:fs/promises';
 
+test('server-selected Human and Agent workspaces retain primary navigation when More tools closes', async ({page}) => {
+  // Match the hosted entry, where the role comes from authenticated recovery
+  // rather than a local host-specific HTML hint. API responses are untouched.
+  await page.route(/http:\/\/127\.0\.0\.1:417[39]\/$/, async route => {
+    const response = await route.fetch();
+    const html = (await response.text()).replace(/<meta\b[^>]*name="ipo-one-workspace-name"[^>]*>/g, '');
+    await route.fulfill({response, body:html});
+  });
+  for (const [port, view] of [[4173,'request-credit'], [4179,'agent-console']]) {
+    await page.goto(`http://127.0.0.1:${port}/#${view}`);
+    await expect(page.locator('#appStartup')).toBeHidden();
+    const more = page.getByRole('button', {name:'More tools',exact:true});
+    if (await more.getAttribute('aria-expanded') === 'true') await more.click();
+    const primary = page.locator(`.nav-item[data-view="${view}"]`);
+    await expect(primary).toBeVisible();
+    await primary.click();
+    await expect(page.locator(`[data-view-panel="${view}"]`)).toBeVisible();
+  }
+});
+
 test('environment details are optional, keyboard operable and fit mobile navigation', async ({page}) => {
   await page.goto('http://127.0.0.1:4173/#request-credit');
   await expect(page.locator('#viewTitle')).toHaveText('Your next step');

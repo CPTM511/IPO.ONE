@@ -97,19 +97,21 @@ export function arrangeWorkspaceNavigation(workspaceName, access) {
     primary.id = "workspacePrimaryNav";
     primary.className = "nav-section workspace-primary-nav";
     primary.setAttribute("aria-label", "Your workspace");
-    primary.dataset.workspacePlacement = "primary";
     nav.prepend(primary);
   }
+  // Server recovery can change which role owns the controls already in these
+  // groups. Restore each group's placement on every arrangement.
+  primary.dataset.workspacePlacement = "primary";
   let more = document.getElementById("workspaceAdvancedNav");
   if (!more) {
     more = document.createElement("div");
     more.id = "workspaceAdvancedNav";
     more.className = "nav-section workspace-advanced-nav";
     more.setAttribute("aria-label", "More workspace tools");
-    more.dataset.workspacePlacement = "advanced";
     nav.append(more);
     document.getElementById("sidebarMoreBtn").setAttribute("aria-controls", more.id);
   }
+  more.dataset.workspacePlacement = "advanced";
   for (const [view, entry] of access.entries) {
     const button = nav.querySelector(`[data-view="${view}"]`);
     if (!button || !entry.allowed) continue;
