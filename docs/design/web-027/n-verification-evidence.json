@@ -664,10 +664,10 @@
     },
     {
       "path": "output/playwright/web-027/k2/runtime-check.json",
-      "sha256": "ba844b6ad2e5af8b837a6b43194d17211bccb3bee31357319e86afde1c5aa1af",
-      "previousArtifactSha256": "208d648bb00860a4856e1dd705bc69f3df56d4c799939be96284a7552b2f6c77",
-      "source": "9b388b2702ae82b21e65798d9e9a6dbe6dc9f613",
-      "note": "Theme contrast repair: 90 installed files and eight role endpoints; historical servicing and Agent execution retain their sources."
+      "sha256": "e32099f9fc19dbfd1d756213cef603e3675b8f9cdbdd542474ce15400d4aa3b7",
+      "previousArtifactSha256": "ba844b6ad2e5af8b837a6b43194d17211bccb3bee31357319e86afde1c5aa1af",
+      "source": "2327b8cb6400c2ec587247f8aef1eae0a696d446",
+      "note": "Startup resource-error repair: installed source and eight role endpoints; historical servicing and Agent execution retain their sources."
     }
   ],
   "reverification": {
@@ -727,5 +727,12 @@
         "darkPreferenceSurvivedRefresh": true
       }
     ]
+  },
+  "startupErrorReverification": {
+    "source": "2327b8cb6400c2ec587247f8aef1eae0a696d446",
+    "at": "2026-09-10T15:07:32.076707+00:00",
+    "scope": "Actual local Human/Principal login, refresh and role-allowed pages with optional script failure injection; no API/asset mocks or economic actions.",
+    "runtimeArtifact": "output/playwright/web-027/k2/runtime-check.json",
+    "browserArtifact": "output/playwright/web-027/startup-error/local/result.json"
   }
 }

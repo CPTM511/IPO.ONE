@@ -1,6 +1,6 @@
 # WEB-027I — 满足条件后正式发布与复验
 
-Status: false startup error repair in verification; previous dark-mode readability repair PASS — DEPLOYED AND USER-VERIFIED; whole-site delivery BLOCKED — NOT COMPLETE (original Principal owned-Agent visible acceptance remains).
+Status: false startup error repair PASS — DEPLOYED AND USER-VERIFIED; whole-site delivery BLOCKED — NOT COMPLETE (original Principal owned-Agent visible acceptance remains).
 
 ## Context and scope
 
@@ -28,7 +28,7 @@ No credentials in output; no client-derived authority; role and tenant isolation
 
 ## Migration impact and rollback
 
-The hosted bundle retains the exact 75 approved migrations from formal baseline 7ce4b95 plus the narrowly guarded wallet recovery migration 0084. Local-only 0076–0083 remain excluded. Migration 0084 changes no account data or privileges. The current theme contrast repair adds no migration: restore the compatible 76-migration deployment `dpl_H6bnc1ddaBsNdNd9GCggV2UHS6xg` without a database rollback. The earlier sidebar rollback remains recorded in its dated section. The earlier startup repair retained its own rollback checkpoint below. The older wallet-expiry repair has its separate dated migration rollback below. Preserve recovered identities, business history and audit records.
+The hosted bundle retains the exact 75 approved migrations from formal baseline 7ce4b95 plus the narrowly guarded wallet recovery migration 0084. Local-only 0076–0083 remain excluded. Migration 0084 changes no account data or privileges. The current startup error repair adds no migration: restore the compatible 76-migration deployment `dpl_9Thjh3YJCzr9YR29fTZJc3qe6gqh` without a database rollback. The earlier sidebar rollback remains recorded in its dated section. The earlier startup repair retained its own rollback checkpoint below. The older wallet-expiry repair has its separate dated migration rollback below. Preserve recovered identities, business history and audit records.
 
 ## Completion evidence
 
@@ -38,7 +38,7 @@ The Founder observes “Unable to open IPO.ONE” briefly on initial entry and a
 
 Scope: identify the application-owned module entry in index.html and limit fatal resource-error handling in web-theme.js to that entry and its module graph. Keep explicit boot-failure handling, the delayed loading hint, the existing stalled-load deadline and visible retry. No auth, API, authority, data, dependency, funds or production configuration changes. Tests cover ignored same-origin/external optional resource failures, real entry/import failures, timeout after an unrelated error, both themes, public entry and authenticated recovery. Hosted frame capture and real wallet recovery also exercise a deliberately unavailable optional resource without mocking API or asset responses. This probe is fault-injection evidence, distinct from normal browsing.
 
-Use the existing release contract and authorization. Verify web tests, source/bundle checks, required CI, local runtime, exact hosted assets, visible public entry and wallet/record recovery. Files: the two startup source files, focused startup tests/support and existing paint/recovery acceptance scripts. No migration or credential changes. Rollback to compatible deployment `dpl_9Thjh3YJCzr9YR29fTZJc3qe6gqh` (`9b388b2`, 76 migrations) without changing durable records. Evidence is under `output/playwright/web-027/startup-error/`; final acceptance remains pending.
+Use the existing release contract and authorization. Verify web tests, source/bundle checks, required CI, local runtime, exact hosted assets, visible public entry and wallet/record recovery. Files: the two startup source files, focused startup tests/support and existing paint/recovery acceptance scripts. No migration or credential changes. Rollback to compatible deployment `dpl_9Thjh3YJCzr9YR29fTZJc3qe6gqh` (`9b388b2`, 76 migrations) without changing durable records. Evidence is under `output/playwright/web-027/startup-error/`; final acceptance is **PASS — DEPLOYED AND USER-VERIFIED** on `2327b8cb6400c2ec587247f8aef1eae0a696d446` / `dpl_EfBMLuMH8zFtEZ1t5FdrJg4N1zv4`. Both required CI runs (34491729506 / 34491723183), 11 focused startup cases, 205 web tests, source/bundle checks and local runtime verification pass. Actual hosted normal and optional-error-injected startup each pass eight desktop/mobile Light/Dark cold/reload cases; Human login/refresh/relogin retains its fully-repaid record and ten owner Evidence events, and Principal visible navigation/recovery passes. Exact hosted assets and the module-entry marker match. The injected optional error occurs before readiness without showing a failure title; no API/asset responses are mocked. Earlier injected-code previews remain preview-only evidence. The parent owned-Agent acceptance remains separate.
 
 ### Previous repair — dark-mode text and surface contrast (2026-09-10)
 
