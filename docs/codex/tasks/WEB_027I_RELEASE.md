@@ -1,6 +1,6 @@
 # WEB-027I — 满足条件后正式发布与复验
 
-Status: startup-flash repair PASS — DEPLOYED AND USER-VERIFIED; whole-site delivery BLOCKED — NOT COMPLETE (original Principal owned-Agent visible acceptance remains).
+Status: sidebar presentation update PASS — DEPLOYED AND USER-VERIFIED; whole-site delivery BLOCKED — NOT COMPLETE (original Principal owned-Agent visible acceptance remains).
 
 ## Context and scope
 
@@ -28,7 +28,7 @@ No credentials in output; no client-derived authority; role and tenant isolation
 
 ## Migration impact and rollback
 
-The hosted bundle retains the exact 75 approved migrations from formal baseline 7ce4b95 plus the narrowly guarded wallet recovery migration 0084. Local-only 0076–0083 remain excluded. Migration 0084 changes no account data or privileges. The September 10 startup repair adds no migration: restore the compatible 76-migration deployment `dpl_6C4nXHCG4P5QUhVdJ755xd88ZShK` without a database rollback. The older wallet-expiry repair has its separate dated migration rollback below. Preserve recovered identities, business history and audit records.
+The hosted bundle retains the exact 75 approved migrations from formal baseline 7ce4b95 plus the narrowly guarded wallet recovery migration 0084. Local-only 0076–0083 remain excluded. Migration 0084 changes no account data or privileges. The current sidebar update adds no migration: restore the compatible 76-migration deployment `dpl_ESCjVFTwCyBFJxWvZuwuB2F8Layn` without a database rollback. The earlier startup repair retained its own rollback checkpoint below. The older wallet-expiry repair has its separate dated migration rollback below. Preserve recovered identities, business history and audit records.
 
 ## Completion evidence
 
@@ -36,9 +36,13 @@ The hosted bundle retains the exact 75 approved migrations from formal baseline 
 
 The Founder approved a compact Beta label with “No real money is moved.”, environment details on demand, account state in the existing top bar, and the existing OpenAPI link renamed “API reference” under More tools. Replace the diagnostic-style footer without changing funds mode, server authority, role permissions, session recovery or error/recovery controls. Keep the reference reachable for every role, including a role with no other advanced destinations. Use native keyboard-operable details with Escape/outside-click dismissal and readable Light/Dark mobile layouts.
 
-Affected files: index.html, workspace-experience.js/css, the existing More tools visibility predicate and focused browser regression. Acceptance requires visible disclosure/open/close, top-bar session status, the actual API reference link, mobile fit and authenticated recovery on the deployed SHA. Commands: web unit/static tests, focused Playwright footer checks and required CI, followed by the existing formal recovery plus visible footer verification. No migration, dependency or API changes. Rollback restores deployment `dpl_ESCjVFTwCyBFJxWvZuwuB2F8Layn` with the same 76 migrations. Implementation and deployment verification are pending; no new numbered plan is required.
+Affected files: index.html, workspace-experience.js/css, the existing More tools visibility predicate and focused browser regression. Acceptance requires visible disclosure/open/close, top-bar session status, the actual API reference link, mobile fit and authenticated recovery on the deployed SHA. Commands: web unit/static tests, focused Playwright footer checks and required CI, followed by the existing formal recovery plus visible footer verification. No migration, dependency or API changes. Rollback restores deployment `dpl_ESCjVFTwCyBFJxWvZuwuB2F8Layn` with the same 76 migrations. The update is deployed and verified as recorded below; no new numbered plan was created.
 
 Formal acceptance of initial candidate e6b0988 exposed a stale navigation placement: before server role recovery the primary container held Home; when Home became advanced, the container inherited that placement before the Human/Agent controls were moved in. Collapsing More tools therefore hid the primary controls. The existing role arrangement now restores both group placements on every pass. A hosted-style browser regression removes only the local HTML role hint, recovers the role from the fixture service, closes More tools and clicks the primary Human/Agent entry. It fails before the fix. No role manifest, authorization or assertion was weakened. The first formal failure and DOM diagnosis are retained separately; final acceptance must rerun against the corrected deployment. The mobile navigation focus loop now also includes native summary controls, so Tab reaches the new environment disclosure after API reference. A focused browser assertion fails before this one-line selector correction and is retained in footer-focus-before.log.
+
+The approved sidebar update is deployed at https://ipo.one as `55c6019475c1e2990fee1199674545e0f4526b79`, deployment `dpl_EZptaVTiDpNn1LN85sA4zKppEpiW`. Both required CI gates passed (34468963186 / 34468958609), plus 205 web/static tests and three focused browser cases covering server-selected Human/Agent recovery, four roles, keyboard disclosure/dismissal, document navigation without changing the workspace, and Light/Dark at 1440/390/320 widths. The static boundary assertion now verifies the approved natural-language funds statement instead of the retired wording; no boundary check was removed.
+
+Actual local and formal visible clicks open the real OpenAPI 3.1.2 document (HTTP 200), expand/dismiss the environment details, preserve top-bar sign-in state and fit desktop/mobile in both themes. Formal login/refresh/logout-login retain the same fully-repaid $24.50 record and ten owner Evidence events; the startup frame checks still pass. The exact compiled browser entry matches the hosted asset. All 90 local runtime files and eight role endpoints are verified. No schema, credential policy, funds mode, API contract, dependency or production environment changes were made. Original Principal owned-Agent acceptance remains the separately recorded parent item, not a claim that this presentation update reverified its complete lifecycle.
 
 ### Previous repair — legacy UI during startup (2026-09-10)
 

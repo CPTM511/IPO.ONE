@@ -664,10 +664,10 @@
     },
     {
       "path": "output/playwright/web-027/k2/runtime-check.json",
-      "sha256": "38a26d2ead0505e355c311300b5683298d5e92cc0c024167311fc600cf89dfcb",
-      "previousArtifactSha256": "716b331578b4e08e30f12d41d45d73dfa5a3abb5e23593b85123d0b3683de439",
-      "source": "5ede04b45877cdfe483940e18dfc9bcaf907e30b",
-      "note": "September 10 startup repair: 90 installed runtime files match this source and all eight role endpoints return 200. This does not re-date historical servicing or Agent execution."
+      "sha256": "459627bda5a764b4be70f61f69bea5c114322e7a04e4adee4f2e35d047ca5640",
+      "previousArtifactSha256": "38a26d2ead0505e355c311300b5683298d5e92cc0c024167311fc600cf89dfcb",
+      "source": "55c6019475c1e2990fee1199674545e0f4526b79",
+      "note": "Sidebar presentation update: all 90 installed files and eight role endpoints verified. Historical servicing and Agent execution retain their sources."
     }
   ],
   "reverification": {
@@ -689,5 +689,11 @@
     "compiledAssetHumanCapitalRecovery": "output/playwright/web-027/startup/compiled-local/recovery.json",
     "noApiMocks": true,
     "scope": "Current runtime installation and compiled frontend visible Human/Capital recovery only; historical results retain their sources."
+  },
+  "footerReverification": {
+    "source": "55c6019475c1e2990fee1199674545e0f4526b79",
+    "at": "2026-09-10T11:13:25.348242+00:00",
+    "scope": "Installed runtime and visible Human/Capital recovery, footer disclosure and real API reference only.",
+    "artifact": "output/playwright/web-027/footer/compiled-local/recovery.json"
   }
 }

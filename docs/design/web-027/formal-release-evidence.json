@@ -1,10 +1,10 @@
 {
   "schemaVersion": "web027_formal_release_evidence.v1",
-  "recordedAt": "2026-09-10T08:19:34.766470+00:00",
+  "recordedAt": "2026-09-10T11:13:25.348242+00:00",
   "verdict": "BLOCKED — NOT COMPLETE",
   "release": {
-    "source": "5ede04b45877cdfe483940e18dfc9bcaf907e30b",
-    "deployment": "dpl_ESCjVFTwCyBFJxWvZuwuB2F8Layn",
+    "source": "55c6019475c1e2990fee1199674545e0f4526b79",
+    "deployment": "dpl_EZptaVTiDpNn1LN85sA4zKppEpiW",
     "url": "https://ipo.one",
     "profile": "public_authenticated_no_funds_beta",
     "schemaMigrations": 76,
@@ -18,12 +18,12 @@
     "browserEntry": {
       "bundled": true,
       "sourceModules": 37,
-      "bytes": 592130
+      "bytes": 592491
     }
   },
   "ci": [
-    "https://github.com/CPTM511/IPO.ONE/actions/runs/34453112244",
-    "https://github.com/CPTM511/IPO.ONE/actions/runs/34453108728"
+    "https://github.com/CPTM511/IPO.ONE/actions/runs/34468963186",
+    "https://github.com/CPTM511/IPO.ONE/actions/runs/34468958609"
   ],
   "verified": {
     "walletLogin": "Historical signed-but-locked Human fix is retained. Current repair permits a verified expired ordinary v2 wallet identity to recover under public-Beta policy, without replacing its Actor or reviving revoked authority.",
@@ -203,7 +203,7 @@
       "productionFundsMoved": false
     },
     "humanLifecycleSource": "7e83916eb9e18153f59b9aa86d8df4c6e74bdb5e",
-    "humanRecoverySource": "5ede04b45877cdfe483940e18dfc9bcaf907e30b",
+    "humanRecoverySource": "55c6019475c1e2990fee1199674545e0f4526b79",
     "canonicalObligationSource": "f4b883f2799fa8b22d708cc0dadaa24966c464fe",
     "walletExpiryRegression": {
       "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
@@ -226,7 +226,7 @@
       "ownedAgentClickAcceptance": false
     },
     "startup": {
-      "source": "5ede04b45877cdfe483940e18dfc9bcaf907e30b",
+      "source": "55c6019475c1e2990fee1199674545e0f4526b79",
       "legacyVisibleFrames": 0,
       "publicPageDuringAuthenticatedRecoveryFrames": 0,
       "phases": [
@@ -239,6 +239,64 @@
       "apiMocks": false,
       "actualHostedCompiledAsset": true,
       "tests": "205 web/static tests; six startup cases including held/failed modules, actual retry, timeout/late recovery, no JavaScript and authenticated reload; both required CI runs passed."
+    },
+    "sidebarFooter": {
+      "source": "55c6019475c1e2990fee1199674545e0f4526b79",
+      "apiMocks": false,
+      "checks": [
+        {
+          "step": "visible API reference opens real specification",
+          "status": 200,
+          "openapi": "3.1.2",
+          "pathCount": 5
+        },
+        {
+          "step": "environment details and compact footer",
+          "width": 1440,
+          "theme": "light",
+          "visible": true,
+          "mobileKeyboardDetailsReachable": null
+        },
+        {
+          "step": "environment details and compact footer",
+          "width": 1440,
+          "theme": "dark",
+          "visible": true,
+          "mobileKeyboardDetailsReachable": null
+        },
+        {
+          "step": "environment details and compact footer",
+          "width": 390,
+          "theme": "light",
+          "visible": true,
+          "mobileKeyboardDetailsReachable": true
+        },
+        {
+          "step": "environment details and compact footer",
+          "width": 390,
+          "theme": "dark",
+          "visible": true,
+          "mobileKeyboardDetailsReachable": true
+        }
+      ],
+      "keyboardDismissal": true,
+      "mobileKeyboardFocusVerified": true,
+      "topbarSessionStatusVisible": true,
+      "apiLinkPreservesCurrentView": true,
+      "primaryNavigationSurvivesCollapsedMoreTools": true,
+      "unitTests": 205,
+      "focusedBrowserCases": 3,
+      "fixtureWidths": [
+        1440,
+        390,
+        320
+      ],
+      "fixtureRoles": [
+        "Human",
+        "Agent",
+        "Capital",
+        "Risk"
+      ]
     }
   },
   "notVerified": [
@@ -246,8 +304,8 @@
   ],
   "localEvidence": "docs/design/web-027/n-verification-evidence.json",
   "rollback": {
-    "deployment": "dpl_6C4nXHCG4P5QUhVdJ755xd88ZShK",
-    "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
+    "deployment": "dpl_ESCjVFTwCyBFJxWvZuwuB2F8Layn",
+    "source": "5ede04b45877cdfe483940e18dfc9bcaf907e30b",
     "databaseRollbackRequired": false,
     "schemaMigrations": 76,
     "preserveRecoveredIdentitiesAndAuditHistory": true
@@ -259,9 +317,9 @@
     },
     {
       "path": "output/playwright/web-027/formal/human-recovery.json",
-      "sha256": "bfb1ce84e1682badfb24e246149c06979825ea33da739a60cbb86c9fcd864fce",
-      "previousArtifactSha256": "766d595fa935546c5cc6d65744bee670b564764f70837b43c93cb1cc7945606b",
-      "source": "5ede04b45877cdfe483940e18dfc9bcaf907e30b"
+      "sha256": "289d000e389b5d8f84705a8d77671c83c920dd44e1948b6559c4ad7c1dc1aace",
+      "previousArtifactSha256": "bfb1ce84e1682badfb24e246149c06979825ea33da739a60cbb86c9fcd864fce",
+      "source": "55c6019475c1e2990fee1199674545e0f4526b79"
     },
     {
       "path": "output/playwright/web-027/formal/human-recovery-before-wait-correction.json",
@@ -362,6 +420,56 @@
       "path": "output/playwright/web-027/formal/startup-noscript.log",
       "source": "f4f0ee9ff9b0248135b0fc864583f04d9083588e",
       "sha256": "2296a1552d997ad298b326ea77a41cbfd7f8491fedeb4ba824d14506ad4f866f"
+    },
+    {
+      "path": "output/playwright/web-027/footer-focus-before.log",
+      "source": "ee1d85ebd2db0c4d8f05e8b2110f8e731fc525e5",
+      "sha256": "a60d93514c97c0798f7482f7725ee39ff6cd3d0334c548269c4fb38132a3e8e5"
+    },
+    {
+      "path": "output/playwright/web-027/formal/footer-first-human-recovery.json",
+      "source": "e6b098814af647f7201ab1cb7da8f45318e9ca98",
+      "sha256": "54d06301e150f03d469b33458bac898ceaf3a4258089634ea1897e4808e4c16d"
+    },
+    {
+      "path": "output/playwright/web-027/formal/footer-navigation-debug.json",
+      "source": "e6b098814af647f7201ab1cb7da8f45318e9ca98",
+      "sha256": "b90c45401e95a8fe5a41f7ddc8189e4ac5eec43425d48b49a742aea87331c3e7"
+    },
+    {
+      "path": "output/playwright/web-027/footer-navigation-before.log",
+      "source": "e6b098814af647f7201ab1cb7da8f45318e9ca98",
+      "sha256": "e85e2e38a37d63ea5734e36150de5a83a8a94248cbb528ab74bae6c3f52dd283"
+    },
+    {
+      "path": "output/playwright/web-027/formal/human-recovery-startup-5ede04b.json",
+      "source": "5ede04b45877cdfe483940e18dfc9bcaf907e30b",
+      "sha256": "bfb1ce84e1682badfb24e246149c06979825ea33da739a60cbb86c9fcd864fce"
+    },
+    {
+      "path": "output/playwright/web-027/formal/footer-health.json",
+      "source": "55c6019475c1e2990fee1199674545e0f4526b79",
+      "sha256": "b8a012ac82784c4e3f66549156ea10e15363816dc3bacfa7b47c235ae7f0aef5"
+    },
+    {
+      "path": "output/playwright/web-027/formal/footer-ci.json",
+      "source": "55c6019475c1e2990fee1199674545e0f4526b79",
+      "sha256": "a1333d3d4e562c3aee1e3e2a6f28ccb4348a3f51bb883b573e19ee2dbce1d27c"
+    },
+    {
+      "path": "output/playwright/web-027/footer/compiled-local/recovery.json",
+      "source": "55c6019475c1e2990fee1199674545e0f4526b79",
+      "sha256": "605afeea2acc9348806e5fb07cd7ef7c382bcb9fa13a65c163b324c9900f0ad7"
+    },
+    {
+      "path": "output/playwright/web-027/footer-web-tests-final.log",
+      "source": "55c6019475c1e2990fee1199674545e0f4526b79",
+      "sha256": "47dfea9cb5234c26d93cc57fb466e0802ae89a1a16cd5e0b9f9431e647b422a2"
+    },
+    {
+      "path": "output/playwright/web-027/footer-browser-final.log",
+      "source": "55c6019475c1e2990fee1199674545e0f4526b79",
+      "sha256": "01573b9e04ac9eca23a4a4e9edfcf6b2e90d817a9686c3941141ffdf6ff6a1aa"
     }
   ],
   "cleanup": {
@@ -380,7 +488,7 @@
     "localReviewRuntimesRetained": true
   },
   "verificationLimits": [
-    "Human original lifecycle was executed on 7e83916; current 5ede04b source was verified through visible login, refresh, logout/login, fully-repaid record and owner Evidence recovery. Startup observations sample each animation frame, not only final screenshots.",
+    "Human original lifecycle was executed on 7e83916; current 55c6019 was verified through visible login, refresh, logout/login, fully-repaid record and owner Evidence recovery. Startup frame assertions also passed. Other historical evidence retains its source.",
     "Agent machine acceptance remains source-bound to f4b883f and its temporary existing-identity credential. The credential and private key were revoked/destroyed afterward. No permanent Agent runner was installed, and no full Agent lifecycle rerun is claimed for this wallet repair.",
     "Local privileged-role and servicing results remain local evidence, with the unchanged hosted configuration and capability scope evaluated separately."
   ],
@@ -443,5 +551,29 @@
     }
   },
   "repairVerdict": "PASS — DEPLOYED AND USER-VERIFIED",
-  "repairScope": "September 10 initial-entry and post-login legacy-UI flash; delegated visible browser acceptance on the actual deployed SHA."
+  "repairScope": "Founder-approved compact sidebar footer, on-demand environment details and API reference in More tools; delegated visible browser acceptance on the actual deployed SHA.",
+  "previousStartupRelease": {
+    "source": "5ede04b45877cdfe483940e18dfc9bcaf907e30b",
+    "deployment": "dpl_ESCjVFTwCyBFJxWvZuwuB2F8Layn",
+    "url": "https://ipo.one",
+    "profile": "public_authenticated_no_funds_beta",
+    "schemaMigrations": 76,
+    "migrationProfile": "web027_wallet_expiry_recovery_v2",
+    "schemaMutation": false,
+    "appliedMigration": null,
+    "manualAccountEdit": false,
+    "sandboxEconomicWrites": false,
+    "localCredentialsPublished": false,
+    "productionEnvironmentUnchanged": true,
+    "browserEntry": {
+      "bundled": true,
+      "sourceModules": 37,
+      "bytes": 592130
+    },
+    "ci": [
+      "https://github.com/CPTM511/IPO.ONE/actions/runs/34453112244",
+      "https://github.com/CPTM511/IPO.ONE/actions/runs/34453108728"
+    ],
+    "recoveryArtifact": "output/playwright/web-027/formal/human-recovery-startup-5ede04b.json"
+  }
 }
