@@ -664,10 +664,10 @@
     },
     {
       "path": "output/playwright/web-027/k2/runtime-check.json",
-      "sha256": "459627bda5a764b4be70f61f69bea5c114322e7a04e4adee4f2e35d047ca5640",
-      "previousArtifactSha256": "38a26d2ead0505e355c311300b5683298d5e92cc0c024167311fc600cf89dfcb",
-      "source": "55c6019475c1e2990fee1199674545e0f4526b79",
-      "note": "Sidebar presentation update: all 90 installed files and eight role endpoints verified. Historical servicing and Agent execution retain their sources."
+      "sha256": "208d648bb00860a4856e1dd705bc69f3df56d4c799939be96284a7552b2f6c77",
+      "previousArtifactSha256": "459627bda5a764b4be70f61f69bea5c114322e7a04e4adee4f2e35d047ca5640",
+      "source": "3246672c38dd94d9b29d9d4a98a8d65764fffe11",
+      "note": "Quiet startup followup: 90 installed files and eight role endpoints verified. Historical servicing, Agent execution and footer acceptance retain their sources."
     }
   ],
   "reverification": {
@@ -695,5 +695,12 @@
     "at": "2026-09-10T11:13:25.348242+00:00",
     "scope": "Installed runtime and visible Human/Capital recovery, footer disclosure and real API reference only.",
     "artifact": "output/playwright/web-027/footer/compiled-local/recovery.json"
+  },
+  "quietStartupReverification": {
+    "source": "3246672c38dd94d9b29d9d4a98a8d65764fffe11",
+    "at": "2026-09-10T12:46:08.905657+00:00",
+    "scope": "Installed frontend/runtime and eight role health endpoints; eight final-source startup browser cases. Prior compiled Human/Capital recovery retained on 768f251; no new financial mutations.",
+    "runtimeArtifact": "output/playwright/web-027/k2/runtime-check.json",
+    "browserArtifact": "output/playwright/web-027/startup-flash/browser-tests-final.log"
   }
 }

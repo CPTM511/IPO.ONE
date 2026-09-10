@@ -1,10 +1,10 @@
 {
   "schemaVersion": "web027_formal_release_evidence.v1",
-  "recordedAt": "2026-09-10T11:13:25.348242+00:00",
+  "recordedAt": "2026-09-10T12:46:08.905657+00:00",
   "verdict": "BLOCKED — NOT COMPLETE",
   "release": {
-    "source": "55c6019475c1e2990fee1199674545e0f4526b79",
-    "deployment": "dpl_EZptaVTiDpNn1LN85sA4zKppEpiW",
+    "source": "3246672c38dd94d9b29d9d4a98a8d65764fffe11",
+    "deployment": "dpl_H6bnc1ddaBsNdNd9GCggV2UHS6xg",
     "url": "https://ipo.one",
     "profile": "public_authenticated_no_funds_beta",
     "schemaMigrations": 76,
@@ -22,8 +22,8 @@
     }
   },
   "ci": [
-    "https://github.com/CPTM511/IPO.ONE/actions/runs/34468963186",
-    "https://github.com/CPTM511/IPO.ONE/actions/runs/34468958609"
+    "https://github.com/CPTM511/IPO.ONE/actions/runs/34477335848",
+    "https://github.com/CPTM511/IPO.ONE/actions/runs/34477328970"
   ],
   "verified": {
     "walletLogin": "Historical signed-but-locked Human fix is retained. Current repair permits a verified expired ordinary v2 wallet identity to recover under public-Beta policy, without replacing its Actor or reviving revoked authority.",
@@ -203,7 +203,7 @@
       "productionFundsMoved": false
     },
     "humanLifecycleSource": "7e83916eb9e18153f59b9aa86d8df4c6e74bdb5e",
-    "humanRecoverySource": "55c6019475c1e2990fee1199674545e0f4526b79",
+    "humanRecoverySource": "3246672c38dd94d9b29d9d4a98a8d65764fffe11",
     "canonicalObligationSource": "f4b883f2799fa8b22d708cc0dadaa24966c464fe",
     "walletExpiryRegression": {
       "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
@@ -226,10 +226,22 @@
       "ownedAgentClickAcceptance": false
     },
     "startup": {
-      "source": "55c6019475c1e2990fee1199674545e0f4526b79",
+      "source": "3246672c38dd94d9b29d9d4a98a8d65764fffe11",
       "legacyVisibleFrames": 0,
+      "loadingInterstitialFrames": 0,
+      "earlyFeedbackFrames": 0,
       "publicPageDuringAuthenticatedRecoveryFrames": 0,
-      "phases": [
+      "publicPaintCases": [
+        "1440-light-cold",
+        "1440-light-reload",
+        "1440-dark-cold",
+        "1440-dark-reload",
+        "390-light-cold",
+        "390-light-reload",
+        "390-dark-cold",
+        "390-dark-reload"
+      ],
+      "authenticatedPhases": [
         "public entry",
         "login",
         "refresh",
@@ -237,11 +249,12 @@
         "relogin"
       ],
       "apiMocks": false,
+      "assetMocks": false,
       "actualHostedCompiledAsset": true,
-      "tests": "205 web/static tests; six startup cases including held/failed modules, actual retry, timeout/late recovery, no JavaScript and authenticated reload; both required CI runs passed."
+      "tests": "Eight focused startup cases; retained footer regression; 205 web/static tests; both required final-source CI runs passed. Actual formal desktop/mobile Light/Dark cold/reload frames and visible login controls; authenticated login/refresh/relogin and durable record/Evidence recovery."
     },
     "sidebarFooter": {
-      "source": "55c6019475c1e2990fee1199674545e0f4526b79",
+      "source": "3246672c38dd94d9b29d9d4a98a8d65764fffe11",
       "apiMocks": false,
       "checks": [
         {
@@ -304,8 +317,8 @@
   ],
   "localEvidence": "docs/design/web-027/n-verification-evidence.json",
   "rollback": {
-    "deployment": "dpl_ESCjVFTwCyBFJxWvZuwuB2F8Layn",
-    "source": "5ede04b45877cdfe483940e18dfc9bcaf907e30b",
+    "deployment": "dpl_EZptaVTiDpNn1LN85sA4zKppEpiW",
+    "source": "55c6019475c1e2990fee1199674545e0f4526b79",
     "databaseRollbackRequired": false,
     "schemaMigrations": 76,
     "preserveRecoveredIdentitiesAndAuditHistory": true
@@ -317,9 +330,9 @@
     },
     {
       "path": "output/playwright/web-027/formal/human-recovery.json",
-      "sha256": "289d000e389b5d8f84705a8d77671c83c920dd44e1948b6559c4ad7c1dc1aace",
-      "previousArtifactSha256": "bfb1ce84e1682badfb24e246149c06979825ea33da739a60cbb86c9fcd864fce",
-      "source": "55c6019475c1e2990fee1199674545e0f4526b79"
+      "sha256": "6a407fe1e83627fe2936c347507e2d7540bfba2a7b527a58883929376b16cc25",
+      "previousArtifactSha256": "289d000e389b5d8f84705a8d77671c83c920dd44e1948b6559c4ad7c1dc1aace",
+      "source": "3246672c38dd94d9b29d9d4a98a8d65764fffe11"
     },
     {
       "path": "output/playwright/web-027/formal/human-recovery-before-wait-correction.json",
@@ -470,6 +483,36 @@
       "path": "output/playwright/web-027/footer-browser-final.log",
       "source": "55c6019475c1e2990fee1199674545e0f4526b79",
       "sha256": "01573b9e04ac9eca23a4a4e9edfcf6b2e90d817a9686c3941141ffdf6ff6a1aa"
+    },
+    {
+      "path": "output/playwright/web-027/formal/human-recovery-footer-55c6019.json",
+      "sha256": "289d000e389b5d8f84705a8d77671c83c920dd44e1948b6559c4ad7c1dc1aace",
+      "source": "55c6019475c1e2990fee1199674545e0f4526b79"
+    },
+    {
+      "path": "output/playwright/web-027/formal/quiet-startup-health.json",
+      "sha256": "defb3ba2c0f008060679f759360c0befafa4e1d6bff212db2c5e07d70cee21c3",
+      "source": "3246672c38dd94d9b29d9d4a98a8d65764fffe11"
+    },
+    {
+      "path": "output/playwright/web-027/formal/startup-paint/result.json",
+      "sha256": "13049609cbb1ec44dc23b57603e1db200f9fab0754aa099a1541df13543e9ff5",
+      "source": "3246672c38dd94d9b29d9d4a98a8d65764fffe11"
+    },
+    {
+      "path": "output/playwright/web-027/startup-flash/ci-final.json",
+      "sha256": "2ec0d39305625bd680cf3770742fd5c3abef7d4ff54df07d461dc6e71eb1260f",
+      "source": "3246672c38dd94d9b29d9d4a98a8d65764fffe11"
+    },
+    {
+      "path": "output/playwright/web-027/startup-flash/browser-tests-final.log",
+      "sha256": "f950182bb7c50a171bae6b542c686f2bac26ee69187bb1d4646040df98172156",
+      "source": "3246672c38dd94d9b29d9d4a98a8d65764fffe11"
+    },
+    {
+      "path": "output/playwright/web-027/startup-flash/formal-before-regression.log",
+      "sha256": "4a45a2145121f8d886d1de2c113f102b87e545d67c44042fd9b4d7d24b2e6e73",
+      "source": "55c6019475c1e2990fee1199674545e0f4526b79"
     }
   ],
   "cleanup": {
@@ -551,7 +594,7 @@
     }
   },
   "repairVerdict": "PASS — DEPLOYED AND USER-VERIFIED",
-  "repairScope": "Founder-approved compact sidebar footer, on-demand environment details and API reference in More tools; delegated visible browser acceptance on the actual deployed SHA.",
+  "repairScope": "Residual full-screen loading interstitial flash: quiet delayed feedback, matching startup canvas and delegated frame/visible-click acceptance on the exact formal SHA.",
   "previousStartupRelease": {
     "source": "5ede04b45877cdfe483940e18dfc9bcaf907e30b",
     "deployment": "dpl_ESCjVFTwCyBFJxWvZuwuB2F8Layn",
@@ -575,5 +618,55 @@
       "https://github.com/CPTM511/IPO.ONE/actions/runs/34453108728"
     ],
     "recoveryArtifact": "output/playwright/web-027/formal/human-recovery-startup-5ede04b.json"
+  },
+  "previousSidebarRelease": {
+    "source": "55c6019475c1e2990fee1199674545e0f4526b79",
+    "deployment": "dpl_EZptaVTiDpNn1LN85sA4zKppEpiW",
+    "url": "https://ipo.one",
+    "profile": "public_authenticated_no_funds_beta",
+    "schemaMigrations": 76,
+    "migrationProfile": "web027_wallet_expiry_recovery_v2",
+    "schemaMutation": false,
+    "appliedMigration": null,
+    "manualAccountEdit": false,
+    "sandboxEconomicWrites": false,
+    "localCredentialsPublished": false,
+    "productionEnvironmentUnchanged": true,
+    "browserEntry": {
+      "bundled": true,
+      "sourceModules": 37,
+      "bytes": 592491
+    },
+    "ci": [
+      "https://github.com/CPTM511/IPO.ONE/actions/runs/34468963186",
+      "https://github.com/CPTM511/IPO.ONE/actions/runs/34468958609"
+    ],
+    "recoveryArtifact": "output/playwright/web-027/formal/human-recovery-footer-55c6019.json",
+    "repairVerdict": "PASS — DEPLOYED AND USER-VERIFIED",
+    "repairScope": "Founder-approved compact sidebar footer, on-demand environment details and API reference in More tools; delegated visible browser acceptance on the actual deployed SHA."
+  },
+  "repairStates": {
+    "CODE": {
+      "source": "3246672c38dd94d9b29d9d4a98a8d65764fffe11"
+    },
+    "RUNTIME": {
+      "source": "3246672c38dd94d9b29d9d4a98a8d65764fffe11",
+      "matchedLocalFiles": 90,
+      "healthyRoleEndpoints": 8
+    },
+    "DEPLOYED": {
+      "source": "3246672c38dd94d9b29d9d4a98a8d65764fffe11",
+      "deployment": "dpl_H6bnc1ddaBsNdNd9GCggV2UHS6xg",
+      "assetHashesMatched": true
+    },
+    "REACHABLE": {
+      "publicVisibleEntryCases": 8,
+      "authenticatedVisibleRecoveryPhases": 3
+    },
+    "VERIFIED": {
+      "source": "3246672c38dd94d9b29d9d4a98a8d65764fffe11",
+      "paintArtifact": "output/playwright/web-027/formal/startup-paint/result.json",
+      "recoveryArtifact": "output/playwright/web-027/formal/human-recovery.json"
+    }
   }
 }
