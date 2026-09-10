@@ -1,6 +1,6 @@
 # WEB-027I — 满足条件后正式发布与复验
 
-Status: dark-mode readability repair in verification; previous startup repair PASS — DEPLOYED AND USER-VERIFIED; whole-site delivery BLOCKED — NOT COMPLETE (original Principal owned-Agent visible acceptance remains).
+Status: dark-mode readability repair PASS — DEPLOYED AND USER-VERIFIED; whole-site delivery BLOCKED — NOT COMPLETE (original Principal owned-Agent visible acceptance remains).
 
 ## Context and scope
 
@@ -28,7 +28,7 @@ No credentials in output; no client-derived authority; role and tenant isolation
 
 ## Migration impact and rollback
 
-The hosted bundle retains the exact 75 approved migrations from formal baseline 7ce4b95 plus the narrowly guarded wallet recovery migration 0084. Local-only 0076–0083 remain excluded. Migration 0084 changes no account data or privileges. The current startup presentation repair adds no migration: restore the compatible 76-migration deployment `dpl_EZptaVTiDpNn1LN85sA4zKppEpiW` without a database rollback. The earlier sidebar rollback remains recorded in its dated section. The earlier startup repair retained its own rollback checkpoint below. The older wallet-expiry repair has its separate dated migration rollback below. Preserve recovered identities, business history and audit records.
+The hosted bundle retains the exact 75 approved migrations from formal baseline 7ce4b95 plus the narrowly guarded wallet recovery migration 0084. Local-only 0076–0083 remain excluded. Migration 0084 changes no account data or privileges. The current theme contrast repair adds no migration: restore the compatible 76-migration deployment `dpl_H6bnc1ddaBsNdNd9GCggV2UHS6xg` without a database rollback. The earlier sidebar rollback remains recorded in its dated section. The earlier startup repair retained its own rollback checkpoint below. The older wallet-expiry repair has its separate dated migration rollback below. Preserve recovered identities, business history and audit records.
 
 ## Completion evidence
 
@@ -36,7 +36,9 @@ The hosted bundle retains the exact 75 approved migrations from formal baseline 
 
 The Founder reports unreadable text in Dark mode, including borrowing shortcuts, product cards, workspace details and activity rows. Existing light-only component backgrounds and fixed text colors conflict with the active workspace palette. Scope: repair the affected shared component styles across Human, Principal/Agent, Capital and Risk role-allowed views, including secondary text, status surfaces, forms, expandable details and hover/focus states. Keep the approved Precision Terminal palette and meaningful status colors; no new design direction or functional changes.
 
-Files: workspace-experience.css, targeted browser contrast/support tests, formal browser acceptance helper and this existing issue/evidence. Verify rendered text contrast in both themes (4.5:1 normal, 3:1 large), visible navigation and disclosure, desktop/mobile fit, actual formal source/asset hashes and wallet recovery. Fixture checks are component evidence; final acceptance uses the actual deployed services. Run all web checks and required CI before promotion. No API, auth, schema, dependency, funds or production configuration changes. Rollback to `dpl_H6bnc1ddaBsNdNd9GCggV2UHS6xg` (`3246672`), preserving the compatible 76-migration profile and business history. Completion remains pending until formal browser acceptance.
+Files: workspace-experience.css, targeted browser contrast/support tests, formal browser acceptance helper and this existing issue/evidence. Verify rendered text contrast in both themes (4.5:1 normal, 3:1 large), visible navigation and disclosure, desktop/mobile fit, actual formal source/asset hashes and wallet recovery. Fixture checks are component evidence; final acceptance uses the actual deployed services. Run all web checks and required CI before promotion. No API, auth, schema, dependency, funds or production configuration changes. Rollback to `dpl_H6bnc1ddaBsNdNd9GCggV2UHS6xg` (`3246672`), preserving the compatible 76-migration profile and business history. Final runtime `9b388b2702ae82b21e65798d9e9a6dbe6dc9f613` is deployed through `dpl_9Thjh3YJCzr9YR29fTZJc3qe6gqh`. Four role component checks and real local/hosted Human and Principal visible journeys pass at 1440/390 in both themes, including disclosure, hover/focus and authenticated Dark refresh. Formal recovery retains the fully-repaid $24.50 plan and ten owner Evidence events. Both exact-source CI runs (34481400400 / 34481392825), 205 web tests, source lint, bundle integrity, asset hashes and local runtime checks pass.
+
+The initial audit reproduced light-only surfaces with text contrast near 1.12:1. Actual local acceptance additionally found an unreadable Principal workspace link; its semantic action colors and interactive regression were corrected before promotion. Preliminary `5c52373` staging was never promoted, and its superseded CI was cancelled. Final acceptance has no API or asset mocks; the earlier injected-CSS runs are preview evidence only. Current repair: **PASS — DEPLOYED AND USER-VERIFIED**. Parent owned-Agent acceptance remains separate; no whole-site 100% claim.
 
 ### Previous repair — residual loading interstitial flash (2026-09-10)
 
