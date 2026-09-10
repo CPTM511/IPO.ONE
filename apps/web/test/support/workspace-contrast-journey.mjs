@@ -23,9 +23,10 @@ export async function workspaceContrastJourney(page, {role, widths=[1440,390], s
       while(await disclosures.count()) {expect(++opened).toBeLessThan(40);await disclosures.first().click();}
       await settle();
       reports.push({role,width,theme,view,state:'expanded',...await renderedContrast(page)});
-      if(view==='overview') {
+      const action=page.locator(view==='overview'?'#homeHumanBorrowBtn':'#openPrincipalWorkspaceLink');
+      if(['overview','request-credit'].includes(view)&&await action.isVisible()) {
         for(const state of ['hover','focus']) {
-          const card=page.locator('#homeHumanBorrowBtn');
+          const card=action;
           if(state==='hover')await card.hover();
           else {await page.keyboard.press('Tab');await card.focus();await expect(card).toBeFocused();}
           await settle();reports.push({role,width,theme,view,state,...await renderedContrast(page)});

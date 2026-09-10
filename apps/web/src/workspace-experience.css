@@ -104,7 +104,7 @@ body.product-experience :is(.panel,.private-workflow-card) { border-radius: 7px;
 body.product-experience :is(.panel-heading,.private-page-heading) :is(h2,h3,h4) { color: var(--b-ink); letter-spacing: -.035em; }
 body.product-experience :is(input,select,textarea) { background: var(--b-bg); color: var(--b-ink); border-color: var(--b-line-strong); border-radius: 5px; min-height: 42px; }
 body.product-experience :is(input,select,textarea):disabled { color: var(--b-soft); opacity: .8; }
-body.product-experience :is(button.primary,.button.primary) { background: var(--b-action-bg, var(--b-ink)); color: var(--b-action-ink, var(--b-bg)); border: 1px solid transparent; border-radius: 5px; min-height: 44px; box-shadow: none; }
+body.product-experience :is(button.primary,.button.primary,.button-link.primary) { background: var(--b-action-bg, var(--b-ink)); color: var(--b-action-ink, var(--b-bg)); border: 1px solid transparent; border-radius: 5px; min-height: 44px; box-shadow: none; }
 body.product-experience button.secondary { background: var(--b-surface); color: var(--b-ink); border: 1px solid var(--b-line); border-radius: 5px; min-height: 42px; box-shadow: none; }
 body.product-experience button:disabled { opacity: .6; cursor: not-allowed; }
 body.product-experience button:not(:disabled):active { transform: translateY(1px); }
@@ -433,7 +433,7 @@ body.product-experience .precision-agent-context { margin-top: 28px; }
 
 body.product-experience [tabindex]:focus-visible { outline: 2px solid var(--b-accent); outline-offset: 4px; }
 /* A single semantic action token, including legacy high-specificity buttons. */
-body.product-experience.workspace-session-active .view button.primary,
+body.product-experience.workspace-session-active .view :is(button,.button-link).primary,
 body.product-experience .access-layer button.primary {
   background: var(--b-action-bg); color: var(--b-action-ink); border-color: transparent;
 }
@@ -508,7 +508,7 @@ body.product-experience :is(.borrowing-entry-action,.product-entry-card,.owned-p
 body.product-experience .owned-position-button[aria-current="true"] { background: var(--b-elevated); border-color: var(--b-accent); }
 body.product-experience :is(.portfolio-mode,.portfolio-lifecycle > span,.private-product-heading > p:not(.eyebrow),.private-hero-metrics span,.borrowing-entry-copy > p:last-child,.borrowing-entry-action small,.product-section-heading > p,.product-entry-copy small,.portfolio-details > summary small,.private-checkpoint span,.v9-runtime-state small,.pilot-feedback-boundary,.request-credit-receipts span,.request-credit-receipts small,.owned-evidence-boundary,.offer-boundary) { color: var(--b-soft); }
 body.product-experience :is(label,summary) { color: var(--b-soft); }
-body.product-experience .panel a:not(.button) { color: var(--b-accent); }
+body.product-experience .panel a:not(.button):not(.button-link) { color: var(--b-accent); }
 body.product-experience .owned-evidence-summary strong { color: var(--b-ink); }
 body.product-experience .obligation-card :is(.obligation-technical-references dt,label) { color: var(--b-soft); }
 body.product-experience .v9-runtime-state { background: var(--b-elevated); border-color: var(--b-line); color: var(--b-ink); }
