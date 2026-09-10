@@ -66,8 +66,12 @@ async function verifyFooter(page) {
   const box=await page.locator('.sidebar-environment-panel').boundingBox();assert(box.x>=0&&box.x+box.width<=width);
   await page.screenshot({path:out+`/footer-details-${width}-${theme}.png`});
   await summary.click();
-  if(width<900)await page.getByRole('button',{name:'Close navigation',exact:true}).first().click();
-  footer.push({step:'environment details and compact footer',width,theme,visible:true});
+  if(width<900){
+   await more.click();await page.getByRole('link',{name:'API reference',exact:true}).focus();
+   await page.keyboard.press('Tab');await expect(summary).toBeFocused();
+   await more.click();await page.getByRole('button',{name:'Close navigation',exact:true}).first().click();
+  }
+  footer.push({step:'environment details and compact footer',width,theme,visible:true,mobileKeyboardDetailsReachable:width<900?true:null});
  }
  await page.setViewportSize({width:1440,height:1000});
 }

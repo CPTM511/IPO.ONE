@@ -10903,7 +10903,7 @@ function handleNavigationKeys(event) {
     return;
   }
   if (event.key !== "Tab") return;
-  const focusable = [...el("sidebar").querySelectorAll("button:not(:disabled), a[href]")];
+  const focusable = [...el("sidebar").querySelectorAll("button:not(:disabled), a[href], summary")];
   const first = focusable[0];
   const last = focusable.at(-1);
   if (event.shiftKey && document.activeElement === first) {

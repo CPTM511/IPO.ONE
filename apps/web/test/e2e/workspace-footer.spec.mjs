@@ -56,6 +56,10 @@ test('environment details are optional, keyboard operable and fit mobile navigat
       await expect(page.locator('.sidebar-environment-panel')).toBeHidden();
     }
   }
+  await page.getByRole('button', {name:'More tools',exact:true}).click();
+  await page.getByRole('link', {name:'API reference',exact:true}).focus();
+  await page.keyboard.press('Tab');
+  await expect(summary).toBeFocused();
 });
 
 test('API reference stays reachable in More tools for all existing workspace roles', async ({page}) => {
