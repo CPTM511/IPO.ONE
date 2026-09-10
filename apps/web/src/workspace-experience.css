@@ -1,7 +1,8 @@
 /* WEB-027 Precision Terminal. Public presentation retains its own brand tokens. */
 /* Never expose the legacy HTML or an intermediate role layout during startup. */
 .app-startup { display: none; }
-html[data-ipo-startup] { background: var(--b-bg); color-scheme: light; }
+html[data-ipo-startup] { color-scheme: light; }
+html[data-ipo-startup]:not([data-ipo-startup="ready"]) { background: var(--b-bg); }
 html[data-ipo-startup][data-ipo-theme="dark"] { color-scheme: dark; }
 html[data-ipo-startup]:not([data-ipo-startup="ready"]) body { margin: 0; background: var(--b-bg); color: var(--b-ink); }
 html[data-ipo-startup]:not([data-ipo-startup="ready"]) body > :not(.app-startup) { display: none !important; }

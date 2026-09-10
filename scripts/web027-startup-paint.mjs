@@ -6,6 +6,7 @@ const origin = process.env.WEB027_PAINT_ORIGIN || 'https://ipo.one';
 const out = process.env.WEB027_PAINT_OUTPUT || 'output/playwright/web-027/formal/startup-paint';
 await mkdir(out, {recursive:true});
 const ready = await (await fetch(`${origin}/readyz`)).json();
+assert.match(ready.releaseId || '', /^[a-f0-9]{40}$/, 'Hosted readiness must identify the deployed source');
 const browser = await chromium.launch({headless:true, proxy:{server:'http://127.0.0.1:7890',bypass:'127.0.0.1,localhost'}});
 const results = [];
 try {
@@ -41,7 +42,10 @@ try {
       else await page.reload({waitUntil:'domcontentloaded'});
       await expect(page.locator('#web009HeroTitle')).toBeVisible({timeout:45000});
       await expect(page.locator('html')).toHaveAttribute('data-ipo-startup','ready');
-      await page.getByRole('button',{name:'Log in',exact:true}).click();
+      const entry = width < 600
+        ? page.locator('#web009Product').getByRole('button',{name:'Open IPO.ONE',exact:true})
+        : page.getByRole('button',{name:'Log in',exact:true});
+      await entry.click();
       await expect(page.locator('#accessLayer')).toBeVisible();
       await page.keyboard.press('Escape');
       await expect(page.locator('#accessLayer')).toBeHidden();
