@@ -76,8 +76,20 @@ body.product-experience .nav-item[hidden] { display: none; }
 body.product-experience .nav-section[hidden] { display: none; }
 body.product-experience .sidebar-more-toggle { margin: 24px 0 10px; border: 0; border-top: 1px solid var(--b-line); border-radius: 0; background: transparent; color: var(--b-soft); padding-top: 18px; }
 body.product-experience .workspace-advanced-nav .nav-item { min-height: 40px; padding-block: 9px; }
-body.product-experience .sidebar-footer { border-color: var(--b-line); }
-body.product-experience .sidebar-footer :is(strong,a) { color: var(--b-soft); }
+body.product-experience .sidebar-footer { border-color: var(--b-line); gap: 2px; padding: 12px 20px 20px; }
+body.product-experience .nav-item:is(a) { text-decoration: none; }
+.sidebar-environment { color: var(--b-soft); }
+.sidebar-environment > summary { display: flex; align-items: center; gap: 9px; width: fit-content; min-height: 44px; cursor: pointer; list-style: none; }
+.sidebar-environment > summary::-webkit-details-marker { display: none; }
+.sidebar-beta-label { padding: 3px 7px; border: 1px solid var(--b-line); border-radius: 4px; color: var(--b-soft); font-size: 11px; line-height: 1.2; font-weight: 500; }
+.sidebar-environment-info { display: grid; place-items: center; width: 14px; height: 14px; border: 1px solid currentColor; border-radius: 50%; font: 10px Georgia, serif; }
+.sidebar-environment > summary:hover { color: var(--b-ink); }
+.sidebar-environment-panel { padding: 0 0 12px; }
+.sidebar-environment-panel p { margin: 4px 0 12px; font-size: 12px; line-height: 1.6; }
+.sidebar-environment-panel dl { display: grid; gap: 4px; margin: 0; font-size: 11px; line-height: 1.5; }
+.sidebar-environment-panel dt { color: var(--b-soft); }
+.sidebar-environment-panel dd { margin: 0 0 8px; color: var(--b-ink); overflow-wrap: anywhere; }
+body.product-experience .sidebar-funds-note { margin: 0; color: var(--b-soft); font-size: 11px; line-height: 1.6; font-weight: 400; }
 body.product-experience #mainContent { padding: 24px 32px 56px; max-width: 1440px; margin: 0 auto; }
 body.product-experience .safety-banner { padding: 10px 14px; margin-bottom: 24px; border: 1px solid var(--b-line); border-radius: 6px; background: var(--b-elevated); color: var(--b-soft); font-size: 11px; }
 body.product-experience .safety-banner strong { color: var(--b-soft); font-weight: 500; }

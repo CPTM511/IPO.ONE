@@ -2094,7 +2094,7 @@ function applyWorkspaceSurfaceAccess() {
       delete section.dataset.workspacePlacement;
     }
   }
-  el("sidebarMoreBtn").hidden = access.advancedViews.size === 0;
+  el("sidebarMoreBtn").hidden = access.advancedViews.size === 0 && !el("sidebarApiReference");
   for (const item of document.querySelectorAll("[data-role-entry]")) {
     item.hidden = item.dataset.roleEntry !== workspaceName;
   }
@@ -13707,7 +13707,7 @@ function bindActions() {
   });
   window.addEventListener("pagehide", disposeWalletProviders, { once: true });
   walletProviderRegistry.start();
-  for (const button of document.querySelectorAll(".nav-item")) {
+  for (const button of document.querySelectorAll(".nav-item[data-view]")) {
     button.addEventListener("click", () => showView(button.dataset.view));
   }
   for (const button of document.querySelectorAll("[data-go-view]")) {

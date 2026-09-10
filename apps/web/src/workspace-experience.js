@@ -29,6 +29,18 @@ function initializeChrome() {
   if (document.body.classList.contains("product-experience")) return;
   document.body.classList.add("product-experience");
   arrangeSecondarySurfaces();
+  const environment = document.getElementById("sidebarEnvironment");
+  if (environment) {
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && environment.open) {
+        environment.open = false;
+        environment.querySelector("summary").focus();
+      }
+    });
+    document.addEventListener("click", event => {
+      if (!environment.contains(event.target)) environment.open = false;
+    });
+  }
   const actions = document.querySelector(".topbar-actions");
   const modes = actions?.querySelector(".mode-switch");
   if (modes) {
@@ -105,6 +117,8 @@ export function arrangeWorkspaceNavigation(workspaceName, access) {
     if (label) button.querySelector("span strong").textContent = label;
     (entry.placement === "primary" ? primary : more).append(button);
   }
+  const apiReference = document.getElementById("sidebarApiReference");
+  if (apiReference) more.append(apiReference);
   for (const section of nav.querySelectorAll(".nav-section")) {
     section.hidden = !section.querySelector(".nav-item:not([hidden])");
   }

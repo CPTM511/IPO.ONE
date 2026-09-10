@@ -32,7 +32,13 @@ The hosted bundle retains the exact 75 approved migrations from formal baseline 
 
 ## Completion evidence
 
-### Current repair — legacy UI during startup (2026-09-10)
+### Current presentation update — sidebar status (2026-09-10)
+
+The Founder approved a compact Beta label with “No real money is moved.”, environment details on demand, account state in the existing top bar, and the existing OpenAPI link renamed “API reference” under More tools. Replace the diagnostic-style footer without changing funds mode, server authority, role permissions, session recovery or error/recovery controls. Keep the reference reachable for every role, including a role with no other advanced destinations. Use native keyboard-operable details with Escape/outside-click dismissal and readable Light/Dark mobile layouts.
+
+Affected files: index.html, workspace-experience.js/css, the existing More tools visibility predicate and focused browser regression. Acceptance requires visible disclosure/open/close, top-bar session status, the actual API reference link, mobile fit and authenticated recovery on the deployed SHA. Commands: web unit/static tests, focused Playwright footer checks and required CI, followed by the existing formal recovery plus visible footer verification. No migration, dependency or API changes. Rollback restores deployment `dpl_ESCjVFTwCyBFJxWvZuwuB2F8Layn` with the same 76 migrations. Implementation and deployment verification are pending; no new numbered plan is required.
+
+### Previous repair — legacy UI during startup (2026-09-10)
 
 The Founder can now enter the original Principal workspace and reports old UI appearing during initial entry and the post-login reload. The source HTML initially exposes the legacy signed-out surface; the new presentation classes and layout are only installed after the application module graph loads. Authenticated reloads also initially render the public page before server recovery completes. Static assets use `no-store`; this is a startup sequencing defect, not evidence that a previous deployment was served.
 

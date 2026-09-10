@@ -34,10 +34,48 @@ async function walletPage(name){const path=`${state}/web027-formal-${name}-walle
 
 
 const receipts=[];
+const footer=[];
+async function verifyFooter(page) {
+ const details=page.locator('#sidebarEnvironment'),summary=details.locator('summary');
+ await expect(page.locator('#accessButtonLabel')).toHaveText('Signed in');
+ await expect(page.locator('.sidebar-funds-note')).toHaveText('No real money is moved.');
+ await expect(page.locator('#sidebarApiStatus')).toBeHidden();
+ await summary.click();await expect(page.locator('#sidebarApiStatus')).toBeVisible();
+ await expect(page.locator('#sidebarApiStatus')).toHaveText('Authenticated');
+ await page.keyboard.press('Escape');await expect(summary).toBeFocused();
+ await expect(page.locator('.sidebar-environment-panel')).toBeHidden();
+ const more=page.getByRole('button',{name:'More tools',exact:true});
+ if(await more.getAttribute('aria-expanded')!=='true')await more.click();
+ const responsePending=page.context().waitForEvent('response',{predicate:r=>new URL(r.url()).pathname==='/openapi.json'&&r.request().isNavigationRequest()});
+ const popupPending=page.waitForEvent('popup');
+ const currentUrl=page.url();
+ await page.getByRole('link',{name:'API reference',exact:true}).click();
+ const [response,popup]=await Promise.all([responsePending,popupPending]);
+ assert.equal(response.status(),200);const spec=await response.json();assert.match(spec.openapi,/^3\./);assert(Object.keys(spec.paths).length>0);
+ await expect(page).toHaveURL(currentUrl);
+ await popup.close();await more.click();
+ footer.push({step:'visible API reference opens real specification',status:response.status(),openapi:spec.openapi,pathCount:Object.keys(spec.paths).length});
+ for(const width of [1440,390])for(const theme of ['light','dark']){
+  await page.setViewportSize({width,height:1000});
+  await page.getByRole('combobox',{name:'Appearance',exact:true}).selectOption(theme);
+  if(width<900)await page.getByRole('button',{name:'Open navigation',exact:true}).click();
+  await expect(page.locator('.sidebar-funds-note')).toBeInViewport();
+  await page.screenshot({path:out+`/footer-${width}-${theme}.png`});
+  await summary.click();await expect(page.locator('.sidebar-environment-panel')).toBeVisible();
+  await expect(page.locator('.sidebar-funds-note')).toBeInViewport();
+  const box=await page.locator('.sidebar-environment-panel').boundingBox();assert(box.x>=0&&box.x+box.width<=width);
+  await page.screenshot({path:out+`/footer-details-${width}-${theme}.png`});
+  await summary.click();
+  if(width<900)await page.getByRole('button',{name:'Close navigation',exact:true}).first().click();
+  footer.push({step:'environment details and compact footer',width,theme,visible:true});
+ }
+ await page.setViewportSize({width:1440,height:1000});
+}
 async function login(page){await page.goto("https://ipo.one/#request-credit");await page.getByRole("button",{name:/^(Log in|Sign in)$/,exact:true}).click();await captureStartup(page,'public entry');await page.getByRole("button",{name:/WEB027 formal acceptance wallet/}).click();await click(page,"#walletSignInBtn");await expect(page.locator("#sidebarApiStatus")).toHaveText("Authenticated",{timeout:45000});await expect(page.locator("#accessLayer")).toBeHidden();}
 try{
  const page=await walletPage("human");page.setDefaultTimeout(30000);page.on("response",async r=>{if(r.url().endsWith("/tenant/v1/operations")){const b=await r.json();receipts.push({operationId:r.request().postDataJSON()?.operationId,status:r.status(),code:b.code,receipt:b.response});}});
  await login(page);
+ await verifyFooter(page);
  for(const phase of ["login","refresh","relogin"]){
   if(phase==="refresh"){await page.reload();await expect(page.locator("#sidebarApiStatus")).toHaveText("Authenticated",{timeout:30000});}
   if(phase==="relogin"){await page.getByRole("button",{name:"Sign out",exact:true}).click();await login(page);}
@@ -46,4 +84,4 @@ try{
   await click(page,"#loadOwnedEvidenceBtn");await expect(page.locator("#ownedEvidencePanel")).toBeVisible();await expect(page.locator("#ownedEvidenceCount")).not.toHaveText("0");await page.locator("#humanObligationCard").scrollIntoViewIfNeeded();await captureStartup(page,phase);await page.screenshot({path:out+`/human-recovery-${phase}.png`});results.push({phase,visible:true,lifecycle:await page.locator("#humanObligationStatus").innerText(),repaid:await page.locator("#humanObligationRepaid").innerText(),evidence:await page.locator("#ownedEvidenceHelper").innerText()});
  }
 }catch(e){results.push({error:e.message});const page=contexts.at(-1)?.pages()[0];if(page)await writeFile(out+"/human-recovery-failure.txt",await page.locator("body").innerText());process.exitCode=1;}
-finally{await writeFile(out+"/human-recovery.json",JSON.stringify({source,results,receipts,actions,startup,apiMocks:false},null,2));await browser.close();console.log(JSON.stringify({source,results}));}
+finally{await writeFile(out+"/human-recovery.json",JSON.stringify({source,results,receipts,actions,startup,footer,apiMocks:false},null,2));await browser.close();console.log(JSON.stringify({source,results,footer}));}

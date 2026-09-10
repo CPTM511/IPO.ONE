@@ -144,16 +144,26 @@
             <svg aria-hidden="true"><use href="/icons.svg#menu"></use></svg>
             <span>More tools</span>
           </button>
+          <div class="nav-section" data-workspace-placement="advanced">
+            <a class="nav-item" id="sidebarApiReference" data-workspace-placement="advanced" href="/openapi.json" target="_blank" rel="noreferrer">
+              <svg aria-hidden="true"><use href="/icons.svg#code"></use></svg>
+              <span><strong>API reference</strong></span>
+            </a>
+          </div>
         </nav>
 
         <div class="sidebar-footer">
-          <div class="pilot-boundary"><span class="pilot-boundary-dot" aria-hidden="true"></span><strong>Public Beta · No Real Funds</strong></div>
-          <div><span>API</span><strong id="sidebarApiStatus">Connecting</strong></div>
-          <div><span>Rail</span><strong>Sandbox only</strong></div>
-          <a href="/openapi.json" target="_blank" rel="noreferrer">
-            OpenAPI contract
-            <svg aria-hidden="true"><use href="/icons.svg#external-link"></use></svg>
-          </a>
+          <details class="sidebar-environment" id="sidebarEnvironment">
+            <summary aria-label="Beta environment details"><span class="sidebar-beta-label">Beta</span><span class="sidebar-environment-info" aria-hidden="true">i</span></summary>
+            <section class="sidebar-environment-panel" aria-label="Environment details">
+              <p>This workspace runs in a test environment. Credit and repayments use simulated funds.</p>
+              <dl>
+                <dt>Session</dt><dd id="sidebarApiStatus">Connecting</dd>
+                <dt>Network access</dt><dd>Test networks only</dd>
+              </dl>
+            </section>
+          </details>
+          <p class="sidebar-funds-note">No real money is moved.</p>
         </div>
       </aside>
 
