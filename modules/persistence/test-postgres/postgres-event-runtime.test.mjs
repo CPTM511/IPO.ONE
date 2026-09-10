@@ -308,6 +308,10 @@ const TENANT_OWNED_TABLES = [
   "authentication_credentials",
   "authentication_events",
   "authentication_oidc_transactions",
+  "authentication_passkey_audit",
+  "authentication_passkey_challenges",
+  "authentication_passkey_evidence",
+  "authentication_passkeys",
   "authentication_replay_entries",
   "authentication_role_enrollments",
   "authentication_session_invalidations",
@@ -368,6 +372,7 @@ const TENANT_OWNED_TABLES = [
   "live_chain_indexer_snapshots",
   "live_chain_observations",
   "live_chain_outbox_messages",
+  "local_principal_agent_runtimes",
   "lockboxes",
   "mandate_releases",
   "mandate_reservations",
@@ -1180,12 +1185,30 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0072_public_beta_self_service_identity",
         "0073_metered_usage_evidence",
         "0074_metered_usage_runtime_privileges",
-        "0075_metered_usage_system_worker_capability"
+        "0075_metered_usage_system_worker_capability",
+        "0076_invited_wallet_role_enrollment",
+        "0077_local_ordinary_wallet_access",
+        "0078_local_principal_agent_runtime",
+        "0079_local_human_sandbox_activation",
+        "0080_local_risk_passkeys",
+        "0081_local_passkey_bounds",
+        "0082_local_special_role_enrollment",
+        "0083_local_operations_reviewer_origin",
+        "0084_verified_ordinary_wallet_expiry_recovery"
       ]);
       const firstStatus = await migrationStatus({ pool });
       assert.equal(firstStatus.every((migration) => migration.applied && migration.checksum.length === 64), true);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 75 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 84 }), [
+        "0084_verified_ordinary_wallet_expiry_recovery",
+        "0083_local_operations_reviewer_origin",
+        "0082_local_special_role_enrollment",
+        "0081_local_passkey_bounds",
+        "0080_local_risk_passkeys",
+        "0079_local_human_sandbox_activation",
+        "0078_local_principal_agent_runtime",
+        "0077_local_ordinary_wallet_access",
+        "0076_invited_wallet_role_enrollment",
         "0075_metered_usage_system_worker_capability",
         "0074_metered_usage_runtime_privileges",
         "0073_metered_usage_evidence",
@@ -1337,10 +1360,28 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0072_public_beta_self_service_identity",
         "0073_metered_usage_evidence",
         "0074_metered_usage_runtime_privileges",
-        "0075_metered_usage_system_worker_capability"
+        "0075_metered_usage_system_worker_capability",
+        "0076_invited_wallet_role_enrollment",
+        "0077_local_ordinary_wallet_access",
+        "0078_local_principal_agent_runtime",
+        "0079_local_human_sandbox_activation",
+        "0080_local_risk_passkeys",
+        "0081_local_passkey_bounds",
+        "0082_local_special_role_enrollment",
+        "0083_local_operations_reviewer_origin",
+        "0084_verified_ordinary_wallet_expiry_recovery"
       ]);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 73 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 82 }), [
+        "0084_verified_ordinary_wallet_expiry_recovery",
+        "0083_local_operations_reviewer_origin",
+        "0082_local_special_role_enrollment",
+        "0081_local_passkey_bounds",
+        "0080_local_risk_passkeys",
+        "0079_local_human_sandbox_activation",
+        "0078_local_principal_agent_runtime",
+        "0077_local_ordinary_wallet_access",
+        "0076_invited_wallet_role_enrollment",
         "0075_metered_usage_system_worker_capability",
         "0074_metered_usage_runtime_privileges",
         "0073_metered_usage_evidence",
@@ -1501,7 +1542,16 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0072_public_beta_self_service_identity",
         "0073_metered_usage_evidence",
         "0074_metered_usage_runtime_privileges",
-        "0075_metered_usage_system_worker_capability"
+        "0075_metered_usage_system_worker_capability",
+        "0076_invited_wallet_role_enrollment",
+        "0077_local_ordinary_wallet_access",
+        "0078_local_principal_agent_runtime",
+        "0079_local_human_sandbox_activation",
+        "0080_local_risk_passkeys",
+        "0081_local_passkey_bounds",
+        "0082_local_special_role_enrollment",
+        "0083_local_operations_reviewer_origin",
+        "0084_verified_ordinary_wallet_expiry_recovery"
       ]);
       assert.equal(
         (await pool.query("SELECT primary_principal_id FROM subjects WHERE id = 'subject_legacy_upgrade'"))
@@ -5180,7 +5230,7 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         (error) => error.code === "23514"
       );
       await assert.rejects(
-        () => migrateDown({ pool, steps: 18 }),
+        () => migrateDown({ pool, steps: 27 }),
         (error) => error.code === "23514"
       );
       assert.equal(
@@ -5266,7 +5316,16 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0072_public_beta_self_service_identity",
         "0073_metered_usage_evidence",
         "0074_metered_usage_runtime_privileges",
-        "0075_metered_usage_system_worker_capability"
+        "0075_metered_usage_system_worker_capability",
+        "0076_invited_wallet_role_enrollment",
+        "0077_local_ordinary_wallet_access",
+        "0078_local_principal_agent_runtime",
+        "0079_local_human_sandbox_activation",
+        "0080_local_risk_passkeys",
+        "0081_local_passkey_bounds",
+        "0082_local_special_role_enrollment",
+        "0083_local_operations_reviewer_origin",
+        "0084_verified_ordinary_wallet_expiry_recovery"
       ]);
 
       const subjectContribution = contributeTradingSubjectCollateral(

@@ -1,0 +1,418 @@
+{
+  "source": "205fe9b7ef6726e00ce107777c4d73c1041df6b4",
+  "apiMocks": false,
+  "datesChanged": false,
+  "realFunds": false,
+  "results": [
+    {
+      "name": "restructure",
+      "status": "PREPARED_AWAITING_NORMAL_MATURITY",
+      "receipt": {
+        "acceptance": {
+          "creditOfferAcceptanceId": "credit_offer_acceptance_1fd9fd089f4af79503e46155093e1ffc8def2752906a9cc158ca5a12febb87f4",
+          "acceptanceHash": "0x1fd9fd089f4af79503e46155093e1ffc8def2752906a9cc158ca5a12febb87f4",
+          "creditOfferId": "credit_offer_a871a1ccd375ec15048ac9fa747c46d0cc3f6ab8dc9465c6deaf47953ad78721",
+          "creditOfferHash": "0xa871a1ccd375ec15048ac9fa747c46d0cc3f6ab8dc9465c6deaf47953ad78721",
+          "termsHash": "0xb5a5f9fb875bc6f439e965b96b66208614046e9bc8131dd2db18cae21fadacce",
+          "creditIntentId": "credit_intent_3a5d23cf-e044-4340-9f53-ea4aa21e3946",
+          "riskDecisionId": "risk_decision_b8670fee84ee5af2bc99e98a4b1304ec6ebe68c6f753fe0a801855a18c4439c2",
+          "subjectId": "subject_70b38f50-a177-487c-96fe-5749967c87c1",
+          "principalId": "principal_404461c0-55bd-44b9-b4ae-75be274e722c",
+          "authorityType": "consent",
+          "authorityId": "consent_27211f0f-7985-4263-b30c-04ae41c53c47",
+          "acknowledgementHash": "0xf09a930a38e8dcdb349f5d2e1639f7dffd9469d449837fb98a5af977cdddc65e",
+          "acceptedAt": "2026-09-07T09:35:31.086Z",
+          "sandboxOnly": true,
+          "productionAuthority": false
+        },
+        "obligation": {
+          "obligationId": "obligation_ad6fb93d-d18a-479a-8e58-f56a328be9a9",
+          "obligationHash": "0x02291c1d056c795a8c282a1e1c398a3b427045224d7e81f86541a18a0efea8c0",
+          "subjectId": "subject_70b38f50-a177-487c-96fe-5749967c87c1",
+          "principalId": "principal_404461c0-55bd-44b9-b4ae-75be274e722c",
+          "creditIntentId": "credit_intent_3a5d23cf-e044-4340-9f53-ea4aa21e3946",
+          "riskDecisionId": "risk_decision_b8670fee84ee5af2bc99e98a4b1304ec6ebe68c6f753fe0a801855a18c4439c2",
+          "creditOfferId": "credit_offer_a871a1ccd375ec15048ac9fa747c46d0cc3f6ab8dc9465c6deaf47953ad78721",
+          "creditOfferAcceptanceId": "credit_offer_acceptance_1fd9fd089f4af79503e46155093e1ffc8def2752906a9cc158ca5a12febb87f4",
+          "authorityType": "consent",
+          "authorityId": "consent_27211f0f-7985-4263-b30c-04ae41c53c47",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "originalPrincipalMinor": "100",
+          "outstandingPrincipalMinor": "100",
+          "annualRateBps": 600,
+          "originationFeeMinor": "0",
+          "accruedInterestMinor": "0",
+          "outstandingInterestMinor": "0",
+          "accruedFeesMinor": "0",
+          "outstandingFeesMinor": "0",
+          "totalRepaidMinor": "0",
+          "repaymentFrequency": "monthly",
+          "installmentCount": 1,
+          "firstPaymentAt": "2026-09-08T09:33:43.789Z",
+          "maturityAt": "2026-09-08T09:33:43.789Z",
+          "scheduleVersion": "obligation_schedule.v1",
+          "scheduleHash": "0xf2b4af58dd5b48d375eff25c6f49a03d9754fe16b90a36adb52ef00da61b49ef",
+          "scheduleSequence": 1,
+          "installments": [
+            {
+              "installmentId": "obligation_installment_142f4df14b26f09a66d1f7f7ac4715d94fcea6eaed8dd6067a0beebe18f70ece",
+              "obligationId": "obligation_ad6fb93d-d18a-479a-8e58-f56a328be9a9",
+              "installmentNumber": 1,
+              "dueAt": "2026-09-08T09:33:43.789Z",
+              "scheduledPrincipalMinor": "100",
+              "scheduledInterestMinor": "0",
+              "scheduledFeeMinor": "0",
+              "paidPrincipalMinor": "0",
+              "paidInterestMinor": "0",
+              "paidFeeMinor": "0",
+              "status": "scheduled",
+              "scheduleVersion": "obligation_schedule.v1",
+              "scheduleSequence": 1,
+              "schemaVersion": "obligation_installment.v1"
+            }
+          ],
+          "executionStatus": "pending",
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "status": "created",
+          "servicingClassification": "current",
+          "daysPastDue": 0,
+          "oldestUnpaidInstallmentId": "obligation_installment_142f4df14b26f09a66d1f7f7ac4715d94fcea6eaed8dd6067a0beebe18f70ece",
+          "servicingEffectiveAt": "2026-09-07T09:35:31.086Z",
+          "servicingReasonCode": "obligation_created",
+          "servicingPolicyVersion": "sandbox-servicing-policy.v1",
+          "servicingOwnerCode": "sandbox_platform",
+          "writtenOffPrincipalMinor": "0",
+          "writtenOffInterestMinor": "0",
+          "writtenOffFeesMinor": "0",
+          "acceptedAt": "2026-09-07T09:35:31.086Z",
+          "createdAt": "2026-09-07T09:35:31.086Z",
+          "updatedAt": "2026-09-07T09:35:31.086Z",
+          "schemaVersion": "obligation.v2"
+        },
+        "offerStatus": "accepted",
+        "executionCreated": false,
+        "fundsAuthority": false,
+        "schemaVersion": "tenant_credit_offer_accepted.v1"
+      }
+    },
+    {
+      "name": "repurchase",
+      "status": "PREPARED_AWAITING_NORMAL_MATURITY",
+      "receipt": {
+        "acceptance": {
+          "creditOfferAcceptanceId": "credit_offer_acceptance_63a1d70cc81b2231e9e442f988f7831c35f4adbe20122c23d71f66a2e00fef44",
+          "acceptanceHash": "0x63a1d70cc81b2231e9e442f988f7831c35f4adbe20122c23d71f66a2e00fef44",
+          "creditOfferId": "credit_offer_11a76a325ad9cf88909972508c1832a101ad1200e05381a05d86abd7844897a6",
+          "creditOfferHash": "0x11a76a325ad9cf88909972508c1832a101ad1200e05381a05d86abd7844897a6",
+          "termsHash": "0x1308dcf0e59591a9fd013fd4884ba4555053cc91fa82796ca0e4e16e0cc3c636",
+          "creditIntentId": "credit_intent_6c03243e-7b31-4e71-8303-19046c714043",
+          "riskDecisionId": "risk_decision_99db8abfea3f0b3ba2b0c143e753e33f8606766d9fb6249618b25d41689cfc70",
+          "subjectId": "subject_2e5a515d-1145-4d9f-8b6d-932d56294a1a",
+          "principalId": "principal_f24c1dbc-b486-4f2c-aeb1-425ac74e9593",
+          "authorityType": "consent",
+          "authorityId": "consent_6f76eca0-aed9-443f-87af-78ba6aa115df",
+          "acknowledgementHash": "0x4032bac9c26631bb06c9a958e25ec6a64228a1e2a962a447c5354984523fc6ea",
+          "acceptedAt": "2026-09-07T09:35:34.520Z",
+          "sandboxOnly": true,
+          "productionAuthority": false
+        },
+        "obligation": {
+          "obligationId": "obligation_355d2cf4-4c17-41e5-adc1-e0ae5236a33a",
+          "obligationHash": "0x3f0d4a9c8dc988fa231bac9a8855133f39416aac36065cc2eefd6e539e9ee618",
+          "subjectId": "subject_2e5a515d-1145-4d9f-8b6d-932d56294a1a",
+          "principalId": "principal_f24c1dbc-b486-4f2c-aeb1-425ac74e9593",
+          "creditIntentId": "credit_intent_6c03243e-7b31-4e71-8303-19046c714043",
+          "riskDecisionId": "risk_decision_99db8abfea3f0b3ba2b0c143e753e33f8606766d9fb6249618b25d41689cfc70",
+          "creditOfferId": "credit_offer_11a76a325ad9cf88909972508c1832a101ad1200e05381a05d86abd7844897a6",
+          "creditOfferAcceptanceId": "credit_offer_acceptance_63a1d70cc81b2231e9e442f988f7831c35f4adbe20122c23d71f66a2e00fef44",
+          "authorityType": "consent",
+          "authorityId": "consent_6f76eca0-aed9-443f-87af-78ba6aa115df",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "originalPrincipalMinor": "100",
+          "outstandingPrincipalMinor": "100",
+          "annualRateBps": 600,
+          "originationFeeMinor": "0",
+          "accruedInterestMinor": "0",
+          "outstandingInterestMinor": "0",
+          "accruedFeesMinor": "0",
+          "outstandingFeesMinor": "0",
+          "totalRepaidMinor": "0",
+          "repaymentFrequency": "monthly",
+          "installmentCount": 1,
+          "firstPaymentAt": "2026-09-08T09:35:34.204Z",
+          "maturityAt": "2026-09-08T09:35:34.204Z",
+          "scheduleVersion": "obligation_schedule.v1",
+          "scheduleHash": "0x9214498440aa56ddeb66e1d42fd8e2581a5a511891e4e2fad50ce4bd0ce97438",
+          "scheduleSequence": 1,
+          "installments": [
+            {
+              "installmentId": "obligation_installment_9808a493cb180c1cb65d6fdd9e9b24eda7cad6ec691948637dd1a6050258a504",
+              "obligationId": "obligation_355d2cf4-4c17-41e5-adc1-e0ae5236a33a",
+              "installmentNumber": 1,
+              "dueAt": "2026-09-08T09:35:34.204Z",
+              "scheduledPrincipalMinor": "100",
+              "scheduledInterestMinor": "0",
+              "scheduledFeeMinor": "0",
+              "paidPrincipalMinor": "0",
+              "paidInterestMinor": "0",
+              "paidFeeMinor": "0",
+              "status": "scheduled",
+              "scheduleVersion": "obligation_schedule.v1",
+              "scheduleSequence": 1,
+              "schemaVersion": "obligation_installment.v1"
+            }
+          ],
+          "executionStatus": "pending",
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "status": "created",
+          "servicingClassification": "current",
+          "daysPastDue": 0,
+          "oldestUnpaidInstallmentId": "obligation_installment_9808a493cb180c1cb65d6fdd9e9b24eda7cad6ec691948637dd1a6050258a504",
+          "servicingEffectiveAt": "2026-09-07T09:35:34.520Z",
+          "servicingReasonCode": "obligation_created",
+          "servicingPolicyVersion": "sandbox-servicing-policy.v1",
+          "servicingOwnerCode": "sandbox_platform",
+          "writtenOffPrincipalMinor": "0",
+          "writtenOffInterestMinor": "0",
+          "writtenOffFeesMinor": "0",
+          "acceptedAt": "2026-09-07T09:35:34.520Z",
+          "createdAt": "2026-09-07T09:35:34.520Z",
+          "updatedAt": "2026-09-07T09:35:34.520Z",
+          "schemaVersion": "obligation.v2"
+        },
+        "offerStatus": "accepted",
+        "executionCreated": false,
+        "fundsAuthority": false,
+        "schemaVersion": "tenant_credit_offer_accepted.v1"
+      }
+    },
+    {
+      "name": "writeoff",
+      "status": "PREPARED_AWAITING_NORMAL_MATURITY",
+      "receipt": {
+        "acceptance": {
+          "creditOfferAcceptanceId": "credit_offer_acceptance_5a8a45e37d4c8be4b4b203304eae19e9f77526ef1abb1e9e7f60a14b8c591fb3",
+          "acceptanceHash": "0x5a8a45e37d4c8be4b4b203304eae19e9f77526ef1abb1e9e7f60a14b8c591fb3",
+          "creditOfferId": "credit_offer_d5294167aa4463b4aaf2955b3bea5e0a668410dc8a453fcf28ad13299f3efa95",
+          "creditOfferHash": "0xd5294167aa4463b4aaf2955b3bea5e0a668410dc8a453fcf28ad13299f3efa95",
+          "termsHash": "0x0885dc711f75459474eff91f0b28fbcf37ddc737391a3a4da767e1d309779318",
+          "creditIntentId": "credit_intent_b17191a1-fde6-46dd-8e19-96a1f66e8bf2",
+          "riskDecisionId": "risk_decision_f76b03b627a02b2b1b52b4036a9fa6c9330e0953903ce27202cfacda94ec7dc2",
+          "subjectId": "subject_d7a7ca9e-8f0b-4cc7-b599-d8828eeee395",
+          "principalId": "principal_9a28920a-c284-4f5a-b94a-87484987c3a0",
+          "authorityType": "consent",
+          "authorityId": "consent_e55a17dd-789e-48f1-84be-8b6120a70034",
+          "acknowledgementHash": "0x1a38a588363e371f480f4a2777475712c6581afe02321469871d7842b490ff0c",
+          "acceptedAt": "2026-09-07T09:35:38.173Z",
+          "sandboxOnly": true,
+          "productionAuthority": false
+        },
+        "obligation": {
+          "obligationId": "obligation_c3746224-101c-4de6-a512-54cba5c7fc51",
+          "obligationHash": "0x7c77ab4e9692fcfb020584161fda23c024e90aa0099b82b4e207b0adf822ab48",
+          "subjectId": "subject_d7a7ca9e-8f0b-4cc7-b599-d8828eeee395",
+          "principalId": "principal_9a28920a-c284-4f5a-b94a-87484987c3a0",
+          "creditIntentId": "credit_intent_b17191a1-fde6-46dd-8e19-96a1f66e8bf2",
+          "riskDecisionId": "risk_decision_f76b03b627a02b2b1b52b4036a9fa6c9330e0953903ce27202cfacda94ec7dc2",
+          "creditOfferId": "credit_offer_d5294167aa4463b4aaf2955b3bea5e0a668410dc8a453fcf28ad13299f3efa95",
+          "creditOfferAcceptanceId": "credit_offer_acceptance_5a8a45e37d4c8be4b4b203304eae19e9f77526ef1abb1e9e7f60a14b8c591fb3",
+          "authorityType": "consent",
+          "authorityId": "consent_e55a17dd-789e-48f1-84be-8b6120a70034",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "originalPrincipalMinor": "100",
+          "outstandingPrincipalMinor": "100",
+          "annualRateBps": 600,
+          "originationFeeMinor": "0",
+          "accruedInterestMinor": "0",
+          "outstandingInterestMinor": "0",
+          "accruedFeesMinor": "0",
+          "outstandingFeesMinor": "0",
+          "totalRepaidMinor": "0",
+          "repaymentFrequency": "monthly",
+          "installmentCount": 1,
+          "firstPaymentAt": "2026-09-08T09:35:37.822Z",
+          "maturityAt": "2026-09-08T09:35:37.822Z",
+          "scheduleVersion": "obligation_schedule.v1",
+          "scheduleHash": "0x6f8b8bfc3147cdcfae94eb283d495adf907cea138fc46669183fb02998d976cf",
+          "scheduleSequence": 1,
+          "installments": [
+            {
+              "installmentId": "obligation_installment_5bac87bbe8eb381aef1dfdfbec5e5c0a444e17435a89d96f18e748bc206cca68",
+              "obligationId": "obligation_c3746224-101c-4de6-a512-54cba5c7fc51",
+              "installmentNumber": 1,
+              "dueAt": "2026-09-08T09:35:37.822Z",
+              "scheduledPrincipalMinor": "100",
+              "scheduledInterestMinor": "0",
+              "scheduledFeeMinor": "0",
+              "paidPrincipalMinor": "0",
+              "paidInterestMinor": "0",
+              "paidFeeMinor": "0",
+              "status": "scheduled",
+              "scheduleVersion": "obligation_schedule.v1",
+              "scheduleSequence": 1,
+              "schemaVersion": "obligation_installment.v1"
+            }
+          ],
+          "executionStatus": "pending",
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "status": "created",
+          "servicingClassification": "current",
+          "daysPastDue": 0,
+          "oldestUnpaidInstallmentId": "obligation_installment_5bac87bbe8eb381aef1dfdfbec5e5c0a444e17435a89d96f18e748bc206cca68",
+          "servicingEffectiveAt": "2026-09-07T09:35:38.173Z",
+          "servicingReasonCode": "obligation_created",
+          "servicingPolicyVersion": "sandbox-servicing-policy.v1",
+          "servicingOwnerCode": "sandbox_platform",
+          "writtenOffPrincipalMinor": "0",
+          "writtenOffInterestMinor": "0",
+          "writtenOffFeesMinor": "0",
+          "acceptedAt": "2026-09-07T09:35:38.173Z",
+          "createdAt": "2026-09-07T09:35:38.173Z",
+          "updatedAt": "2026-09-07T09:35:38.173Z",
+          "schemaVersion": "obligation.v2"
+        },
+        "offerStatus": "accepted",
+        "executionCreated": false,
+        "fundsAuthority": false,
+        "schemaVersion": "tenant_credit_offer_accepted.v1"
+      }
+    }
+  ],
+  "actions": [
+    {
+      "label": "Connect & sign in with wallet\nHuman Borrower · one-use SIWE signature · no transaction or fee",
+      "at": "2026-09-07T09:35:28.737Z"
+    },
+    {
+      "label": "Review Offer",
+      "at": "2026-09-07T09:35:30.696Z"
+    },
+    {
+      "label": "Reconnect wallet to continue",
+      "at": "2026-09-07T09:35:30.743Z"
+    },
+    {
+      "label": "Reconnect session wallet\nConnect the selected wallet for an exact sandbox confirmation",
+      "at": "2026-09-07T09:35:30.833Z"
+    },
+    {
+      "label": "",
+      "at": "2026-09-07T09:35:30.862Z"
+    },
+    {
+      "label": "Confirm & create sandbox Obligation",
+      "at": "2026-09-07T09:35:30.892Z"
+    },
+    {
+      "label": "Confirm in wallet",
+      "at": "2026-09-07T09:35:31.028Z"
+    },
+    {
+      "label": "Confirm sandbox execution",
+      "at": "2026-09-07T09:35:31.296Z"
+    },
+    {
+      "label": "Confirm in wallet",
+      "at": "2026-09-07T09:35:31.326Z"
+    },
+    {
+      "label": "Connect & sign in with wallet\nHuman Borrower · one-use SIWE signature · no transaction or fee",
+      "at": "2026-09-07T09:35:32.181Z"
+    },
+    {
+      "label": "See how it works",
+      "at": "2026-09-07T09:35:33.591Z"
+    },
+    {
+      "label": "Create sandbox profile",
+      "at": "2026-09-07T09:35:33.605Z"
+    },
+    {
+      "label": "Create scoped Consent",
+      "at": "2026-09-07T09:35:33.821Z"
+    },
+    {
+      "label": "Request & evaluate credit",
+      "at": "2026-09-07T09:35:33.943Z"
+    },
+    {
+      "label": "Reconnect wallet to continue",
+      "at": "2026-09-07T09:35:34.170Z"
+    },
+    {
+      "label": "Reconnect session wallet\nConnect the selected wallet for an exact sandbox confirmation",
+      "at": "2026-09-07T09:35:34.243Z"
+    },
+    {
+      "label": "",
+      "at": "2026-09-07T09:35:34.266Z"
+    },
+    {
+      "label": "Confirm & create sandbox Obligation",
+      "at": "2026-09-07T09:35:34.292Z"
+    },
+    {
+      "label": "Confirm in wallet",
+      "at": "2026-09-07T09:35:34.322Z"
+    },
+    {
+      "label": "Confirm sandbox execution",
+      "at": "2026-09-07T09:35:34.601Z"
+    },
+    {
+      "label": "Confirm in wallet",
+      "at": "2026-09-07T09:35:34.626Z"
+    },
+    {
+      "label": "Connect & sign in with wallet\nHuman Borrower · one-use SIWE signature · no transaction or fee",
+      "at": "2026-09-07T09:35:35.455Z"
+    },
+    {
+      "label": "See how it works",
+      "at": "2026-09-07T09:35:36.878Z"
+    },
+    {
+      "label": "Create sandbox profile",
+      "at": "2026-09-07T09:35:36.909Z"
+    },
+    {
+      "label": "Create scoped Consent",
+      "at": "2026-09-07T09:35:37.122Z"
+    },
+    {
+      "label": "Request & evaluate credit",
+      "at": "2026-09-07T09:35:37.350Z"
+    },
+    {
+      "label": "Reconnect wallet to continue",
+      "at": "2026-09-07T09:35:37.679Z"
+    },
+    {
+      "label": "Reconnect session wallet\nConnect the selected wallet for an exact sandbox confirmation",
+      "at": "2026-09-07T09:35:37.757Z"
+    },
+    {
+      "label": "",
+      "at": "2026-09-07T09:35:37.780Z"
+    },
+    {
+      "label": "Confirm & create sandbox Obligation",
+      "at": "2026-09-07T09:35:37.807Z"
+    },
+    {
+      "label": "Confirm in wallet",
+      "at": "2026-09-07T09:35:37.843Z"
+    },
+    {
+      "label": "Confirm sandbox execution",
+      "at": "2026-09-07T09:35:38.234Z"
+    },
+    {
+      "label": "Confirm in wallet",
+      "at": "2026-09-07T09:35:38.262Z"
+    }
+  ]
+}

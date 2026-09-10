@@ -391,6 +391,19 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     idempotencyRequirement: IdempotencyRequirement.PROHIBITED
   }),
   tenantOperation({
+    operationId: "pilotReadApprovalInbox", action: "approval.inbox.read", resourceType: "approval_proposal",
+    allowedActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR, ActorType.AUDITOR],
+    requiredCapability: PilotCapability.APPROVAL_READ, ownershipRule: OwnershipRule.NONE,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED,
+    requiresRecentMfaActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR, ActorType.AUDITOR]
+  }),
+  tenantOperation({
+    operationId: "pilotReadRiskAgentDirectory", action: "risk.agent_directory.read", resourceType: "risk_portfolio",
+    allowedActorTypes: [ActorType.RISK_OPERATOR], requiredCapability: PilotCapability.RISK_READ_TENANT,
+    ownershipRule: OwnershipRule.TENANT, idempotencyRequirement: IdempotencyRequirement.PROHIBITED,
+    requiresRecentMfaActorTypes: [ActorType.RISK_OPERATOR]
+  }),
+  tenantOperation({
     operationId: "pilotProposeApproval",
     action: "approval.propose",
     resourceType: "approval_proposal",
@@ -474,6 +487,16 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     requiredCapability: PilotCapability.HUMAN_SUBJECT_CREATE_SELF,
     ownershipRule: OwnershipRule.NONE,
     idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
+    operationId: "pilotActivateSandboxHumanSubject",
+    action: "subject.activate.sandbox.self",
+    resourceType: "subject",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.SUBJECT_ACTIVATE_SANDBOX_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["subject_state", "principal_state"]
   }),
   tenantOperation({
     operationId: "pilotReadHumanSelf",

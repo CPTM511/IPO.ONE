@@ -1,8 +1,11 @@
+import { createLocalReviewWorkspace, localReviewOperationAvailable } from "./local-review-workspace.js";
+import { arrangeWorkspaceNavigation, updateWorkspaceChrome, renderHumanTaskSummary, renderAgentTaskHeading, renderAgentTaskControls, renderPrecisionAuthority } from "./workspace-experience.js";
 import {
-  createApplicationReadyAgentHandoffManifest,
-  createAwaitingAgentHandoffManifest,
+  createApplicationReadyAgentHandoffManifest, createAwaitingAgentHandoffManifest,
   createReadyAgentHandoffManifest
 } from "./agent-handoff-manifest.js";
+import "./web-009-public-review.js";
+import "./web-012b-presentation.js";
 import { createAgentPilotCapabilityManifest } from "./agent-pilot-capability-manifest.js";
 import { createAgentConsolePresentation } from "./agent-console-presentation.js";
 import {
@@ -110,6 +113,7 @@ let currentView = "overview";
 let interactionMode = "human";
 let humanNewApplicationMode = false;
 let authenticatedDataEpoch = 0;
+let localReviewWorkspace;
 let tenantPilotProbeOwner = null;
 let tenantPilotProbePromise = null;
 let tenantPilotProbeSerial = 0;
@@ -131,6 +135,7 @@ let serverCatalogOperations = new Set();
 let serverCatalogSnapshot = null;
 let explicitWalletReleaseInProgress = false;
 const tenantPilot = {
+  humanSelf: null,
   checked: false,
   connected: false,
   busy: false,
@@ -559,7 +564,8 @@ const accessState = {
   providers: new Set(),
   walletAuthenticationEnabled: false,
   walletWorkspaceRoles: new Set(),
-  selectedWorkspaceRole: "human_borrower",
+  selectedWorkspaceRole: document.querySelector('meta[name="ipo-one-workspace-name"]')?.content === "controller" ||
+    window.location.hash === "#agent-console" ? "principal_controller" : "human_borrower",
   sessionActive: false,
   sessionAuthenticationMethod: null,
   localSessionSignedOut: false,
@@ -838,6 +844,13 @@ function renderOidcProviders(providers) {
   );
 }
 
+let localSandboxAgentRuntime = null;
+
+function walletWorkspaceLabel(role) {
+  return ({ human_borrower: "Human Borrower", principal_controller: "Principal Controller",
+    capital_partner_operator: "Capital Partner", risk_operator: "Risk Operations", operations_operator: "Servicing Operations", auditor: "Auditor" })[role] ?? "Workspace";
+}
+
 function renderAccess() {
   const selected = SUPPORTED_WALLET_CHAINS[accessState.selectedChainId];
   const connected = SUPPORTED_WALLET_CHAINS[accessState.connectedChainId];
@@ -875,7 +888,7 @@ function renderAccess() {
     : "Connect & sign in with wallet";
   el("walletSignInBtn").querySelector("small").textContent = walletSession
     ? "Connect the selected wallet for an exact sandbox confirmation"
-    : `${accessState.selectedWorkspaceRole === "human_borrower" ? "Human Borrower" : "Principal Controller"} · one-use SIWE signature · no transaction or fee`;
+    : `${walletWorkspaceLabel(accessState.selectedWorkspaceRole)} · one-use SIWE signature · no transaction or fee`;
   el("accessWorkspacePicker").hidden =
     authenticated ||
     !accessState.walletAuthenticationEnabled ||
@@ -932,10 +945,8 @@ function renderAccess() {
   el("accessBtn").setAttribute("aria-label", accessButtonLabel);
   el("accessBtn").title = accessButtonLabel;
   el("accessBtn").classList.toggle("authenticated", authenticated);
-  document.body.classList.toggle(
-    "private-session-closed",
-    !privateWorkspaceVisible
-  );
+  document.body.classList.toggle("private-session-closed", !privateWorkspaceVisible);
+  document.body.dataset.web009WorkspaceRole = tenantPilot.workspaceKind ?? "";
   document.body.classList.toggle("authenticated-session-present", authenticated);
   document.body.classList.toggle("workspace-session-active", privateWorkspaceVisible);
   const privacyShield = el("signedOutPrivacyShield");
@@ -943,6 +954,8 @@ function renderAccess() {
   if (!authenticated) {
     el("viewEyebrow").textContent = "IPO.ONE";
     el("viewTitle").textContent = "Verifiable credit for Humans and Agents";
+  } else {
+    updateWorkspaceChrome(currentWorkspaceName(), currentView);
   }
   el("signedOutPrivacyTitle").textContent =
     "Verifiable Credit Infrastructure for Humans and Agents";
@@ -959,13 +972,15 @@ function renderAccess() {
   el("accessSessionPanel").hidden = !authenticated && !localSessionEnded;
   el("accessMethodPanel").hidden =
     localSessionEnded || (authenticated && !walletSession);
-  el("accessMethodStep").textContent = walletSession ? "Session" : "2";
+  el("accessMethodStep").textContent = walletSession ? "Session" : el("accessWorkspacePicker").hidden ? "1" : "2";
   el("signInMethodTitle").textContent = walletSession
     ? "Reconnect the session wallet"
     : "Choose how to sign in";
   el("signInMethodCopy").textContent = walletSession
     ? "Select and connect the wallet again before an exact sandbox confirmation. The server session remains authoritative."
-    : "The signed session receives only the workspace role selected above.";
+    : el("accessWorkspacePicker").hidden
+      ? "Available sign-in methods are checked for this environment and browser."
+      : "Sign in to the workspace selected above. Your existing permissions apply.";
   el("accessDialogGrid").classList.toggle(
     "session-active",
     authenticated || localSessionEnded
@@ -1126,7 +1141,7 @@ function handleAccessKeys(event) {
   if (event.key !== "Tab") return;
   const dialog = el("accessLayer").querySelector(".access-dialog");
   const focusable = [
-    ...dialog.querySelectorAll("button:not(:disabled), a[href], input:not(:disabled)")
+    ...dialog.querySelectorAll("button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), summary, [tabindex='0']")
   ].filter((control) =>
     !control.hidden &&
     control.getAttribute("aria-hidden") !== "true" &&
@@ -1188,6 +1203,7 @@ async function probeAccessOptions() {
   try {
     const options = await authJson("/auth/v1/options");
     const authorityAvailable = walletAuthorityLifecycle.getSnapshot().status === "available";
+    riskPasskeyState.enabled = options?.riskPasskey === true;
     accessState.authenticationProfile =
       typeof options?.profile === "string" ? options.profile : null;
     accessState.localSessionSignedOut = false;
@@ -1197,7 +1213,7 @@ async function probeAccessOptions() {
     accessState.walletWorkspaceRoles = new Set(
       Array.isArray(options?.walletWorkspaceRoles)
         ? options.walletWorkspaceRoles.filter((role) =>
-            new Set(["human_borrower", "principal_controller"]).has(role)
+            new Set(["human_borrower", "principal_controller", "capital_partner_operator", "risk_operator", "operations_operator", "auditor"]).has(role)
           )
         : []
     );
@@ -1223,6 +1239,7 @@ async function probeAccessOptions() {
       authorityAvailable &&
       (options?.sessionActive === true || tenantPilot.connected);
     accessState.pendingWorkspaceBootstrap = false;
+    await refreshRiskPasskeyStatus();
     if (authorityAvailable) {
       accessState.helper = accessState.sessionActive
         ? "Secure session active. You can connect either approved test network."
@@ -1418,9 +1435,11 @@ async function connectApprovedNetwork({ authenticate = false } = {}) {
       accessState.sessionAuthenticationMethod =
         authentication?.authenticationMethod === "siwe" ? "siwe" : null;
       accessState.pendingWorkspaceBootstrap = true;
-      accessState.helper = "Wallet sign-in complete. Your internal roles and Mandates remain server-controlled.";
+      accessState.helper = "Signed in. Opening your workspace…";
       renderAccess();
-      el("continueAuthenticatedSessionBtn").focus();
+      // The server has verified the signature and issued the selected-role
+      // session. Bootstrap from that session immediately; no second click.
+      window.location.reload();
     }
   } catch (error) {
     accessState.helper = error?.code === 4001
@@ -2032,6 +2051,8 @@ function localPilotAgentAccount() {
   return /^0x[a-fA-F0-9]{40}$/.test(account) ? account : undefined;
 }
 
+function isReviewWorkspace() { return ["risk", "operations", "auditor", "riskReviewer", "operationsReviewer"].includes(currentWorkspaceName()); }
+
 function currentWorkspaceName() {
   const configuredWorkspaceName = document.querySelector(
     'meta[name="ipo-one-workspace-name"]'
@@ -2073,10 +2094,11 @@ function applyWorkspaceSurfaceAccess() {
       delete section.dataset.workspacePlacement;
     }
   }
-  el("sidebarMoreBtn").hidden = access.advancedViews.size === 0;
+  el("sidebarMoreBtn").hidden = access.advancedViews.size === 0 && !el("sidebarApiReference");
   for (const item of document.querySelectorAll("[data-role-entry]")) {
     item.hidden = item.dataset.roleEntry !== workspaceName;
   }
+  arrangeWorkspaceNavigation(workspaceName, access);
   return access;
 }
 
@@ -2169,7 +2191,8 @@ async function tenantApi(operationId, {
   correlationId = tenantRequestToken("web_tenant_correlation"),
   requestId = tenantRequestToken("web_tenant_request"),
   idempotencyKey,
-  includeTransportMeta = false
+  includeTransportMeta = false,
+  approvalArtifact
 } = {}) {
   const requestDataEpoch = authenticatedDataEpoch;
   walletAuthorityLifecycle.assertProtectedAvailable();
@@ -2182,6 +2205,7 @@ async function tenantApi(operationId, {
     correlationId,
     schemaVersion: "tenant_protocol_request.v1"
   };
+  if (approvalArtifact) protocolRequest.approvalArtifact = approvalArtifact;
   if (resource) protocolRequest.resource = resource;
   if (purpose) protocolRequest.purpose = purpose;
   if (reasonCode) protocolRequest.reasonCode = reasonCode;
@@ -2622,6 +2646,7 @@ function purgeAuthenticatedBrowserState({
   reason = "Private browser state was cleared."
 } = {}) {
   authenticatedDataEpoch += 1;
+  localReviewWorkspace?.clear();
   invalidateTenantPilotProbe();
   invalidateRiskRequestOwners();
   humanNewApplicationMode = false;
@@ -2643,6 +2668,7 @@ function purgeAuthenticatedBrowserState({
   for (const key of [HUMAN_SUBJECT_STORAGE_KEY, HUMAN_CONSENT_STORAGE_KEY]) {
     forgetOpaqueId(key);
   }
+  localSandboxAgentRuntime = null;
   const localAgentAccount = document.querySelector(
     'meta[name="ipo-one-local-agent-account"]'
   );
@@ -3223,7 +3249,8 @@ function renderAgentOnlineWorkflow(presentation) {
       "application",
       "principal_activation",
       "runtime_accept",
-      "active_recovery"
+      "active_recovery",
+      ...(localBrowserRun ? ["runtime_execute", "runtime_repay", "runtime_evidence"] : [])
     ].includes(stage);
   button.toggleAttribute("aria-busy", agentOnlinePilot.busy);
   button.textContent = agentOnlinePilot.busy
@@ -3238,13 +3265,13 @@ function renderAgentOnlineWorkflow(presentation) {
         runtime_accept: localBrowserRun
           ? "Complete sandbox Agent lifecycle"
           : "Check for Agent Obligation",
-        runtime_execute: "Agent Obligation created",
-        runtime_repay: "Approved use executed",
-        runtime_evidence: "Repayment posted",
+        runtime_execute: localBrowserRun ? "Resume sandbox Agent lifecycle" : "Agent Obligation created",
+        runtime_repay: localBrowserRun ? "Resume sandbox Agent lifecycle" : "Approved use executed",
+        runtime_evidence: localBrowserRun ? "Verify Agent Evidence" : "Repayment posted",
         runtime_complete: "Agent lifecycle complete",
         active_recovery: "Check Agent progress"
       }[stage];
-  const localLifecycleComplete = localBrowserRun && Boolean(runtimeResult);
+  const localLifecycleComplete = localBrowserRun && (Boolean(runtimeResult) || stage === "runtime_complete");
   button.hidden = localLifecycleComplete;
   executeButton.hidden = localBrowserRun;
   repayButton.hidden = localBrowserRun;
@@ -3301,6 +3328,7 @@ function renderAgentOnlineWorkflow(presentation) {
       ? agentOnlinePilot.helper
       : defaultHelper;
   el("agentOnlineHelper").classList.toggle("error", agentOnlinePilot.error);
+  renderAgentTaskControls(stage);
 }
 
 function agentConsoleToolRow(tool) {
@@ -3761,6 +3789,10 @@ async function runOnlineReferenceAgent() {
   try {
     if (localBrowserRun && mandate.status === "draft") {
       await runLocalAgentApplication(mandate);
+    } else if (localBrowserRun && currentAgentOnlineObligation(mandate.mandateId)?.status === "fully_repaid") {
+      // A refresh must keep a visible read-only path to current Evidence. Never
+      // replay an economic goal just to restore a completed Agent lifecycle.
+      await checkAgentRuntimeProgress(mandate);
     } else if (localBrowserRun) {
       await runLocalAgentLifecycle(mandate);
     } else if (mandate.status === "draft") {
@@ -4018,6 +4050,7 @@ function renderAgentIntegrationGuide() {
   el("agentRuntimeIdentity").textContent = guide.identity;
   el("agentRuntimeAuthority").textContent = guide.authority;
   el("agentWorkspaceHeroCopy").textContent = guide.copy;
+  renderAgentTaskHeading(guide.title);
   el("agentWorkspaceIdentity").textContent = guide.identity;
   el("agentWorkspaceAuthority").textContent = guide.authority;
   el("agentProtocolDisclosureStatus").textContent = guide.protocol;
@@ -4247,6 +4280,7 @@ function renderAgentAuthorityPilot() {
     exactResourceId(subjectId) && agentAuthorityPilot.subject?.subjectId === subjectId
   );
   const subjectPending = agentAuthorityPilot.subject?.subjectId === subjectId && agentAuthorityPilot.subject.status === "pending";
+  const subjectSuspended = subjectLoaded && agentAuthorityPilot.subject.status === "suspended";
   const accountBinding = agentAuthorityPilot.accountBinding?.subjectId === subjectId
     ? agentAuthorityPilot.accountBinding.accountBinding
     : null;
@@ -4256,7 +4290,7 @@ function renderAgentAuthorityPilot() {
     ? agentAuthorityPilot.accountChallenge
     : null;
   const challengeExpired = Boolean(challenge && new Date(challenge.expiresAt).getTime() <= Date.now());
-  const challengeOpen = Boolean(challenge && !challengeExpired && !accountBound);
+  const challengeOpen = Boolean(challenge && !challengeExpired && !accountBound && subjectPending);
   const exactDraftLoaded = mandate?.mandateId === mandateId && mandate.status === "draft";
   const exactContinuation = controlledAgentContinuationForMandate(
     tenantPilot.workspaceResume,
@@ -4320,6 +4354,19 @@ function renderAgentAuthorityPilot() {
   }
   el("openSelectedAgentWorkspaceBtn").disabled =
     privateBusy || workspaceOptions.length < 2 || !workspaceChoice.value;
+  const localSetupAvailable = accessState.authenticationProfile === "local_no_funds" && principalWorkspace && localSandboxAgentRuntime?.available === true;
+  el("localSandboxAgentSetup").hidden = !localSetupAvailable;
+  el("createLocalSandboxAgentBtn").hidden = !localSetupAvailable || localSandboxAgentRuntime.status !== "not_created" || exactAgentSelected;
+  el("createLocalSandboxAgentBtn").disabled = privateBusy;
+  el("revokeLocalSandboxAgentBtn").hidden = !localSetupAvailable || localSandboxAgentRuntime.status !== "active";
+  el("revokeLocalSandboxAgentBtn").disabled = privateBusy;
+  el("localSandboxAgentStatus").textContent = localSandboxAgentRuntime?.status === "revoked"
+    ? "Runtime credential revoked. Existing records remain available; this Agent cannot start further work."
+    : subjectSuspended
+      ? "Agent suspended by a protective control. New account proof, authority and execution are blocked. Existing records and credential revocation remain available."
+    : localSandboxAgentRuntime?.status === "active"
+      ? "Your dedicated local Agent runtime is registered. Current Subject state, account proof and an active Mandate control what it can do."
+      : "Create your own sandbox Agent. Its credential stays encrypted on this local server. No credit or spending is authorized by setup.";
   el("agentAuthoritySelectedWorkflow").hidden = !exactAgentSelected;
   el("agentAuthorityReviewPanel").hidden = !exactAgentSelected || !mandate;
   el("agentSubjectCreationControls").hidden = Boolean(subjectId);
@@ -4327,10 +4374,10 @@ function renderAgentAuthorityPilot() {
   el("agentMandateStage").hidden = !subjectLoaded || !accountBound || Boolean(mandateId);
   el("agentApplicationStageSection").hidden = !exactDraftLoaded || !accountBound;
   el("agentActivationStage").hidden = !continuationReady || mandate?.status === "active";
-  el("agentRuntimeStage").hidden = mandate?.status !== "active";
+  el("agentRuntimeStage").hidden = mandate?.status !== "active" || !subjectKnownActive;
   el("createPrivateAgentSubjectBtn").hidden = !exactAgentSelected || Boolean(subjectId);
   el("createPrivateAgentSubjectBtn").disabled = privateBusy;
-  el("createAccountChallengeBtn").disabled = privateBusy || !subjectLoaded || !accountProofInputReady || subjectKnownActive || accountBound || challengeOpen;
+  el("createAccountChallengeBtn").disabled = privateBusy || !subjectPending || !accountProofInputReady || subjectKnownActive || accountBound || challengeOpen;
   el("agentAccountAddress").setAttribute(
     "aria-invalid",
     subjectId && !accountProofInputReady ? "true" : "false"
@@ -4347,7 +4394,7 @@ function renderAgentAuthorityPilot() {
   el("downloadAccountChallengeBtn").disabled = privateBusy || !challengeOpen;
   el("refreshAccountBindingBtn").disabled = privateBusy || !subjectId;
   el("createDraftMandateBtn").hidden = !subjectLoaded || Boolean(mandateId);
-  el("createDraftMandateBtn").disabled = privateBusy;
+  el("createDraftMandateBtn").disabled = privateBusy || !accountBound;
   const applicationReady = exactDraftLoaded && accountBound;
   el("openAgentApplicationHandoffBtn").disabled = privateBusy || !applicationReady;
   el("openAgentApplicationHandoffBtn").textContent =
@@ -4431,6 +4478,8 @@ function renderAgentAuthorityPilot() {
       : "Waiting for signing request";
   el("agentAccountActivationStatus").textContent = accountBound
     ? "Subject active"
+    : subjectSuspended
+      ? "Subject suspended"
     : subjectPending
       ? "Subject pending"
       : "Assigned Subject unavailable";
@@ -4439,6 +4488,8 @@ function renderAgentAuthorityPilot() {
     : "Create a signing request to view the closed EIP-712 payload.";
   el("agentAccountProofNextStep").textContent = accountBound
     ? "Account proof verified. Continue to Draft bounded sandbox authority."
+    : subjectSuspended
+      ? "Protective suspension is active. Further account proof and authorization require reviewed recovery; refreshing cannot remove this control."
     : challengeExpired
       ? "This one-use request expired. Create and download a new signing request."
       : challenge
@@ -4464,6 +4515,23 @@ function renderAgentAuthorityPilot() {
     ? new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(mandate.expiresAt))
     : "—";
   el("agentAuthorityEvidenceHash").textContent = agentAuthorityPilot.activationEvidenceHash ?? "—";
+
+  renderPrecisionAuthority({
+    name: agentAuthorityPilot.subject?.displayName || workspaceOptions.find(option =>
+      option.actorId === agentAuthorityPilot.workspaceSelection?.actorId)?.label || (subjectId ? "Your Agent" : "Agent setup"),
+    hasMandate: Boolean(mandate), active: mandate?.status === "active",
+    accountBound, continuationReady, status: mandate ? titleize(mandate.status) : "Not prepared",
+    aggregate: mandate ? usdMinorToMoney(mandate.aggregateLimitMinor) : "Not set",
+    perAction: mandate ? usdMinorToMoney(mandate.perActionLimitMinor) : "Not set",
+    purpose: mandate?.allowedCategories?.map(titleize).join(", ") || "Not specified in this Mandate",
+    provider: mandate?.allowedProviderIds?.length
+      ? mandate.allowedProviderIds.length === 1 && mandate.allowedProviderIds[0] === "provider_gateway_compute"
+        ? "Gateway Compute" : `${mandate.allowedProviderIds.length} providers in Mandate scope`
+      : "Not specified in this Mandate",
+    expiry: mandate?.expiresAt ? new Intl.DateTimeFormat("en-US", {
+      dateStyle: "medium", timeStyle: "short", timeZone: "UTC"
+    }).format(new Date(mandate.expiresAt)) + " UTC" : "Not set"
+  });
 
   for (const id of [
     "agentAuthorityPrincipalId",
@@ -4526,16 +4594,22 @@ function humanGuidePresentation() {
   }
 
   if (humanNewApplicationMode && obligation) {
+    const readyToReview = Boolean(offer);
     return {
-      title: "Create another sandbox request",
-      copy: "Your current position is preserved. Choose a new amount and schedule to receive a separate explainable Offer.",
-      status: "New request",
-      action: "focus-request",
-      actionLabel: "Choose request terms",
+      title: !consentReady ? "Approve Consent for your next request"
+        : readyToReview ? "Review your new Offer" : "Create another sandbox request",
+      copy: !consentReady
+        ? "Your current credit plan is preserved. Create fresh, purpose-limited Consent before requesting another Offer."
+        : readyToReview
+          ? "Your current plan is preserved. Review the new amount, rate, schedule and decision before accepting a separate Obligation."
+          : "Your current position is preserved. Choose a new amount and schedule to receive a separate explainable Offer.",
+      status: readyToReview ? "New Offer ready" : "New request",
+      action: !consentReady ? "create-consent" : readyToReview ? "review-offer" : "focus-request",
+      actionLabel: !consentReady ? "Create scoped Consent" : readyToReview ? "Review Offer" : "Choose request terms",
       secondaryAction: "return-current",
       secondaryLabel: "Return to current credit",
-      checkpoints,
-      currentIndex: Math.min(currentIndex < 0 ? 4 : currentIndex, 1),
+      checkpoints: [Boolean(consentReady), Boolean(tenantPilot.intent || offer), false, false, false],
+      currentIndex: !consentReady ? 0 : readyToReview ? 2 : 1,
       journey: "Current position preserved"
     };
   }
@@ -4612,6 +4686,21 @@ function humanGuidePresentation() {
       checkpoints,
       currentIndex: 3,
       journey: "Obligation ready to activate"
+    };
+  }
+
+  if (obligation?.status === "written_off") {
+    return {
+      title: "Review the recorded write-off",
+      copy: "Operations and Risk recorded a synthetic loss disposition. The outstanding balance remains in the history; this is not repayment. Open Evidence to review the authorized action.",
+      status: "Written off",
+      action: "verify-evidence",
+      actionLabel: "Review Evidence",
+      secondaryAction: "start-new",
+      secondaryLabel: "Start another request",
+      checkpoints,
+      currentIndex: 4,
+      journey: "Written off · not repaid"
     };
   }
 
@@ -4704,6 +4793,16 @@ function renderHumanGuide() {
   el("humanCreditForm").hidden = !applicationOpen;
   el("humanOfferConsole").hidden = !applicationOpen;
   el("humanApplication").classList.toggle("position-mode", Boolean(obligation && !humanNewApplicationMode));
+  const nextInstallment = privateNextInstallment(obligation);
+  renderHumanTaskSummary({
+    connected: tenantPilot.connected && hasHumanBorrowerWorkspace(),
+    hasObligation: Boolean(obligation),
+    outstanding: obligation ? usdMinorToMoney(obligation.outstandingPrincipalMinor) : "—",
+    repaid: obligation ? usdMinorToMoney(obligation.totalRepaidMinor) : "—",
+    payment: nextInstallment ? usdMinorToMoney(privateInstallmentAmount(nextInstallment)) : "—",
+    due: nextInstallment ? privateDate(nextInstallment.dueAt) : "No scheduled payment",
+    status: guide.journey
+  });
   el("humanApplicationTitle").textContent = obligation && !humanNewApplicationMode
     ? "Your current sandbox credit"
     : humanNewApplicationMode
@@ -4742,6 +4841,12 @@ function runHumanGuideAction(action) {
   }
   if (action === "return-current") {
     humanNewApplicationMode = false;
+    // Recover the current plan's own authority reference, not the cleared
+    // draft request. The server reauthorizes any later protected operation.
+    const obligation = tenantPilot.obligation;
+    if (obligation?.authorityType === "consent" && exactResourceId(obligation.authorityId)) {
+      el("humanConsentId").value = obligation.authorityId;
+    }
     renderTenantPilot();
     focusJumpTarget(el("humanGuide"));
     return;
@@ -4749,6 +4854,7 @@ function runHumanGuideAction(action) {
   if (action === "toggle-details") {
     const details = el("humanGuideDetails");
     details.open = !details.open;
+    details.closest(".workspace-assurance")?.setAttribute("open", "");
     details.querySelector("summary")?.focus();
   }
 }
@@ -5428,6 +5534,8 @@ function renderServicingCase({ humanMode, obligation, nextInstallment }) {
     ? `Pay ${usdMinorToMoney(presentation.pastDueMinor)} across every past-due component; cure is confirmed only by the returned Obligation.`
     : presentation.classification === "cured"
       ? "The exact returned Obligation confirms cure. Future scheduled amounts remain repayable through the same waterfall."
+      : presentation.lifecycleStatus === "written_off"
+        ? "This synthetic Obligation is written off, not repaid. Repayment is unavailable for this terminal state; review its retained balance and Evidence."
       : presentation.repaymentAvailable
         ? "Early partial or full repayment is available now; no due-date wait or prepayment penalty applies. Allocation follows fee, interest, then principal."
         : "This Obligation is fully repaid. No balance remains to repay.";
@@ -5453,8 +5561,8 @@ function renderServicingCase({ humanMode, obligation, nextInstallment }) {
     : repayment
       ? `Applied ${usdMinorToMoney(repayment.appliedMinor)} through the deterministic waterfall.`
       : "Fee → interest → principal. Cure is confirmed only by the returned Obligation.";
-  amountInput.disabled = !humanMode || fullyRepaid;
-  sourceInput.disabled = !humanMode || fullyRepaid;
+  amountInput.disabled = !humanMode || !presentation.repaymentAvailable;
+  sourceInput.disabled = !humanMode || !presentation.repaymentAvailable;
   actionButton.disabled = !humanMode || tenantPilot.busy || !tenantPilot.connected ||
     !presentation.repaymentAvailable || !validServicingRepaymentInput();
   actionButton.lastChild.textContent = !humanMode
@@ -6239,6 +6347,7 @@ function renderPrivateProductSurfaces() {
   }
 
   syncPrivateViewMeta();
+  updateWorkspaceChrome(currentWorkspaceName(), currentView);
   const humanMode = interactionMode === "human";
   const obligation = tenantPilot.obligation;
   const offer = tenantPilot.offer;
@@ -6416,10 +6525,17 @@ function renderPrivateProductSurfaces() {
   const fullyRepaidServicingCase = Boolean(
     servicingCase && asBigInt(servicingCase.outstandingMinor) === 0n
   );
+  const writtenOffServicingCase = servicingCase?.lifecycleStatus === "written_off";
+  if (humanMode && writtenOffServicingCase) {
+    el("privatePaymentsTitle").textContent = "Review the recorded write-off.";
+    el("privatePaymentsCopy").textContent = "The original schedule, outstanding balance and authorized disposition remain available. A write-off is not repayment.";
+  }
   setPrivateAction(
     el("privatePaymentsPrimaryBtn"),
     humanMode
-      ? fullyRepaidServicingCase
+      ? writtenOffServicingCase
+        ? "human-evidence"
+        : fullyRepaidServicingCase
         ? "new-human-credit"
         : servicingCase
           ? "servicing-cure"
@@ -6430,7 +6546,9 @@ function renderPrivateProductSurfaces() {
         ? "agent-api"
         : "principal-authority",
     humanMode
-      ? fullyRepaidServicingCase
+      ? writtenOffServicingCase
+        ? "Review write-off Evidence"
+        : fullyRepaidServicingCase
         ? "Start new credit"
         : servicingCase
           ? "Open early repayment"
@@ -6679,6 +6797,13 @@ function pilotCaseRow(item, { operator = false } = {}) {
     correct.textContent = "Add correction event";
     controls.append(uphold, correction, correct);
     row.append(controls);
+  }
+  if (operator) {
+    const busy = riskOperations.caseBusy || riskOperations.recoveryBusy || riskOperations.catalogBusy;
+    for (const control of row.querySelectorAll("button, select")) {
+      control.disabled = busy || !riskOperations.caseTransitionCatalogAvailable;
+      control.setAttribute("aria-busy", String(busy));
+    }
   }
   return row;
 }
@@ -7200,9 +7325,9 @@ function capitalPartnerFacilityRow(facility) {
   const identityLabel = document.createElement("span");
   const identityValue = document.createElement("strong");
   const identityDetail = document.createElement("small");
-  identityLabel.textContent = "Facility / Obligation";
-  identityValue.textContent = facility.facilityId;
-  identityDetail.textContent = facility.obligationId;
+  identityLabel.textContent = "Credit plan";
+  identityValue.textContent = `${facility.repaidLabel} repaid`;
+  identityDetail.textContent = "Shared Obligation · synthetic funds";
   identity.append(identityLabel, identityValue, identityDetail);
   const fields = [
     ["Status", `${titleize(facility.status)} · ${titleize(facility.servicingClassification)}`],
@@ -7217,7 +7342,15 @@ function capitalPartnerFacilityRow(facility) {
     cell.append(label, value);
     return cell;
   });
-  row.append(identity, ...fields);
+  const details = document.createElement("details");
+  details.className = "technical-details";
+  const summary = document.createElement("summary"); summary.textContent = "Technical references";
+  const references = document.createElement("p"); references.textContent = `${facility.facilityId} · ${facility.obligationId}`;
+  details.append(summary, references);
+  const open = document.createElement("button"); open.className = "secondary"; open.type = "button";
+  open.textContent = "View credit details"; open.dataset.capitalFacility = facility.obligationId;
+  open.disabled = !capitalPartnerPilot.facilityAvailable || capitalPartnerPilot.busy || capitalPartnerPilot.refreshBusy;
+  row.append(identity, ...fields, open, details);
   return row;
 }
 
@@ -7312,6 +7445,8 @@ function clearCapitalPartnerWorkspaceState({
   helper = "This Capital Partner workspace is unavailable or not authorized. No application details were disclosed.",
   error = true
 } = {}) {
+  el("capitalPartnerFacilityDetail").hidden = true;
+  el("capitalPartnerFacilityDetail").replaceChildren();
   capitalPartnerPilot.profile = null;
   capitalPartnerPilot.applications = [];
   capitalPartnerPilot.selectedApplication = null;
@@ -8439,6 +8574,14 @@ function renderTenantPilot() {
   const consentReady = exactResourceId(consentId);
   const createSubjectButton = el("createHumanSubjectBtn");
   const createConsentButton = el("createHumanConsentBtn");
+  const activation = el("activateSandboxHumanBtn");
+  const self = tenantPilot.humanSelf;
+  const profileStatus = self?.subject?.subjectId === subjectId ? self.subject.status : null;
+  activation.disabled = privateBusy || !tenantPilot.connected || !humanWorkspace || !subjectReady || !consentReady || profileStatus === "active";
+  activation.textContent = profileStatus === "active" ? "Sandbox profile active" : "Activate sandbox profile";
+  el("humanActivationStatus").textContent = profileStatus === "active"
+    ? "Sandbox profile active. You can verify an execution account in Settings. No credit or funds authority was granted."
+    : "Activation requires your current scoped Consent and a local synthetic identity reference. Review and confirm before the profile changes.";
   createSubjectButton.disabled =
     privateBusy || !tenantPilot.connected || !humanWorkspace || subjectReady;
   createSubjectButton.textContent = subjectReady
@@ -8469,6 +8612,7 @@ function renderTenantPilot() {
   const offerAccepted = Boolean(obligation);
   const obligationExecuted = obligation?.executionStatus === "executed";
   const obligationRepaid = obligation?.status === "fully_repaid";
+  const obligationWrittenOff = obligation?.status === "written_off";
   const passportVerified = renderDecisionPassport(decision);
   if (offer && !reviewState.current) el("humanOfferAcknowledge").checked = false;
   el("humanApplicationStatus").textContent = obligationRepaid
@@ -8602,12 +8746,16 @@ function renderTenantPilot() {
   el("humanRepaymentFields").hidden = !obligationExecuted || obligationRepaid;
   el("postHumanRepaymentBtn").hidden = !obligationExecuted || obligationRepaid;
   el("postHumanRepaymentBtn").disabled =
-    privateBusy || !tenantPilot.connected || !obligationExecuted || obligationRepaid;
+    privateBusy || !tenantPilot.connected || !obligationExecuted || obligationRepaid || obligationWrittenOff;
   el("postHumanRepaymentBtn").textContent = tenantPilot.busy
     ? "Confirming sandbox repayment…"
-    : "Confirm early or scheduled repayment";
+    : obligationWrittenOff ? "Repayment unavailable · written off" : "Confirm early or scheduled repayment";
+  el("humanRepaymentAmount").disabled = obligationWrittenOff;
+  el("humanRepaymentSource").disabled = obligationWrittenOff;
   const repayment = tenantPilot.repayment;
-  el("humanRepaymentAllocation").textContent = repayment
+  el("humanRepaymentAllocation").textContent = obligationWrittenOff
+    ? "A synthetic write-off was recorded. It is not repayment; the outstanding balance and original schedule remain in the history. Review the owner Evidence for the exact disposition."
+    : repayment
     ? `Applied ${usdMinorToMoney(repayment.appliedMinor)} · interest ${usdMinorToMoney(repayment.appliedInterestMinor)} · principal ${usdMinorToMoney(repayment.appliedPrincipalMinor)}${BigInt(repayment.surplusMinor) > 0n ? ` · surplus ${usdMinorToMoney(repayment.surplusMinor)} not posted` : ""}`
     : "Early partial or full repayment is available now with no sandbox prepayment penalty. Fee → interest → principal; surplus is not posted.";
   const schedule = el("humanObligationSchedule");
@@ -9147,7 +9295,25 @@ function recoveredResource(resources, resourceType) {
   );
 }
 
+function renderHumanApplicationInbox() {
+  const panel = el("humanApplicationInbox");
+  const recovery = tenantPilot.workspaceResume;
+  const reviews = (recovery?.humanOfferReviews ?? (recovery?.humanOfferReview ? [recovery.humanOfferReview] : []))
+    .filter((review) => review.offer?.creditOfferId !== tenantPilot.obligation?.creditOfferId);
+  panel.hidden = recovery?.workspaceKind !== "human_borrower" || reviews.length === 0;
+  el("humanApplicationOptions").replaceChildren(...reviews.map((review) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "secondary";
+    button.dataset.humanReviewOffer = review.offer.creditOfferId;
+    button.setAttribute("aria-pressed", String(tenantPilot.offer?.creditOfferId === review.offer.creditOfferId));
+    button.textContent = `${review.offer.capitalPartnerId ? "Capital Partner" : "Sandbox evaluation"} · ${usdMinorToMoney(review.offer.approvedPrincipalMinor)} · ${bpsToPercent(review.offer.annualRateBps)} APR · ${review.offer.installmentCount} payments · ${privateDate(review.offer.createdAt, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", second: "2-digit" })} · Review Offer`;
+    return button;
+  }));
+}
+
 async function recoverAuthenticatedWorkspace({
+  selectedHumanOfferId,
   selectedAgentActorId = agentAuthorityPilot.workspaceSelection?.status === "selected"
     ? agentAuthorityPilot.workspaceSelection.actorId
     : undefined
@@ -9205,12 +9371,20 @@ async function recoverAuthenticatedWorkspace({
     if (subject) {
       el("humanSubjectId").value = subject.resourceId;
       rememberOpaqueId(HUMAN_SUBJECT_STORAGE_KEY, subject.resourceId);
+      await refreshHumanActivationState();
     }
     if (consent) {
       el("humanConsentId").value = consent.resourceId;
       rememberOpaqueId(HUMAN_CONSENT_STORAGE_KEY, consent.resourceId);
     }
-    const recoveredOfferReview = recovery.humanOfferReview;
+    const reviews = recovery.humanOfferReviews ?? (recovery.humanOfferReview ? [recovery.humanOfferReview] : []);
+    const recoveredOfferReview = selectedHumanOfferId
+      ? reviews.find((review) => review.offer.creditOfferId === selectedHumanOfferId)
+      : recovery.humanOfferReview;
+    if (selectedHumanOfferId && !recoveredOfferReview) {
+      renderHumanApplicationInbox();
+      throw new Error("This Offer is no longer available. Refresh applications and choose current terms.");
+    }
     let actionableHumanOfferRecovered = false;
     if (recoveredOfferReview) {
       try {
@@ -9285,11 +9459,16 @@ async function recoverAuthenticatedWorkspace({
       ? "Borrower workspace restored from authenticated PostgreSQL server truth."
       : "Authenticated Borrower workspace ready. Create a Human Subject to begin.";
     setMode("human");
+    renderHumanApplicationInbox();
     return;
   }
 
   if (recovery.workspaceKind === "principal_controller") {
     setMode("agent");
+    localSandboxAgentRuntime = accessState.authenticationProfile === "local_no_funds"
+      ? await referenceAgentApi("/local/v1/reference-agent/enrollment/status", {schemaVersion:"local_principal_agent_runtime_request.v1"})
+      : null;
+    if (localSandboxAgentRuntime?.accountAddress) el("agentAccountAddress").value = localSandboxAgentRuntime.accountAddress;
     const workspaceSelection = selectPrincipalAgentWorkspace(recovery);
     const previousWorkspaceSelection = agentAuthorityPilot.workspaceSelection;
     const selectionStateCleared = principalAgentSelectionChanged(
@@ -9303,7 +9482,7 @@ async function recoverAuthenticatedWorkspace({
     if (workspaceSelection.status !== "selected") {
       if (!selectionStateCleared) clearPrincipalAgentSelectionState();
       agentAuthorityPilot.helper = workspaceSelection.status === "empty"
-        ? "No Agent is assigned to this Principal workspace. Ask the pilot administrator to provision one; this browser cannot create an Actor."
+        ? (localSandboxAgentRuntime?.available ? "Create your dedicated local sandbox Agent below, then review its account and authority." : "No Agent is assigned to this Principal workspace. Ask the pilot administrator to provision one.")
         : "This Principal workspace has multiple or incomplete Agent references. An authorized Agent picker is required before authority can be changed.";
       return;
     }
@@ -9498,7 +9677,7 @@ async function probeTenantPilot() {
     capitalPartnerPilot.refreshBusy = true;
     renderCapitalPartner();
   }
-  if (currentWorkspaceName() === "risk") {
+  if (isReviewWorkspace()) {
     invalidateRiskRequestOwners([
       "recovery", "portfolio", "health", "feedback", "insights", "queue"
     ]);
@@ -9550,7 +9729,7 @@ async function runTenantPilotProbe(probeOwner) {
     tenantPilot.connected = false;
     serverCatalogOperations = new Set();
     serverCatalogSnapshot = null;
-    if (currentWorkspaceName() === "risk") {
+    if (isReviewWorkspace()) {
       ++riskOperations.recoveryEpoch;
       clearRiskCatalogAvailability();
       clearRiskPortfolioRecoveryState({ status: "denied" });
@@ -9587,7 +9766,7 @@ async function runTenantPilotProbe(probeOwner) {
     tenantPilot.connected = false;
     serverCatalogOperations = new Set();
     serverCatalogSnapshot = null;
-    if (currentWorkspaceName() === "risk") {
+    if (isReviewWorkspace()) {
       ++riskOperations.recoveryEpoch;
       clearRiskCatalogAvailability();
       clearRiskPortfolioRecoveryState({ status: "unavailable" });
@@ -9627,7 +9806,7 @@ async function runTenantPilotProbe(probeOwner) {
       tenantPilot.connectionLabel = response.status === 401 || response.status === 403
         ? "Authenticated session required"
         : "Private gateway unavailable";
-      if (currentWorkspaceName() === "risk") {
+      if (isReviewWorkspace()) {
         ++riskOperations.recoveryEpoch;
         clearRiskCatalogAvailability();
         const status = response.status === 401 || response.status === 403
@@ -9676,6 +9855,7 @@ async function runTenantPilotProbe(probeOwner) {
     ]);
     const available = new Set((catalog.operations ?? []).map((operation) => operation.operationId));
     serverCatalogOperations = available;
+    localReviewWorkspace?.setCatalog(available);
     auditorEvidence.catalogAvailable = available.has("pilotReadEvidence");
     ownedEvidence.catalogAvailable = available.has("pilotReadOwnObligationEvidence");
     creditStatePilot.catalogAvailable = available.has("pilotReadOwnCreditState");
@@ -9713,21 +9893,24 @@ async function runTenantPilotProbe(probeOwner) {
     pilotFeedback.catalogAvailable = available.has("pilotSubmitPilotFeedback");
     pilotCases.fileAvailable = available.has("pilotFileCase");
     pilotCases.listAvailable = available.has("pilotListOwnCases");
-    riskOperations.readCatalogAvailable = available.has("pilotReadTenantRisk");
+    const riskAvailable = ["operations", "auditor", "riskReviewer", "operationsReviewer"].includes(currentWorkspaceName())
+      ? new Set([...available].filter(op => localReviewOperationAvailable(currentWorkspaceName(), op, available)))
+      : available;
+    riskOperations.readCatalogAvailable = riskAvailable.has("pilotReadTenantRisk");
     riskOperations.portfolioReferenceCatalogAvailable =
-      available.has("pilotReadTenantRiskPortfolioReference");
-    riskOperations.healthCatalogAvailable = available.has("pilotReadPilotHealth");
-    riskOperations.feedbackCatalogAvailable = available.has("pilotReadPilotFeedbackSummary");
-    riskOperations.readinessCatalogAvailable = available.has("pilotReadClosedPilotReadiness");
-    riskOperations.caseReadCatalogAvailable = available.has("pilotReadCaseQueue");
-    riskOperations.caseTransitionCatalogAvailable = available.has("pilotTransitionCase");
-    riskOperations.queueCatalogAvailable = available.has("pilotReadServicingQueue");
+      riskAvailable.has("pilotReadTenantRiskPortfolioReference");
+    riskOperations.healthCatalogAvailable = riskAvailable.has("pilotReadPilotHealth");
+    riskOperations.feedbackCatalogAvailable = riskAvailable.has("pilotReadPilotFeedbackSummary");
+    riskOperations.readinessCatalogAvailable = riskAvailable.has("pilotReadClosedPilotReadiness");
+    riskOperations.caseReadCatalogAvailable = riskAvailable.has("pilotReadCaseQueue");
+    riskOperations.caseTransitionCatalogAvailable = riskAvailable.has("pilotTransitionCase");
+    riskOperations.queueCatalogAvailable = riskAvailable.has("pilotReadServicingQueue");
     riskOperations.queueReferenceCatalogAvailable =
-      available.has("pilotReadServicingQueueReference");
-    riskOperations.freezeCatalogAvailable = available.has("pilotFreezeSubject");
-    securedPoolPilot.readAvailable = available.has("pilotReadOwnSecuredPool");
-    securedPoolPilot.reviewAvailable = available.has("pilotReviewSecuredPoolAction");
-    securedPoolPilot.riskAvailable = available.has("pilotReadSecuredPoolRisk");
+      riskAvailable.has("pilotReadServicingQueueReference");
+    riskOperations.freezeCatalogAvailable = riskAvailable.has("pilotFreezeSubject");
+    securedPoolPilot.readAvailable = riskAvailable.has("pilotReadOwnSecuredPool");
+    securedPoolPilot.reviewAvailable = riskAvailable.has("pilotReviewSecuredPoolAction");
+    securedPoolPilot.riskAvailable = riskAvailable.has("pilotReadSecuredPoolRisk");
     const operationsAvailable = [...requiredOperations].every((operationId) => available.has(operationId));
     const csrfReady = Boolean(tenantCsrfToken());
     tenantPilot.connected = operationsAvailable && csrfReady;
@@ -9772,16 +9955,14 @@ async function runTenantPilotProbe(probeOwner) {
         if (!denied) throw error;
       }
     }
-    const riskBootstrapReady = currentWorkspaceName() === "risk" &&
+    const riskBootstrapReady = isReviewWorkspace() &&
       csrfReady &&
-      riskOperations.portfolioReferenceCatalogAvailable &&
-      riskOperations.readCatalogAvailable &&
-      riskOperations.queueReferenceCatalogAvailable &&
-      riskOperations.queueCatalogAvailable;
+      ((riskOperations.portfolioReferenceCatalogAvailable && riskOperations.readCatalogAvailable) ||
+       (riskOperations.queueReferenceCatalogAvailable && riskOperations.queueCatalogAvailable));
     if (riskBootstrapReady) {
       await recoverRiskWorkspace();
       if (!isCurrentTenantPilotProbe(probeOwner)) return;
-    } else if (currentWorkspaceName() === "risk") {
+    } else if (isReviewWorkspace()) {
       ++riskOperations.recoveryEpoch;
       clearRiskPortfolioRecoveryState({ status: "unavailable" });
       clearServicingQueueRecoveryState({ status: "unavailable" });
@@ -9851,7 +10032,7 @@ async function runTenantPilotProbe(probeOwner) {
     officialReportPilot.retrieveAvailable = false;
     officialReportPilot.revokeAvailable = false;
     clearCapitalPartnerCatalogAvailability();
-    if (currentWorkspaceName() === "risk") {
+    if (isReviewWorkspace()) {
       ++riskOperations.recoveryEpoch;
       clearRiskPortfolioRecoveryState({ status: "unavailable" });
       clearServicingQueueRecoveryState({ status: "unavailable" });
@@ -9875,6 +10056,36 @@ async function runTenantPilotProbe(probeOwner) {
   }
 }
 
+async function refreshHumanActivationState() {
+  tenantPilot.humanSelf = null;
+  const subjectId = tenantInputValue("humanSubjectId");
+  if (!subjectId || !hasHumanBorrowerWorkspace()) return;
+  const result = await tenantApi("pilotReadHumanSelf", { idempotent: false, resource: { resourceType: "subject", resourceId: subjectId } });
+  tenantPilot.humanSelf = result.response;
+}
+
+async function activateSandboxHumanProfile() {
+  await runTenantAction(el("activateSandboxHumanBtn"), async () => {
+    await refreshHumanActivationState();
+    const self = tenantPilot.humanSelf;
+    const consentId = tenantInputValue("humanConsentId");
+    const reference = self?.identityReferences?.find(item => item.consentId === consentId && item.status === "active" && item.syntheticOnly === true && item.productionVerified === false);
+    if (self?.subject?.status !== "pending" || !reference) throw new Error("Create an active scoped Consent and local synthetic identity reference before activating this pending profile.");
+    const dialog = el("humanActivationDialog");
+    dialog.returnValue = "cancel";
+    const confirmed = new Promise(resolve => dialog.addEventListener("close", () => resolve(dialog.returnValue === "activate"), { once: true }));
+    dialog.showModal();
+    if (!await confirmed) throw Object.assign(new Error("Activation cancelled."), { code: "user_action_cancelled" });
+    await tenantApi("pilotActivateSandboxHumanSubject", {
+      resource: { resourceType: "subject", resourceId: self.subject.subjectId },
+      payload: { consentId, identityReferenceId: reference.identityReferenceId, expectedSubjectUpdatedAt: self.subject.updatedAt,
+        acknowledgement: "activate_synthetic_profile_no_credit_or_funds" }
+    });
+    await refreshHumanActivationState();
+    renderExecutionWallet();
+  }, "Sandbox profile activated. Account ownership verification is now available in Settings.");
+}
+
 async function createHumanSubject() {
   if (exactResourceId(tenantInputValue("humanSubjectId"))) return;
   if (!hasHumanBorrowerWorkspace()) {
@@ -9890,6 +10101,7 @@ async function createHumanSubject() {
     async () => {
       const result = await tenantApi("pilotCreateHumanSubject");
       el("humanSubjectId").value = result.response.subjectId;
+      await refreshHumanActivationState();
       rememberOpaqueId(HUMAN_SUBJECT_STORAGE_KEY, result.response.subjectId);
       tenantPilot.intent = null;
       tenantPilot.decision = null;
@@ -9942,6 +10154,7 @@ async function createHumanConsent() {
       });
       el("humanConsentId").value = result.response.consent.consentId;
       rememberOpaqueId(HUMAN_CONSENT_STORAGE_KEY, result.response.consent.consentId);
+      await refreshHumanActivationState();
       tenantPilot.intent = null;
       tenantPilot.decision = null;
       tenantPilot.offer = null;
@@ -10100,14 +10313,17 @@ async function acceptHumanCreditOffer() {
         });
         const currentBinding = assertRecoveredHumanCreditReviewUnchanged(
           tenantPilot.offerReview,
-          currentWorkspace.response.humanOfferReview
+          (currentWorkspace.response.humanOfferReviews ?? [currentWorkspace.response.humanOfferReview])
+            .find((review) => review?.offer.creditOfferId === offer.creditOfferId)
         );
         restoreHumanCreditRequest(currentBinding.creditRequest);
         tenantPilot.workspaceResume = currentWorkspace.response;
         tenantPilot.offerReview = currentBinding;
-        tenantPilot.intent = currentWorkspace.response.humanOfferReview.creditIntent;
-        tenantPilot.decision = currentWorkspace.response.humanOfferReview.decision;
-        tenantPilot.offer = currentWorkspace.response.humanOfferReview.offer;
+        const refreshedReview = (currentWorkspace.response.humanOfferReviews ?? [currentWorkspace.response.humanOfferReview])
+          .find((review) => review?.offer.creditOfferId === offer.creditOfferId);
+        tenantPilot.intent = refreshedReview.creditIntent;
+        tenantPilot.decision = refreshedReview.decision;
+        tenantPilot.offer = refreshedReview.offer;
         offer = tenantPilot.offer;
       }
       if (!el("humanOfferAcknowledge").checked) {
@@ -10296,6 +10512,9 @@ async function postHumanSandboxRepayment({
       if (!obligation || obligation.executionStatus !== "executed") {
         throw new Error("Execute the sandbox Obligation before repayment.");
       }
+      if (obligation.status === "written_off") {
+        throw new Error("Repayment is unavailable for a written-off Obligation. Review its Evidence.");
+      }
       const amount = Number(el(amountInputId).value);
       if (!Number.isFinite(amount) || amount <= 0 || amount > 1000) {
         throw new Error("Repayment must be greater than $0 and no more than $1,000 in the sandbox.");
@@ -10380,6 +10599,22 @@ async function postHumanSandboxRepayment({
     },
     "Sandbox repayment posted through the deterministic fee, interest, and principal waterfall."
   );
+}
+
+async function createLocalSandboxAgent() {
+  await runAgentAuthorityAction(el("createLocalSandboxAgentBtn"), async () => {
+    localSandboxAgentRuntime = await referenceAgentApi("/local/v1/reference-agent/enrollment/create", {schemaVersion:"local_principal_agent_runtime_request.v1"});
+    await recoverAuthenticatedWorkspace({selectedAgentActorId: localSandboxAgentRuntime.actorId});
+  }, "Your dedicated sandbox Agent is created. Prove its account next; no Mandate is active yet.", {requireSelection:false});
+}
+
+async function revokeLocalSandboxAgent() {
+  await runAgentAuthorityAction(el("revokeLocalSandboxAgentBtn"), async () => {
+    localSandboxAgentRuntime = await referenceAgentApi("/local/v1/reference-agent/enrollment/revoke", {
+      schemaVersion:"local_principal_agent_runtime_request.v1", actorId:localSandboxAgentRuntime.actorId
+    });
+    await recoverAuthenticatedWorkspace();
+  }, "Local Agent runtime credential revoked. Future Agent requests fail closed; existing records remain available.");
 }
 
 async function createPrivateAgentSubject() {
@@ -10668,7 +10903,7 @@ function handleNavigationKeys(event) {
     return;
   }
   if (event.key !== "Tab") return;
-  const focusable = [...el("sidebar").querySelectorAll("button:not(:disabled), a[href]")];
+  const focusable = [...el("sidebar").querySelectorAll("button:not(:disabled), a[href], summary")];
   const first = focusable[0];
   const last = focusable.at(-1);
   if (event.shiftKey && document.activeElement === first) {
@@ -10705,6 +10940,7 @@ function showView(viewName, { focus = true, historyMode = "push" } = {}) {
     ? `${interactionMode === "agent" ? "Agent" : "Human"} entry · shared kernel`
     : VIEW_META[nextView].eyebrow;
   el("viewTitle").textContent = VIEW_META[nextView].title;
+  updateWorkspaceChrome(currentWorkspaceName(), nextView);
   if (["agent-console", "architecture"].includes(nextView)) setMode("agent");
   else renderPrivateProductSurfaces();
   setNavigationOpen(false, { moveFocus: false });
@@ -10755,6 +10991,9 @@ function handleWorkspaceLocationChange() {
 
 function focusJumpTarget(target) {
   if (!target) return;
+  for (let ancestor = target.parentElement; ancestor; ancestor = ancestor.parentElement) {
+    if (ancestor.tagName === "DETAILS") ancestor.open = true;
+  }
   target.scrollIntoView({ behavior: reducedMotion.matches ? "auto" : "smooth", block: "start" });
   target.focus({ preventScroll: true });
 }
@@ -12040,7 +12279,18 @@ function renderRiskOperations() {
   const status = el("privateRiskStatus");
   const catalogReady = riskOperations.readCatalogAvailable;
   status.classList.remove("neutral", "warning");
-  if (!catalogReady) {
+  const reviewHeading = {
+    operations: ["Servicing, with independent review.", "Prepare an exact servicing proposal and track its independent approvals. Execution remains a separate explicit action."],
+    auditor: ["Records, ready for review.", "Read the tenant portfolio, case records and servicing approvals. This workspace has no authority to change them."],
+    operationsReviewer: ["Independent operations review.", "Review the exact plan and its current state before approving or rejecting. This workspace cannot propose or execute servicing."],
+    riskReviewer: ["Independent risk review.", "Review the exact plan, impact and expiry before recording your approval or rejection. This workspace cannot propose or execute servicing."]
+  }[currentWorkspaceName()];
+  if (reviewHeading) {
+    el("privateRiskTitle").textContent = reviewHeading[0];
+    el("privateRiskDescription").textContent = reviewHeading[1];
+    status.textContent = "Local sandbox";
+    status.classList.add("neutral");
+  } else if (!catalogReady) {
     status.textContent = "Operation unavailable";
     status.classList.add("warning");
   } else if (riskOperations.error) {
@@ -12224,7 +12474,7 @@ function renderRiskOperations() {
         ? "No open or assigned pilot cases require review."
         : "Load the authorized, privacy-safe case queue.")]));
   const caseLoadButton = el("loadPilotCaseQueueBtn");
-  caseLoadButton.disabled = riskOperations.caseBusy ||
+  caseLoadButton.disabled = riskOperations.recoveryBusy || riskOperations.catalogBusy || riskOperations.caseBusy ||
     !riskOperations.caseReadCatalogAvailable ||
     riskOperations.portfolioSelection.status !== "selected";
   caseLoadButton.toggleAttribute("aria-busy", riskOperations.caseBusy);
@@ -12308,10 +12558,11 @@ function renderRiskOperations() {
     : "No verified queue loaded.";
 
   const freezeSelection = riskOperations.freezeSubjectSelection;
-  const selectedCaseStillVisible = freezeSelection && riskOperations.queueCases.some(
+  const selectedCaseStillVisible = freezeSelection && (freezeSelection.source === "directory"
+    ? localReviewWorkspace?.hasAgent(freezeSelection.subjectId) : riskOperations.queueCases.some(
     (item) => item.subjectId === freezeSelection.subjectId &&
       item.obligationId === freezeSelection.obligationId
-  );
+  ));
   if (freezeSelection && !selectedCaseStillVisible) {
     riskOperations.freezeSubjectSelection = null;
     el("riskFreezeSubjectId").value = "";
@@ -12335,7 +12586,7 @@ function renderRiskOperations() {
   const selectedFreezeCase = riskOperations.freezeSubjectSelection;
   el("riskFreezeForm").hidden = !selectedFreezeCase;
   el("riskFreezeSubjectLabel").textContent = selectedFreezeCase
-    ? `${titleize(selectedFreezeCase.classification)} · ${selectedFreezeCase.daysPastDue} days past due`
+    ? selectedFreezeCase.source === "directory" ? `Agent ${selectedFreezeCase.reference} · Authorized directory selection` : `${titleize(selectedFreezeCase.classification)} · ${selectedFreezeCase.daysPastDue} days past due`
     : "No case selected";
   el("riskFreezeSelectionState").textContent = selectedFreezeCase
     ? "Case selected for review. Choose a reason and confirm before the protective command is sent."
@@ -12829,7 +13080,7 @@ function riskRequestIsCurrent(owner, resourceType, resourceId) {
 }
 
 async function recoverRiskWorkspace() {
-  if (riskOperations.recoveryBusy || currentWorkspaceName() !== "risk") return;
+  if (riskOperations.recoveryBusy || !isReviewWorkspace()) return;
   const requestOwner = beginRiskRequest("recovery");
   riskOperations.recoveryBusy = true;
   ++riskOperations.recoveryEpoch;
@@ -12876,7 +13127,7 @@ async function recoverRiskWorkspace() {
     } else {
       clearRiskPortfolioRecoveryState({ status: "unavailable" });
       riskOperations.error = true;
-      riskOperations.helper = "The private catalog does not expose authorized portfolio recovery.";
+      riskOperations.helper = "Portfolio access is not granted to this role.";
     }
 
     if (
@@ -12922,6 +13173,93 @@ async function recoverRiskWorkspace() {
   }
 }
 
+const riskPasskeyState = { enabled: false, busy: false, status: null, revokeId: null };
+function renderRiskPasskeys(message) {
+  const panel = el("riskPasskeyPanel");
+  panel.hidden = !riskPasskeyState.enabled;
+  if (panel.hidden) return;
+  const status = riskPasskeyState.status;
+  const verified = status?.verified === true && Date.parse(status.expiresAt) > Date.now();
+  el("riskPasskeyBadge").textContent = verified ? "Recently verified" : "Verification required";
+  el("riskPasskeyBadge").className = `state-pill ${verified ? "success" : "neutral"}`;
+  el("riskPasskeyMessage").textContent = message ?? (!accessState.sessionActive ? "Sign in with this workspace’s invited wallet first." : status?.recoveryRequired
+    ? "No active Passkey remains. Named operator recovery must be reviewed; wallet sign-in cannot replace a revoked key."
+    : verified ? "Your presence is verified. This role’s authorized operations are available."
+      : "Use your device or security key to verify your presence. Protected operations require verification within the last 15 minutes.");
+  el("riskPasskeyTime").textContent = verified ? `Verified ${new Date(status.verifiedAt).toLocaleTimeString()} · Expires ${new Date(status.expiresAt).toLocaleTimeString()}` : "Local invited workspace · No funds movement";
+  el("registerRiskPasskeyBtn").textContent = status?.keys?.length ? "Add backup Passkey" : "Register Passkey";
+  el("registerRiskPasskeyBtn").className = status?.keys?.length ? "secondary" : "primary";
+  el("registerRiskPasskeyBtn").hidden = !status?.canRegister;
+  el("registerRiskPasskeyBtn").disabled = riskPasskeyState.busy || !accessState.sessionActive;
+  el("verifyRiskPasskeyBtn").hidden = !status?.keys?.length;
+  el("verifyRiskPasskeyBtn").disabled = riskPasskeyState.busy || !accessState.sessionActive;
+  const list = el("riskPasskeyKeys"); list.replaceChildren();
+  for (const [index, key] of (status?.keys ?? []).entries()) {
+    const item = document.createElement("li"), label = document.createElement("span"), button = document.createElement("button");
+    label.textContent = `Passkey ${index + 1} · Added ${new Date(key.createdAt).toLocaleDateString()}`;
+    button.type = "button"; button.className = "secondary"; button.textContent = "Revoke";
+    button.setAttribute("aria-label", `Revoke Passkey ${index + 1}`);
+    button.disabled = riskPasskeyState.busy || !verified;
+    button.addEventListener("click", () => { riskPasskeyState.revokeId = key.id; el("revokeRiskPasskeyDialog").showModal(); });
+    item.append(label, button); list.append(item);
+  }
+}
+async function refreshRiskPasskeyStatus() {
+  if (!riskPasskeyState.enabled || !accessState.sessionActive) {
+    riskPasskeyState.status = null; renderRiskPasskeys(); return;
+  }
+  try { riskPasskeyState.status = await authJson("/auth/v1/passkey/status"); renderRiskPasskeys(); }
+  catch { riskPasskeyState.status = null; renderRiskPasskeys("Verification status is unavailable. Sign in again or retry; protected operations remain locked."); }
+}
+async function passkeyPost(action, body) {
+  const csrfToken = tenantCsrfToken();
+  if (!csrfToken) throw new Error("Refresh this page to restore your authenticated session.");
+  return authJson(`/auth/v1/passkey/${action}`, { method: "POST", body, headers: { "x-csrf-token": csrfToken } });
+}
+function passkeyBinary(value) { return Uint8Array.from(atob(value.replace(/-/g, "+").replace(/_/g, "/")), char => char.charCodeAt(0)); }
+function passkeyBase64(value) { return btoa(String.fromCharCode(...new Uint8Array(value))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+async function runRiskPasskey(purpose) {
+  if (riskPasskeyState.busy) return;
+  riskPasskeyState.busy = true; renderRiskPasskeys("Complete the Passkey prompt on your device. You can cancel safely.");
+  let challengeId;
+  try {
+    if (!globalThis.PublicKeyCredential || !navigator.credentials) throw new Error("This browser does not support Passkeys. Open this local workspace in a supported browser.");
+    const challenge = await passkeyPost("begin", { purpose }); challengeId = challenge.challengeId;
+    const options = challenge.options; options.challenge = passkeyBinary(options.challenge);
+    for (const property of ["allowCredentials", "excludeCredentials"]) if (options[property]) options[property] = options[property].map(c => ({ ...c, id: passkeyBinary(c.id) }));
+    if (options.user) options.user.id = passkeyBinary(options.user.id);
+    const credential = await navigator.credentials[purpose === "register" ? "create" : "get"]({ publicKey: options });
+    if (!credential) throw new Error("Passkey verification cancelled.");
+    const response = { id: credential.id, rawId: passkeyBase64(credential.rawId), type: credential.type,
+      authenticatorAttachment: credential.authenticatorAttachment,
+      clientExtensionResults: credential.getClientExtensionResults(),
+      response: { clientDataJSON: passkeyBase64(credential.response.clientDataJSON), ...(purpose === "register"
+        ? { attestationObject: passkeyBase64(credential.response.attestationObject), transports: credential.response.getTransports?.() ?? [] }
+        : { authenticatorData: passkeyBase64(credential.response.authenticatorData), signature: passkeyBase64(credential.response.signature), userHandle: credential.response.userHandle ? passkeyBase64(credential.response.userHandle) : null }) } };
+    riskPasskeyState.status = await passkeyPost("finish", { challengeId, response }); challengeId = null;
+    renderRiskPasskeys(); await refreshRiskWorkspace();
+  } catch (error) {
+    if (challengeId) await passkeyPost("cancel", { challengeId }).catch(() => {});
+    await refreshRiskPasskeyStatus();
+    renderRiskPasskeys(error.name === "NotAllowedError" || error.name === "AbortError"
+      ? "Passkey verification was cancelled or timed out. No new verification was granted. Try again when ready."
+      : error.message || "Verification failed. Start a new Passkey verification.");
+  } finally { riskPasskeyState.busy = false; const message = el("riskPasskeyMessage").textContent; renderRiskPasskeys(message); }
+}
+el("registerRiskPasskeyBtn").addEventListener("click", () => runRiskPasskey("register"));
+el("verifyRiskPasskeyBtn").addEventListener("click", () => runRiskPasskey("verify"));
+el("cancelRiskPasskeyRevokeBtn").addEventListener("click", () => el("revokeRiskPasskeyDialog").close());
+el("confirmRiskPasskeyRevokeBtn").addEventListener("click", async () => {
+  if (riskPasskeyState.busy || !riskPasskeyState.revokeId) return;
+  riskPasskeyState.busy = true; el("revokeRiskPasskeyDialog").close(); renderRiskPasskeys("Revoking Passkey…");
+  try {
+    riskPasskeyState.status = await passkeyPost("revoke", { passkeyId: riskPasskeyState.revokeId, acknowledgement: "revoke_this_passkey" });
+    await refreshRiskWorkspace(); renderRiskPasskeys();
+  } catch (error) { renderRiskPasskeys(error.message); }
+  finally { riskPasskeyState.busy = false; riskPasskeyState.revokeId = null; const message = el("riskPasskeyMessage").textContent; renderRiskPasskeys(message); }
+});
+setInterval(() => { if (riskPasskeyState.enabled && !riskPasskeyState.busy && document.visibilityState === "visible") refreshRiskPasskeyStatus(); }, 30000);
+
 async function refreshRiskWorkspace() {
   if (
     riskOperations.catalogBusy ||
@@ -12960,12 +13298,12 @@ async function freezeRiskSubject() {
     !el("riskFreezeAcknowledge").checked
   ) {
     riskOperations.freezeError = true;
-    riskOperations.freezeHelper = "Select one current authorized queue case, choose an approved protective reason, and confirm the suspension.";
+    riskOperations.freezeHelper = "Select one current authorized Agent or queue case, choose an approved protective reason, and confirm the suspension.";
     renderRiskOperations();
     announce(riskOperations.freezeHelper);
     return;
   }
-  const stillCurrent = riskOperations.queueCases.some(
+  const stillCurrent = selectedCase.source === "directory" ? localReviewWorkspace?.hasAgent(selectedCase.subjectId) : riskOperations.queueCases.some(
     (item) => item.subjectId === selectedCase.subjectId &&
       item.obligationId === selectedCase.obligationId
   );
@@ -12991,6 +13329,7 @@ async function freezeRiskSubject() {
       idempotent: true
     });
     riskOperations.freezeResult = result.response;
+    if (selectedCase.source === "directory") localReviewWorkspace?.forgetAgent(subjectId);
     riskOperations.freezeHelper = "Protective suspension verified and recorded with immutable Evidence.";
     riskOperations.freezeSubjectSelection = null;
     el("riskFreezeSubjectId").value = "";
@@ -13347,9 +13686,9 @@ function bindActions() {
         !accessState.walletWorkspaceRoles.has(role)
       ) return;
       accessState.selectedWorkspaceRole = role;
-      accessState.helper = `${role === "human_borrower" ? "Human Borrower" : "Principal Controller"} selected. The next wallet signature will issue only this workspace role.`;
+      accessState.helper = `${walletWorkspaceLabel(role)} selected. The next wallet signature will issue only this workspace role.`;
       renderAccess();
-      announce(`${role === "human_borrower" ? "Human Borrower" : "Principal Controller"} workspace selected`);
+      announce(`${walletWorkspaceLabel(role)} workspace selected`);
     });
   }
   for (const button of document.querySelectorAll("[data-wallet-chain]")) {
@@ -13368,7 +13707,7 @@ function bindActions() {
   });
   window.addEventListener("pagehide", disposeWalletProviders, { once: true });
   walletProviderRegistry.start();
-  for (const button of document.querySelectorAll(".nav-item")) {
+  for (const button of document.querySelectorAll(".nav-item[data-view]")) {
     button.addEventListener("click", () => showView(button.dataset.view));
   }
   for (const button of document.querySelectorAll("[data-go-view]")) {
@@ -13546,6 +13885,57 @@ function bindActions() {
       "Enter one exact assigned ID. Missing, expired, denied, and cross-Provider resources are not enumerated.";
     renderCapitalNetwork();
   });
+  async function selectHumanApplication(selectedHumanOfferId) {
+    const controls = [el("refreshHumanApplicationsBtn"), ...el("humanApplicationOptions").querySelectorAll("button")];
+    controls.forEach((button) => { button.disabled = true; });
+    try {
+      await recoverAuthenticatedWorkspace({ selectedHumanOfferId });
+      el("humanOfferAcknowledge").checked = false;
+      renderTenantPilot();
+      renderHumanApplicationInbox();
+      if (selectedHumanOfferId) focusJumpTarget(el("humanOfferConsole"));
+    } catch (error) {
+      el("humanApplicationInboxHelper").textContent = error.message;
+      announce(error.message);
+    } finally { controls.forEach((button) => { button.disabled = false; }); }
+  }
+  el("refreshHumanApplicationsBtn").addEventListener("click", () => selectHumanApplication());
+  el("humanApplicationOptions").addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-human-review-offer]");
+    if (button && !button.disabled) selectHumanApplication(button.dataset.humanReviewOffer);
+  });
+
+  el("capitalPartnerFacilityRows").addEventListener("click", async (event) => {
+    const button = event.target.closest("button[data-capital-facility]");
+    if (!button || button.disabled) return;
+    const obligationId = button.dataset.capitalFacility;
+    if (!capitalPartnerPilot.portfolio?.facilities.some((item) => item.obligationId === obligationId)) return;
+    const epoch = authenticatedDataEpoch;
+    button.disabled = true;
+    const panel = el("capitalPartnerFacilityDetail");
+    panel.hidden = false;
+    panel.textContent = "Loading this exact authorized credit plan…";
+    try {
+      const result = await tenantApi("pilotReadCapitalPartnerFacility", {
+        resource: { resourceType: "obligation", resourceId: obligationId }, payload: {}, idempotent: false
+      });
+      if (epoch !== authenticatedDataEpoch) return;
+      const facility = result.response.facility;
+      if (result.response.schemaVersion !== "tenant_capital_partner_facility_view.v1" ||
+        facility?.obligationId !== obligationId || facility.capitalPartnerId !== capitalPartnerPilot.profile.capitalPartnerId ||
+        facility.schemaVersion !== "facility_view.v1" || facility.sandboxOnly !== true || facility.productionFundsMoved !== false) {
+        throw new Error("Credit details did not match the selected plan.");
+      }
+      const title = document.createElement("h3"); title.textContent = `${titleize(facility.status)} · ${usdMinorToMoney(facility.repaidMinor)} repaid`;
+      const detail = document.createElement("p"); detail.textContent = `Outstanding ${usdMinorToMoney(facility.outstandingMinor)} · ${facility.daysPastDue} days past due · ${titleize(facility.servicingClassification)}`;
+      const next = document.createElement("p"); next.textContent = facility.nextPayment ? `Next payment ${privateDate(facility.nextPayment.dueAt, { month: "short", day: "numeric" })}` : "No remaining scheduled payment.";
+      const boundary = document.createElement("p"); boundary.textContent = "Read from the shared Obligation. No real funds; chain anchoring is tracked separately.";
+      panel.replaceChildren(title, detail, next, boundary); focusJumpTarget(panel);
+    } catch (error) {
+      if (epoch === authenticatedDataEpoch) panel.textContent = `Credit details unavailable. ${error.message}`;
+    } finally { button.disabled = false; }
+  });
+
   el("capitalPartnerOfferForm").addEventListener("submit", (event) => {
     event.preventDefault();
     authorCapitalPartnerOffer();
@@ -13564,6 +13954,9 @@ function bindActions() {
     control.addEventListener("input", renderCapitalPartner);
     control.addEventListener("change", renderCapitalPartner);
   }
+  el("confirmSandboxHumanActivationBtn").addEventListener("click", () => el("humanActivationDialog").close("activate"));
+  el("cancelSandboxHumanActivationBtn").addEventListener("click", () => el("humanActivationDialog").close("cancel"));
+  el("activateSandboxHumanBtn").addEventListener("click", activateSandboxHumanProfile);
   el("createHumanSubjectBtn").addEventListener("click", createHumanSubject);
   el("createHumanConsentBtn").addEventListener("click", createHumanConsent);
   el("humanCreditForm").addEventListener("submit", (event) => {
@@ -13940,6 +14333,8 @@ function bindActions() {
     }
   });
   el("createPrivateAgentSubjectBtn").addEventListener("click", createPrivateAgentSubject);
+  el("createLocalSandboxAgentBtn").addEventListener("click", createLocalSandboxAgent);
+  el("revokeLocalSandboxAgentBtn").addEventListener("click", revokeLocalSandboxAgent);
   el("createAccountChallengeBtn").addEventListener("click", createAgentAccountChallenge);
   el("proveAccountOnlineBtn").addEventListener("click", proveAgentAccountOnline);
   el("refreshAccountBindingBtn").addEventListener("click", refreshAgentAccountBinding);
@@ -14091,8 +14486,10 @@ async function boot() {
   renderAuditorEvidence();
   renderCreditRegistryEvidence();
   renderRiskOperations();
-  await probeHostedChainCapability();
-  await probeAccessOptions();
+  // A public page needs no private data. A session-bearing reload stays behind
+  // the startup surface until its authorized destination and layout are ready.
+  if (!tenantCsrfToken()) document.dispatchEvent(new Event("ipo-workspace-ready"));
+  await Promise.all([probeHostedChainCapability(), probeAccessOptions()]);
   await probeTenantPilot();
   setConnection(tenantPilot.connected);
   const postLoginView = tenantPilot.connected && !hasWorkspaceSessionRoleMismatch()
@@ -14111,12 +14508,28 @@ async function boot() {
     await loadSecuredPoolWorkspace();
   }
   render();
+  document.dispatchEvent(new Event("ipo-workspace-ready"));
   announce(tenantPilot.connected
     ? "Authenticated public Beta workspace ready"
     : "Sign in to access the public Beta workspace");
 }
 
+localReviewWorkspace = createLocalReviewWorkspace({
+  api:tenantApi,
+  getState:()=>({signedIn:accessState.sessionActive,workspace:currentWorkspaceName()}),
+  selectAgent(agent) {
+    if (riskOperations.freezeBusy) return;
+    riskOperations.freezeSubjectSelection=Object.freeze({source:"directory",subjectId:agent.subjectId,reference:agent.reference});
+    el("riskFreezeSubjectId").value=agent.subjectId;
+    el("riskFreezeReason").value="";el("riskFreezeAcknowledge").checked=false;
+    riskOperations.freezeResult=null;riskOperations.freezeError=false;
+    riskOperations.freezeHelper="Agent selected from the authenticated directory. Choose a protective reason and explicitly confirm the suspension.";
+    renderRiskOperations();el("riskFreezeForm").scrollIntoView({block:"center",behavior:"auto"});el("riskFreezeReason").focus({preventScroll:true});
+  }
+});
+
 boot().catch((error) => {
+  document.dispatchEvent(new Event("ipo-workspace-failed"));
   const requestSuffix = error?.requestId ? ` Request ID: ${error.requestId}` : "";
   el("connectionStatus").textContent = "Workspace startup blocked";
   el("sidebarApiStatus").textContent = "Startup blocked";

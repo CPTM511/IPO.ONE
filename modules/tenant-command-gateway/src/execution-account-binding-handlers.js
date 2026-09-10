@@ -424,6 +424,10 @@ export function revokeExecutionAccountBindingHandler() {
         bindingState.value.subjectId !== subject.subjectId ||
         bindingState.value.schemaVersion !== "account_binding.v3"
       ) fail("tenant_resource_unavailable", "The requested resource is not available.");
+      if (bindingState.rootAggregateType !== "execution_account_binding_challenge" ||
+          bindingState.rootAggregateId !== bindingState.value.executionChallengeId) {
+        fail("projection_integrity_mismatch", "Execution AccountBinding stream is unavailable");
+      }
       const binding = revokeExecutionAccountBinding(bindingState.value, { revokedAt: now });
       const event = createCreditEvent({
         eventType: CreditEventType.EXECUTION_ACCOUNT_BINDING_REVOKED,
@@ -441,11 +445,11 @@ export function revokeExecutionAccountBindingHandler() {
         now
       });
       return {
-        aggregateType: "account_binding",
-        aggregateId: binding.accountBindingId,
+        aggregateType: bindingState.rootAggregateType,
+        aggregateId: bindingState.rootAggregateId,
         events: [{
-          aggregateType: "account_binding",
-          aggregateId: binding.accountBindingId,
+          aggregateType: bindingState.rootAggregateType,
+          aggregateId: bindingState.rootAggregateId,
           expectedVersion: bindingState.aggregateVersion,
           event
         }],

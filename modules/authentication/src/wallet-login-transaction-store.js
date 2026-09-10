@@ -8,7 +8,7 @@ import {
 } from "./security-utils.js";
 
 const APPROVED_CHAIN_IDS = new Set([84532, 1952]);
-const SELECTABLE_HUMAN_ROLES = new Set(["human_borrower", "principal_controller"]);
+import { SELECTABLE_HUMAN_ROLES, WALLET_ROLE_LABELS, allowedWalletRoles } from "./wallet-workspace-roles.js";
 
 function requestedRole(value) {
   const role = assertBoundedString("requestedRole", value, {
@@ -62,7 +62,8 @@ export class InMemoryWalletLoginTransactionStore {
     uri,
     statement = "Sign in to the IPO.ONE no-funds credit workspace.",
     ttlMs = 5 * 60_000,
-    maximumTransactions = 1_000
+    maximumTransactions = 1_000,
+    workspaceRoles
   }) {
     if (!referenceHasher?.hash) {
       throw authenticationError("invalid_authentication_configuration", "referenceHasher is required");
@@ -77,6 +78,7 @@ export class InMemoryWalletLoginTransactionStore {
     if (!Number.isSafeInteger(maximumTransactions) || maximumTransactions < 1 || maximumTransactions > 10_000) {
       throw authenticationError("invalid_authentication_configuration", "wallet login capacity is invalid");
     }
+    this.workspaceRoles = allowedWalletRoles(workspaceRoles);
     this.referenceHasher = referenceHasher;
     this.domain = domain;
     this.uri = parsedUri.href;
@@ -93,6 +95,7 @@ export class InMemoryWalletLoginTransactionStore {
     const checkedAddress = normalizeAddress(address);
     const checkedChainId = normalizeChainId(chainId);
     const checkedRole = requestedRole(requestedRoleInput);
+    if (!this.workspaceRoles.includes(checkedRole)) throw authenticationError("authentication_role_rejected", "selected workspace is not available on this host");
     const handle = randomOpaqueValue();
     const nonce = randomBytes(16).toString("hex");
     const expirationTime = new Date(now.getTime() + this.ttlMs);
@@ -103,7 +106,7 @@ export class InMemoryWalletLoginTransactionStore {
       expirationTime,
       issuedAt: now,
       nonce,
-      statement: `${this.statement} Selected workspace: ${checkedRole === "human_borrower" ? "Human Borrower" : "Principal Controller"}.`,
+      statement: `${this.statement} Selected workspace: ${WALLET_ROLE_LABELS[checkedRole]}.`,
       uri: this.uri,
       version: "1"
     });

@@ -1,123 +1,48 @@
-# WEB-019 design QA
+# WEB-027 design QA
 
-## Comparison target
+Source visual truth: `docs/design/web-027/precision-terminal-reference.png`.
+Implementation: `output/playwright/web-027/authority-1440-dark.png` and `authority-1440-light.png`; real-service state captures in `output/playwright/web-027/durable-agent-authority.png`, `durable-agent-result.png` and `durable-human-fully-repaid.png`.
 
-- Source visual truth:
-  `/Users/cptmao/.codex/generated_images/019fa271-5a62-7ad2-8a1f-b55a46cf80f1/call_B9q7yS6GJv3ascasIHmx8Ok6.png`
-- Source dimensions: 1487 × 1058 px.
-- Browser-rendered implementation:
-  `/Users/cptmao/Documents/IPO.ONE/artifacts/ui/web019-overview-desktop-1280x911-pass2.jpg`
-- Implementation dimensions and CSS viewport: 1280 × 911 px at device density 1.
-- Normalization: the source was resized to 1280 × 911 px because its aspect
-  ratio matches the implementation viewport. The implementation was not
-  rescaled.
-- Same-input comparison:
-  `/Users/cptmao/Documents/IPO.ONE/artifacts/ui/web019-design-qa-comparison-pass2.jpg`
-- State: authenticated Human Workspace, active synthetic obligation, durable
-  workspace recovery available, no-funds sandbox.
+Source dimensions: 1487×1058 pixels, raster concept with no recorded CSS/device scale. Implementation: 1440×1024 pixels at 1440×1024 CSS, device scale 1. No screenshot resampling or image editing. The 47px width and 34px height differences are explicit; this is a composition/state comparison, not a pixel-diff score. Source is a fictional Draft review; implementation is the corresponding real guarded Draft review using clearly marked fixture data for repeatability. Live amounts and timestamps intentionally differ.
 
-## Findings
+## Comparison and iteration history
 
-No actionable P0, P1, or P2 findings remain.
+The source and implementation were opened together in the same tool comparison input, first before the final copy/icon refinement, then again after it. Full-view comparison includes the whole left navigation, heading, main term block and right action card. Essential text, checkbox, button and icons are readable at 1:1; focused review of those regions used the same original-resolution pair, so a separate resampled crop was unnecessary.
 
-- Typography: the implementation preserves the source's compact geometric
-  hierarchy while using the repository's existing type stack. Headings, metric
-  values, labels, pills, and sidebar text remain readable without low-contrast
-  gray-on-gray treatment. Long metric values wrap without overlapping icons.
-- Spacing and layout: the dark navigation rail, workspace switch, four-metric
-  row, action hierarchy, and three product rows follow the selected direction.
-  IPO.ONE's mandatory no-funds boundary adds one compact row above the source
-  composition; all primary products and both next actions remain above the fold.
-- Colors and tokens: graphite, white, lavender, and green semantic tokens retain
-  IPO.ONE's identity. Foreground contrast is intentionally stronger than the
-  secondary `o1.credit` reference.
-- Image quality and assets: this screen contains no product photography or
-  illustration. Existing repository SVG symbols are used consistently for
-  interface icons; no emoji, placeholder art, CSS drawings, or approximate
-  brand imagery were introduced.
-- Copy and content: product labels are direct and commercial while remaining
-  accurate to the no-funds pilot. Missing available-credit truth is presented as
-  `Unavailable`; no amount, score, transaction, or Evidence claim is invented.
-- States and interactions: Human/Agent workspace switching, Credit routing,
-  More tools disclosure, mobile navigation, sign-in state, and sign-out controls
-  were exercised. Browser console warning/error output was empty.
-- Accessibility and responsiveness: semantic buttons and existing focus
-  behavior are preserved. At 390 × 844 CSS px the navigation and metrics stack
-  without horizontal overflow; the final density pass only removes redundant
-  authenticated copy and reduces vertical spacing, without changing mobile
-  breakpoints.
+| Finding | Impact / correction | Post-fix evidence |
+| --- | --- | --- |
+| P1: inherited primary-button styling overrode the new action colors | Legacy selectors produced unreadable action text. A single scoped semantic action rule now controls foreground/background without changing event handlers. | `authority-1440-dark.png`; enabled-button contrast >=4.5:1 browser assertions in both themes. |
+| P2: long Agent activation copy consumed the decision area | Retained exact-action acknowledgement and the existing Offer boundary, shortened repeated prose, and placed the real library bot icon next to the object heading. | Latest authority 1440 Dark/Light; the main action is visible at approximately y=700px in the Draft desktop state. |
+| P1: Capital selected application kept a pale fixed background under white text | Replaced fixed selection/hover backgrounds with shared accent-muted tokens, including non-button selected rows. | `output/playwright/web-026/capital-1440-dark.png`, recaptured after the correction. The selected title is visibly readable. |
+| P2: public initial layout jumped from x=192 to x=0 during startup | Reserved the correct full-width public geometry before deferred experience initialization. | Public-quality before/after: 0.16944 on WEB-026H versus 0 on final 7f691f1 in three interleaved local runs; no auth or navigation behavior changed. |
 
-## Full-view comparison evidence
+## Systematic review
 
-The pass-2 composite places the normalized source on the left and the final
-browser capture on the right. It confirms the intended shared composition:
-compact dark sidebar, top-level workspace switch, four account signals, one
-dominant credit action, clear product rows, and progressive disclosure for
-advanced tools.
+- Typography: existing type stack, strong object heading, tabular two-column amounts and quieter metadata match the reference hierarchy. No oversized marketing heading replaces operational content. Actual controls use normal words and explicit mutations.
+- Layout/spacing: 224px sidebar and 320px right review panel retain the chosen visual structure. A real sandbox banner, technical disclosure and application receipt add vertical content absent from the concept; they remain accessible. Authority details stack at narrow widths without horizontal overflow.
+- Colors: graphite/mint selected direction, independent Light palette, distinct semantic states. No fabricated live-health green indicator. Buttons and selected Capital rows use theme tokens.
+- Images/icons: source's fictional logos/avatars and company footer were intentionally omitted. Real brand assets and the existing bot/icon sprite are used; no approximate SVG illustration or CSS art.
+- Copy/state: Draft/Active distinction, exact Mandate acknowledgement and no-funds consequence are explicit. Completed Evidence can be read after refresh without another runtime goal. Human current-plan and new-request states are separate.
+- Additional inspected renders: Human/Agent tasks at 1440 Dark; authority at 390 Dark and 1440 Light; Capital at 1440 Dark; Risk at 390 Light. All four role layouts are captured/tested in six widths and both themes. Initial Capital/Risk screenshots were fixture-only. J1 now separately verifies real local invited login/recovery; `capital/partner.png` is a durable-service render. At the J checkpoint Risk MFA remained blocked; K2 verification below supersedes this.
+- Interactions: native navigation, More tools, theme, current-plan action, Agent review/activation, keyboard disclosure focus, login error recovery and reduced-motion checks pass in browser suites. Actual Human/Agent signed flows use durable local services and isolated QA wallets, without API response mocks.
 
-IPO.ONE intentionally differs in three places:
+## Intentional differences and remaining acceptance
 
-1. It displays the no-funds safety boundary instead of implying production
-   capital.
-2. It keeps a secondary Agent authority action because Human and Agent are
-   parallel first-class entry modes.
-3. It shows only server-derived portfolio values, including `Unavailable` when
-   the current protocol surface does not return available credit.
+The source falsely says a Draft “Authorizes” and invents names, limits, health and legal claims. The implementation corrects those rather than copying them. The real exact-action checkbox and technical recovery disclosure add necessary content. No arbitrary “all functions complete” claim follows from this visual match.
 
-These are accepted product constraints rather than fidelity defects.
+Visual corrections above are addressed. WEB-027J repaired invited login, legacy reports, Principal execution binding and fresh Principal Agent provisioning. Overall product handoff remains blocked by the remaining whole-site semantic acceptance matrix and physical-device acceptance. Screen presence is not capability acceptance. Full 200% browser zoom and final hosted role acceptance remain to be recorded before release.
 
-## Focused-region evidence
+final result: blocked
 
-A separate crop was not required. The original-resolution 1280 × 911 browser
-capture keeps the navigation labels, workspace switch, safety row, metric
-labels and values, product descriptions, pills, and action controls legible.
-Those regions were also exercised directly in the browser rather than judged
-from the composite alone.
+## WEB-027J follow-up
 
-## Comparison history
+Inspected the actual fresh Principal `j4/before-restart.png` and Capital `capital/partner.png`, with the selected Precision Terminal layout retained. New local Agent enrollment/revocation controls reuse the same native button and form system. Exact runtime and schema hashes were verified separately. Full browser regression has 29 covered cases after the five Agent-host fixture cases were corrected and retested; no fixture result is substituted for durable login or authority.
 
-### Pass 1 — blocked
 
-- Finding: P2 above-the-fold hierarchy drift.
-- Evidence:
-  `/Users/cptmao/Documents/IPO.ONE/artifacts/ui/web019-design-qa-comparison.jpg`
-- Difference: separate safety and authenticated-runtime panels plus a duplicate
-  portfolio heading pushed the product entry rows below the first viewport.
-- Impact: the implementation read like an internal status console instead of
-  the selected action-first commercial workspace.
-- Fix:
-  - hide the redundant authenticated-runtime panel only after the workspace is
-    positively connected;
-  - retain the full panel for checking, blocked, and signed-out states;
-  - keep the overview section heading accessible but visually remove its
-    duplicate display;
-  - tighten metric and product-row vertical rhythm;
-  - move the server-recovery status below the product entries.
+## WEB-027K1 follow-up
 
-### Pass 2 — passed
+Inspected real Human activation and completed-plan screens. Existing position form hiding initially orphaned activation; fixed by keeping the identity panel outside it. Screenshot review found white text on a light confirmation dialog; changed to the existing theme ink token. Final actual-browser contrast exceeds 6.49:1 at 1440/390 in Light/Dark, dialog fits and native Escape cancels. K1 activation and account proof use real local services; At this K1 checkpoint the Risk verifier review was pending; K2 below records its approved implementation.
 
-- Evidence:
-  `/Users/cptmao/Documents/IPO.ONE/artifacts/ui/web019-design-qa-comparison-pass2.jpg`
-- Result: the four account signals, both primary actions, and all three product
-  families are visible above the fold. Mandatory safety truth remains clear,
-  readable, and distinct from commercial actions.
-- Post-fix browser console warnings/errors: none.
+## WEB-027K2 follow-up
 
-## Verification
-
-- `node --check apps/web/src/app.js`
-- `node --test apps/web/test/*.test.js` — 94 passed.
-- `pnpm run check:web-bundle` — passed.
-- `pnpm run check` — 652 passed.
-- `git diff --check` — passed.
-
-## Follow-up polish
-
-- P3: when the protocol eventually exposes an approved available-credit
-  operation, the first metric can display that server-derived amount without a
-  layout change.
-- P3: recent verified activity remains immediately after the compact workspace
-  details/recovery area and may require one short scroll on smaller desktop
-  heights. This preserves the mandatory safety and server-truth context.
-
-final result: passed
+Inspected final `71f4723` actual-service Risk desktop Dark and mobile Light revoke dialog; automated visible review also covers 1440/390 Light/Dark. Controls fit without horizontal overflow, dialog text contrast is at least 15.23:1 and native Escape cancels without mutation. Backup registration, verification and explicit revoke controls preserve the Precision palette. Full cryptographic browser acceptance, expiry/revocation and Human/Agent regressions are recorded in `docs/design/web-027/k2-verification-evidence.json`. No fixture result is presented as a physical Founder-device or formal-site acceptance.

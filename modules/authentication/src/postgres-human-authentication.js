@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { createSiweMessage } from "viem/siwe";
+import { createSiweMessage, parseSiweMessage } from "viem/siwe";
 import { getAddress } from "viem";
 import { createOperationalId, hashId } from "../../../packages/domain/src/index.js";
 import { createAuthenticationContext } from "./authentication-context.js";
@@ -39,7 +39,7 @@ const HUMAN_AUTHENTICATION_METHODS = new Set([
 ]);
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 const APPROVED_CHAIN_IDS = new Set([84532, 1952]);
-const SELECTABLE_HUMAN_ROLES = new Set(["human_borrower", "principal_controller"]);
+import { SELECTABLE_HUMAN_ROLES, WALLET_ROLE_LABELS, allowedWalletRoles } from "./wallet-workspace-roles.js";
 const PUBLIC_BETA_ROLE_PROFILE_KEYS = new Set([
   "human_borrower",
   "principal_controller"
@@ -61,7 +61,7 @@ const ACTOR_LOCK_POLICY =
   "((membership_row.expires_at IS NULL) OR " +
   "(membership_row.expires_at > clock_timestamp())))))";
 
-function authenticationRlsPolicies() {
+function authenticationRlsPolicies(localPasskeys = false) {
   const policies = new Map([
     ["tenants\0tenant_self_select", ["SELECT", "(id = current_app_tenant_id())", null]],
     ["tenants\0tenant_self_update", [
@@ -81,7 +81,8 @@ function authenticationRlsPolicies() {
     "authentication_sessions",
     "authentication_session_invalidations",
     "authentication_replay_entries",
-    "authentication_events"
+    "authentication_events",
+    ...(localPasskeys ? ["authentication_passkeys", "authentication_passkey_challenges", "authentication_passkey_evidence", "authentication_passkey_audit"] : [])
   ]) {
     policies.set(`${table}\0tenant_isolation_${table}`, ["ALL", TENANT_ROW_POLICY, TENANT_ROW_POLICY]);
   }
@@ -103,7 +104,7 @@ function assertRepository(repository, expectedTenantId) {
   return repository;
 }
 
-export async function assertPostgresAuthenticationRole(queryable) {
+export async function assertPostgresAuthenticationRole(queryable, { localPasskeys = false } = {}) {
   if (!queryable || typeof queryable.query !== "function") {
     throw authenticationError(
       "invalid_authentication_configuration",
@@ -186,7 +187,13 @@ export async function assertPostgresAuthenticationRole(queryable) {
     authentication_sessions: [true, true, true, false, false, false, false],
     authentication_session_invalidations: [true, true, false, false, false, false, false],
     authentication_replay_entries: [true, true, false, true, false, false, false],
-    authentication_events: [true, true, false, false, false, false, false]
+    authentication_events: [true, true, false, false, false, false, false],
+    ...(localPasskeys ? {
+      authentication_passkeys: [true, true, true, false, false, false, false],
+      authentication_passkey_challenges: [true, true, true, false, false, false, false],
+      authentication_passkey_evidence: [true, true, false, false, false, false, false],
+      authentication_passkey_audit: [true, true, false, false, false, false, false]
+    } : {})
   });
   for (const [table, privileges] of Object.entries(expected)) {
     const result = await queryable.query(
@@ -303,7 +310,7 @@ export async function assertPostgresAuthenticationRole(queryable) {
       "authentication tables must enforce the reviewed RLS boundary"
     );
   }
-  const expectedPolicies = authenticationRlsPolicies();
+  const expectedPolicies = authenticationRlsPolicies(localPasskeys);
   const rlsPolicies = await queryable.query(
     `SELECT tablename AS table_name, policyname AS policy_name,
             permissive, roles::text[] AS roles, cmd,
@@ -673,7 +680,8 @@ export class PostgresWalletLoginTransactionStore {
     uri,
     statement = "Sign in to the IPO.ONE no-funds credit workspace.",
     ttlMs = 5 * 60_000,
-    maximumTransactions = 1_000
+    maximumTransactions = 1_000,
+    workspaceRoles
   }) {
     this.tenantId = tenantId(configuredTenantId);
     this.repository = assertRepository(eventRepository, this.tenantId);
@@ -684,6 +692,7 @@ export class PostgresWalletLoginTransactionStore {
     if (parsedUri.host !== domain || parsedUri.origin !== `https://${domain}`) {
       throw authenticationError("invalid_authentication_configuration", "wallet login origin is invalid");
     }
+    this.workspaceRoles = allowedWalletRoles(workspaceRoles);
     this.referenceHasher = referenceHasher;
     this.secretBox = secretBox;
     this.domain = domain;
@@ -700,6 +709,7 @@ export class PostgresWalletLoginTransactionStore {
     const checkedAddress = normalizeAddress(address);
     const checkedChainId = normalizeChainId(chainId);
     const checkedRole = selectableHumanRole(requestedRole);
+    if (!this.workspaceRoles.includes(checkedRole)) throw authenticationError("authentication_role_rejected", "selected workspace is not available on this host");
     const handle = randomOpaqueValue();
     const nonce = randomBytes(16).toString("hex");
     const expirationTime = new Date(now.getTime() + this.ttlMs);
@@ -710,7 +720,7 @@ export class PostgresWalletLoginTransactionStore {
       expirationTime,
       issuedAt: now,
       nonce,
-      statement: `${this.statement} Selected workspace: ${checkedRole === "human_borrower" ? "Human Borrower" : "Principal Controller"}.`,
+      statement: `${this.statement} Selected workspace: ${WALLET_ROLE_LABELS[checkedRole]}.`,
       uri: this.uri,
       version: "1"
     });
@@ -786,11 +796,20 @@ export class PostgresWalletLoginTransactionStore {
       )) {
         throw new Error("wallet transaction binding mismatch");
       }
+      const message = this.secretBox.open("siwe.message", row.message_ciphertext);
+      const signed = parseSiweMessage(message);
+      if (signed.domain !== this.domain || signed.uri !== this.uri ||
+          signed.chainId !== Number(row.chain_id) ||
+          signed.address?.toLowerCase() !== address.toLowerCase() ||
+          !this.workspaceRoles.includes(row.requested_role) ||
+          signed.statement !== `${this.statement} Selected workspace: ${WALLET_ROLE_LABELS[row.requested_role]}.`) {
+        throw new Error("wallet transaction host or role mismatch");
+      }
       return Object.freeze({
         address: normalizeAddress(address),
         chainId: normalizeChainId(Number(row.chain_id)),
         requestedRole: selectableHumanRole(row.requested_role),
-        message: this.secretBox.open("siwe.message", row.message_ciphertext),
+        message,
         expiresAt: timestamp(row.expires_at)
       });
     } catch {
@@ -904,6 +923,7 @@ export class PostgresCredentialRegistry {
     tenantId: requestedTenantId,
     externalSubject,
     clientId,
+    requestedRole,
     now = new Date()
   }) {
     if (!this.publicBetaWalletRoleProfiles) {
@@ -950,6 +970,24 @@ export class PostgresCredentialRegistry {
     const roles = this.publicBetaWalletRoleProfiles;
 
     return this.repository.withTenantWrite(async (client) => {
+      // A failed legacy lookup must never turn a revoked identity into a new
+      // account under the v2 key. Serialize with the verified rebind path.
+      await client.query(
+        "SELECT pg_advisory_xact_lock(hashtext('authentication_reference_rebind'), hashtext($1 || ':' || $2 || ':' || $3))",
+        [this.tenantId, normalizedIssuer, normalizedClientId]
+      );
+      const knownHashes = typeof this.referenceHasher.lookupHashes === "function"
+        ? this.referenceHasher.lookupHashes("subject", `${normalizedIssuer}\0${normalizedSubject}`).map(item => item.referenceHash)
+        : [subjectRefHash];
+      const known = await client.query(
+        "SELECT id FROM authentication_credentials WHERE tenant_id=$1 AND issuer=$2 AND client_id=$3 AND subject_ref_hash=ANY($4::text[]) ORDER BY reference_hash_key_version DESC LIMIT 1 FOR UPDATE",
+        [this.tenantId, normalizedIssuer, normalizedClientId, knownHashes]
+      );
+      if (known.rowCount) {
+        return this.#recoverVerifiedPublicBetaWallet(
+          client, known.rows[0].id, requestedRole, now
+        );
+      }
       const result = await client.query(
         `SELECT provision_public_beta_human_wallet_identity(
            $1, $2, $3, $4, $5, $6, $7, $8, $9,
@@ -988,6 +1026,91 @@ export class PostgresCredentialRegistry {
         now
       );
     });
+  }
+
+  // Called only after fresh SIWE verification, through the ordinary public-Beta
+  // fallback. Expiration of a legacy invitation is not an account suspension.
+  // Keep the same identity; never recreate it or revive revoked authority.
+  async #recoverVerifiedPublicBetaWallet(client, credentialId, requestedRole, now) {
+    const selected = await client.query(
+      `SELECT c.*, t.status AS tenant_status, a.status AS actor_status,
+              m.status AS membership_status, m.valid_from, m.expires_at AS membership_expires_at,
+              m.role_bundle, m.policy_version AS membership_policy_version,
+              m.capabilities AS membership_capabilities, m.client_ids AS membership_client_ids
+         FROM authentication_credentials c
+         JOIN tenants t ON t.id=c.tenant_id
+         JOIN actors a ON a.id=c.actor_id
+         JOIN memberships m ON m.tenant_id=c.tenant_id AND m.actor_id=c.actor_id
+        WHERE c.tenant_id=$1 AND c.id=$2 FOR UPDATE OF c`,
+      [this.tenantId, credentialId]
+    );
+    const row = selected.rows[0];
+    if (!row?.expires_at || new Date(row.expires_at) > now) {
+      return this.#activeInTransaction(client, credentialId, now);
+    }
+    const reject = () => {
+      throw authenticationError("authentication_credential_rejected", "credential is not active");
+    };
+    const allowed = this.publicBetaWalletRoleProfiles[row.role_bundle];
+    if (
+      selected.rowCount !== 1 || !PUBLIC_BETA_ROLE_PROFILE_KEYS.has(requestedRole) ||
+      ![CredentialStatus.ACTIVE, CredentialStatus.EXPIRED].includes(row.status) ||
+      row.actor_type !== ActorType.HUMAN ||
+      row.client_authentication_method !== ClientAuthenticationMethod.SIWE ||
+      row.sender_constraint_method !== SenderConstraintMethod.HOST_SESSION ||
+      row.reference_hash_key_version !== "v2" || !allowed ||
+      row.tenant_status !== "active" || row.actor_status !== "active" ||
+      row.membership_status !== "active" || new Date(row.valid_from) > now ||
+      (row.membership_expires_at && new Date(row.membership_expires_at) <= now) ||
+      row.policy_version !== row.membership_policy_version ||
+      !sameValues(row.roles, [row.role_bundle]) ||
+      !row.membership_client_ids.includes(row.client_id) ||
+      row.allowed_capabilities.some(value => !allowed.includes(value) ||
+        !row.membership_capabilities.includes(value))
+    ) reject();
+    const enrollments = await client.query(
+      `SELECT * FROM authentication_role_enrollments
+        WHERE tenant_id=$1 AND credential_id=$2 ORDER BY id FOR UPDATE`,
+      [this.tenantId, credentialId]
+    );
+    const ordinary = enrollments.rows.filter(entry => entry.status === "active");
+    const role = ordinary.find(entry => entry.role_bundle === requestedRole);
+    const expiry = new Date(row.expires_at).getTime();
+    if (!role || ordinary.some(entry => {
+      const capabilities = this.publicBetaWalletRoleProfiles[entry.role_bundle];
+      return !capabilities || entry.actor_id !== row.actor_id ||
+        entry.policy_version !== row.policy_version ||
+        !entry.client_ids.includes(row.client_id) ||
+        entry.capabilities.some(value => !capabilities.includes(value));
+    }) || new Date(role.valid_from) > now ||
+      (role.expires_at && new Date(role.expires_at) <= now &&
+        new Date(role.expires_at).getTime() !== expiry)
+    ) reject();
+    const rotated = await client.query(
+      `UPDATE authentication_credentials
+          SET status='active', expires_at=NULL, version=version+1,
+              sender_constraint_ref_hash=$3, updated_at=$4
+        WHERE tenant_id=$1 AND id=$2 RETURNING *`,
+      [this.tenantId, credentialId,
+        this.referenceHasher.hash("sender.constraint", `public-beta-wallet-recovery\0${createOperationalId("recovery")}`), now]
+    );
+    // Only remove the same historical invitation expiry. Independent role
+    // expiry/revocation remains authoritative, including every special role.
+    await client.query(
+      `UPDATE authentication_role_enrollments
+          SET expires_at=NULL, version=version+1, updated_at=$4
+        WHERE tenant_id=$1 AND credential_id=$2 AND expires_at=$3
+          AND status='active' AND role_bundle IN ('human_borrower','principal_controller')`,
+      [this.tenantId, credentialId, row.expires_at, now]
+    );
+    await appendEvent(client, {
+      eventType: AuthenticationEventType.CREDENTIAL_ROTATED,
+      tenantId: this.tenantId, actorId: this.systemActorId, credentialId,
+      reasonCode: "public_beta_wallet_expiry_recovered", occurredAt: now,
+      payload: { senderConstraintMethod: SenderConstraintMethod.HOST_SESSION,
+        referenceHashKeyVersion: "v2", version: safeVersion(rotated.rows[0].version, "credential version") }
+    });
+    return this.#activeInTransaction(client, credentialId, now);
   }
 
   async register(input) {
@@ -1440,7 +1563,9 @@ export class PostgresCredentialRegistry {
             AND (e.expires_at IS NULL OR e.expires_at > $5)
             AND e.policy_version = $6
             AND e.client_ids ? $7
-            AND a.actor_type = 'human'
+            AND ((e.role_bundle = 'risk_operator' AND a.actor_type = 'risk_operator')
+              OR (e.role_bundle IN ('operations_operator','auditor') AND a.actor_type::text = e.role_bundle)
+              OR (e.role_bundle IN ('human_borrower','principal_controller','capital_partner_operator') AND a.actor_type = 'human'))
             AND a.status = 'active'
           FOR SHARE OF e, a`,
         [
@@ -1783,7 +1908,8 @@ export class PostgresHumanSessionStore {
     origin,
     idleTimeoutMs = 30 * 60_000,
     absoluteTimeoutMs = 8 * 60 * 60_000,
-    maximumSessions = 10_000
+    maximumSessions = 10_000,
+    resolveStepUp
   }) {
     this.tenantId = tenantId(configuredTenantId);
     this.repository = assertRepository(eventRepository, this.tenantId);
@@ -1801,6 +1927,10 @@ export class PostgresHumanSessionStore {
       throw authenticationError("invalid_authentication_configuration", "session capacity is invalid");
     }
     this.maximumSessions = maximumSessions;
+    if (resolveStepUp !== undefined && typeof resolveStepUp !== "function") {
+      throw authenticationError("invalid_authentication_configuration", "step-up resolver is invalid");
+    }
+    this.resolveStepUp = resolveStepUp;
   }
 
   async create(input) {
@@ -1934,7 +2064,17 @@ export class PostgresHumanSessionStore {
     return this.#issued(sessionFromRow(row), handle, csrfToken);
   }
 
-  async authenticate({ sessionHandle, requestMethod, requestOrigin, csrfToken, now = new Date() }) {
+  async authenticate(input) {
+    return this.#authenticate(input);
+  }
+
+  // Internal server composition only: ceremony and session admission share one lock/transaction.
+  async withAuthenticatedSession(input, operation) {
+    if (typeof operation !== "function") throw authenticationError("invalid_authentication_configuration", "session operation is required");
+    return this.#authenticate(input, operation);
+  }
+
+  async #authenticate({ sessionHandle, requestMethod, requestOrigin, csrfToken, now = new Date() }, operation) {
     const method = assertBoundedString("requestMethod", requestMethod, {
       maximum: 16,
       pattern: /^[A-Za-z]+$/
@@ -2097,12 +2237,15 @@ export class PostgresHumanSessionStore {
         RETURNING *`,
         [this.tenantId, sessionRefHash, effectiveNow, nextIdleExpiresAt]
       );
-      return { session: sessionFromRow(updated.rows[0]) };
+      const currentSession = sessionFromRow(updated.rows[0]);
+      const value = operation ? await operation(client, currentSession, effectiveNow) : undefined;
+      const stepUp = this.resolveStepUp ? await this.resolveStepUp(client, currentSession, effectiveNow) : undefined;
+      return { session: currentSession, stepUp, value };
     });
     if (!result.session) {
       throw authenticationError("authentication_session_rejected", "session is not active");
     }
-    return this.#context(result.session, new Date(result.session.lastSeenAt));
+    return operation ? result.value : this.#context(result.session, new Date(result.session.lastSeenAt), result.stepUp);
   }
 
   async rotate({ sessionHandle, reasonCode = "session_rotation", now = new Date() }) {
@@ -2466,7 +2609,7 @@ export class PostgresHumanSessionStore {
     }
   }
 
-  #context(session, now) {
+  #context(session, now, stepUp) {
     return createAuthenticationContext({
       tenantId: session.tenantId,
       actorId: session.actorId,
@@ -2481,9 +2624,9 @@ export class PostgresHumanSessionStore {
       authenticationMethod: session.authenticationMethod,
       senderConstraintMethod: SenderConstraintMethod.HOST_SESSION,
       authenticatedAt: now,
-      authTime: session.authTime,
+      authTime: stepUp?.verifiedAt ?? session.authTime,
       acr: session.acr,
-      amr: session.amr
+      amr: stepUp ? [...new Set([...session.amr, "webauthn"])] : session.amr
     });
   }
 

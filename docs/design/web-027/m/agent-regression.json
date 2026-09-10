@@ -1,0 +1,78 @@
+{
+  "source": "205fe9b7ef6726e00ce107777c4d73c1041df6b4",
+  "apiMocks": false,
+  "results": [
+    {
+      "freshPrincipalLifecycle": true,
+      "fullyRepaid": true,
+      "visibleClicks": true
+    },
+    {
+      "restartRecovery": true,
+      "credentialRevocation": true,
+      "revocationAfterRefresh": true
+    }
+  ],
+  "actionEvidence": [
+    {
+      "selector": "#createLocalSandboxAgentBtn",
+      "label": "Create my sandbox Agent",
+      "at": "2026-09-07T09:29:49.447Z"
+    },
+    {
+      "selector": "#createAccountChallengeBtn",
+      "label": "Create signing request",
+      "at": "2026-09-07T09:29:49.842Z"
+    },
+    {
+      "selector": "#proveAccountOnlineBtn",
+      "label": "Ask registered test Agent to prove",
+      "at": "2026-09-07T09:29:50.041Z"
+    },
+    {
+      "selector": "#createDraftMandateBtn",
+      "label": "Create Draft Mandate",
+      "at": "2026-09-07T09:29:50.258Z"
+    },
+    {
+      "selector": "#openAgentApplicationHandoffBtn",
+      "label": "Run local Agent application",
+      "at": "2026-09-07T09:29:50.461Z"
+    },
+    {
+      "selector": "#agentOnlineRunBtn",
+      "label": "Review and activate this Mandate",
+      "at": "2026-09-07T09:29:51.286Z"
+    },
+    {
+      "selector": "#activateMandateBtn",
+      "label": "Activate sandbox Mandate",
+      "at": "2026-09-07T09:29:51.337Z"
+    },
+    {
+      "selector": "#continueAgentCreditBtn",
+      "label": "Open Agent workspace",
+      "at": "2026-09-07T09:29:51.585Z"
+    },
+    {
+      "selector": "#agentOnlineRunBtn",
+      "label": "Complete sandbox Agent lifecycle",
+      "at": "2026-09-07T09:29:51.610Z"
+    },
+    {
+      "selector": "#agentOnlineReviewBtn",
+      "label": "Review Agent obligations",
+      "at": "2026-09-07T09:29:51.985Z"
+    },
+    {
+      "selector": "#agentOnlineRunBtn",
+      "label": "Verify Agent Evidence",
+      "at": "2026-09-07T09:29:52.350Z"
+    },
+    {
+      "selector": "#revokeLocalSandboxAgentBtn",
+      "label": "Revoke local runtime credential",
+      "at": "2026-09-07T09:29:56.351Z"
+    }
+  ]
+}

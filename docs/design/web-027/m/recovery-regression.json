@@ -1,0 +1,77 @@
+{
+  "source": "205fe9b7ef6726e00ce107777c4d73c1041df6b4",
+  "apiMocks": false,
+  "results": [
+    {
+      "name": "Keyboard Offer selection revalidates without accepting",
+      "count": 11,
+      "labels": [
+        "Sandbox evaluation · $25.00 · 9% APR · 2 payments · Sep 7, 1:19:07 PM · Review Offer",
+        "Sandbox evaluation · $25.00 · 9% APR · 2 payments · Sep 7, 1:13:48 PM · Review Offer",
+        "Sandbox evaluation · $22.00 · 9% APR · 2 payments · Sep 7, 12:53:13 PM · Review Offer",
+        "Sandbox evaluation · $20.00 · 9% APR · 2 payments · Sep 6, 11:44:15 PM · Review Offer",
+        "Sandbox evaluation · $20.00 · 9% APR · 2 payments · Sep 6, 11:43:04 PM · Review Offer",
+        "Sandbox evaluation · $20.00 · 9% APR · 2 payments · Sep 6, 11:40:26 PM · Review Offer",
+        "Sandbox evaluation · $20.00 · 9% APR · 2 payments · Sep 6, 11:37:42 PM · Review Offer",
+        "Sandbox evaluation · $20.00 · 9% APR · 2 payments · Sep 6, 11:29:43 PM · Review Offer",
+        "Sandbox evaluation · $20.00 · 9% APR · 2 payments · Sep 6, 11:20:01 PM · Review Offer",
+        "Sandbox evaluation · $20.00 · 9% APR · 2 payments · Sep 6, 8:53:57 PM · Review Offer",
+        "Sandbox evaluation · $20.00 · 9% APR · 2 payments · Sep 6, 8:49:04 PM · Review Offer"
+      ]
+    },
+    {
+      "name": "Human Offer choices fit",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "name": "Human Offer choices fit",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "name": "Human Offer choices fit",
+      "width": 390,
+      "theme": "light"
+    },
+    {
+      "name": "Human Offer choices fit",
+      "width": 390,
+      "theme": "dark"
+    },
+    {
+      "name": "Human Offer choices fit",
+      "width": 320,
+      "theme": "light"
+    },
+    {
+      "name": "Human Offer choices fit",
+      "width": 320,
+      "theme": "dark"
+    },
+    {
+      "name": "Human Pool visible read boundary",
+      "text": "BASE SEPOLIA · ONE EXACT MARKET · TEST ASSETS ONLY\n\nSecured Pool, read from server truth.\n\nThe same canonical Pool state supports Human liquidity and secured-credit positions. IPO.ONE verifies the approved deployment and reads a safe block; this page cannot sign or submit a transaction.\n\nDeployment known · state unavailable\n\nINDEPENDENT TRUTH AXES\n\nWhat IPO.ONE can verify right now\n\nA deployed contract can remain true even when RPC, indexer, reconciliation, or a private AccountBinding is unavailable.\n\nRefresh Pool state\nDeployment\nDeployment configured\nExact onchain verification is currently unavailable\nRPC\nUnavailable\npool rpc adapter unavailable\nIndexer\nUnavailable\npool indexer state unavailable\nReconciliation\nUnavailable\nreconciliation unavailable\nMarket\nUnavailable\nNo market amount is asserted\nSubmission\nDisabled by task authority\nNo signer or transaction primitive\n\nPUBLIC MARKET · TEST USDC / WETH\n\nCurrent read-only market\n\n0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da · exact deployment known; live market values unavailable\n\nNo real funds\nAvailable liquidity\nUnavailable\nTest USDC asset units\nGross debt\nUnavailable\nTest USDC asset units\nUtilization\nUnavailable\nServer-derived basis points\nLP claim\nUnavailable\nTest USDC asset units\nContract\n0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da\nMarket ID\nUnavailable\nSafe block\nUnavailable\nObserved\nUnavailable\nOracle\nunavailable · observation time unavailable\nNew-risk control\nNew risk frozen · protocol unknown\n\nPRIVATE POSITION · SUBJECT + ACCOUNTBINDING REQUIRED\n\nMy authorized Pool position\n\nPublic market data never grants access to a private position. IPO.ONE returns position values only for the authenticated Actor's owned Subject and active execution AccountBinding.\n\nNo authorized AccountBinding\nAccountBinding\nUnavailable for current Subject\nMy position\nUnavailable\nSupply claim\nUnavailable\nHealth\nUnavailable\nRead-only scenario review\n\nDeployment truth loaded with an explicitly degraded RPC or indexer state. Private position and chain submission remain unavailable."
+    },
+    {
+      "name": "Metered Resource deployment state",
+      "text": "The hosted synthetic Metered Resource is not enabled for this deployment role. No external Provider or real funds are available."
+    },
+    {
+      "name": "Capital exact Facility survives Agent-triggered process restart",
+      "pass": true
+    }
+  ],
+  "network": [
+    {
+      "operationId": "pilotReadOwnSecuredPool",
+      "status": 200,
+      "schemaVersion": "tenant_secured_pool_workspace.v1"
+    },
+    {
+      "operationId": "pilotReadOwnSecuredPool",
+      "status": 200,
+      "schemaVersion": "tenant_secured_pool_workspace.v1"
+    }
+  ]
+}

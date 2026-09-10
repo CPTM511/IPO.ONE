@@ -1,3 +1,4 @@
+import { authorizationCommandPayloadHash } from "./local-approval-runtime.js";
 import {
   DomainError,
   assertNoRawPiiReference,
@@ -347,6 +348,7 @@ export class TenantCommandGateway {
     credentialRegistry,
     referenceHasher,
     approvalVerifier,
+    approvalRuntimeFactory,
     livePolicyAdapterFactory,
     abuseTelemetry
   }) {
@@ -368,6 +370,7 @@ export class TenantCommandGateway {
     this.credentialRegistry = credentialRegistry;
     this.referenceHasher = referenceHasher;
     this.approvalVerifier = approvalVerifier;
+    this.approvalRuntimeFactory = approvalRuntimeFactory;
     this.livePolicyAdapterFactory = livePolicyAdapterFactory;
     this.abuseTelemetry = abuseTelemetry;
     Object.freeze(this);
@@ -506,6 +509,9 @@ export class TenantCommandGateway {
           authenticationContext: envelope.authenticationContext,
           referenceHasher: this.referenceHasher
         });
+        const approvalRuntime = this.approvalRuntimeFactory ? await this.approvalRuntimeFactory({ client, coreRepository, directory,
+          authenticationContext: envelope.authenticationContext, policyRegistry:this.policyRegistry, credentialRegistry:this.credentialRegistry,
+          referenceHasher:this.referenceHasher, auditStore, handlers:this.handlers, livePolicyAdapterFactory:this.livePolicyAdapterFactory }) : undefined;
         const livePolicyAdapter = this.livePolicyAdapterFactory?.({
           client,
           coreRepository,
@@ -520,7 +526,7 @@ export class TenantCommandGateway {
           auditStore,
           referenceHasher: this.referenceHasher,
           livePolicyAdapter,
-          approvalVerifier: this.approvalVerifier
+          approvalVerifier: approvalRuntime?.service ?? this.approvalVerifier
         });
         let authorizationDecision;
         try {
@@ -529,7 +535,7 @@ export class TenantCommandGateway {
             operationId: envelope.operationId,
             requestId: envelope.requestId,
             correlationId: envelope.correlationId,
-            commandPayloadHash: identity.commandPayloadHash,
+            commandPayloadHash: authorizationCommandPayloadHash(envelope),
             ...(envelope.resource === undefined ? {} : { resource: envelope.resource }),
             ...(envelope.purpose === undefined ? {} : { purpose: envelope.purpose }),
             ...(envelope.reasonCode === undefined ? {} : { reasonCode: envelope.reasonCode }),
@@ -568,6 +574,7 @@ export class TenantCommandGateway {
 
         if (handler.kind === "query") {
           const response = await handler.execute({
+            approvalRuntime,
             client,
             coreRepository,
             directory,
@@ -591,6 +598,8 @@ export class TenantCommandGateway {
         }
 
         const plan = await handler.plan({
+          approvalRuntime,
+          idempotencyKey: envelope.idempotencyKey,
           client,
           coreRepository,
           directory,

@@ -1,3 +1,11 @@
+import { createLocalApprovalRuntimeFactory } from "../../../modules/tenant-command-gateway/src/local-approval-runtime.js";
+import { createLocalApprovalProofVerifier } from "./local-approval-proof.js";
+import { localSpecialRolesEnabled, assertLocalSpecialRoleDatabase, loadLocalSpecialRoleInvitations, localSpecialRoleSpecs } from "./local-special-role-access.js";
+import { LocalRiskPasskeys } from "../../../modules/authentication/src/local-risk-passkeys.js";
+import { createLocalPrincipalAgentRuntime } from "./local-principal-agent-runtime.js";
+import { assertLocalAccessDatabase, localAccessCapabilities, localAccessEnabled } from "./local-access-repair.js";
+import { readFile } from "node:fs/promises";
+import { PRODUCTION_BOOTSTRAP_PROFILES } from "./production-bootstrap.js";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createTrustedNetworkContext } from "../../../modules/abuse-control/src/index.js";
@@ -19,6 +27,7 @@ import {
   TenantCommandGateway,
   TenantCommandHandlerRegistry,
   AgentTenantCommandClient,
+  HumanTenantCommandClient,
   createPostgresTenantLivePolicyAdapter,
   createTenantFoundationHandlers
 } from "../../../modules/tenant-command-gateway/src/index.js";
@@ -101,13 +110,15 @@ function createGateway(
   {
     credentialRegistry = authentication.credentialRegistry,
     referenceHasher = authentication.referenceHasher,
-    meteredUsageProvider
+    meteredUsageProvider,
+    approvalRuntimeFactory
   } = {}
 ) {
   const durableGateway = new TenantCommandGateway({
     pool,
     handlers: new TenantCommandHandlerRegistry(
       createTenantFoundationHandlers({
+        localSandboxHumanActivation: localAccessEnabled(),
         hyperliquidInfoAdapter: new HyperliquidTestnetInfoAdapter(),
         hyperliquidBindingProofVerifier:
           new HyperliquidBindingProofVerifier(),
@@ -125,6 +136,7 @@ function createGateway(
           launchPolicy.profiles.live_testnet_secured_pool.exactProfile
       })
     ),
+    approvalRuntimeFactory,
     policyRegistry: authentication.policyRegistry,
     credentialRegistry,
     referenceHasher,
@@ -157,42 +169,70 @@ async function loadLocalDurableAuthenticationMaterial() {
   ]);
 }
 
-function localRuntimeConfig() {
+function localRuntimeConfig({ ordinaryWalletEnrollment = false } = {}) {
   return loadAuthenticationRuntimeConfig({
     NODE_ENV: "development",
-    IPO_ONE_AUTHENTICATION_MODE: "local_test"
+    IPO_ONE_AUTHENTICATION_MODE: "local_test",
+    ...(ordinaryWalletEnrollment ? { IPO_ONE_LOCAL_WALLET_SELF_SERVICE: "ordinary_verified_wallets" } : {})
   });
 }
 
 async function createLocalHumanAccess({
   authenticationPool,
   authenticationMaterial,
+  ordinaryWalletEnrollmentAllowed = true,
   identity,
   port,
   profile
 }) {
-  const browserOrigin = `http://127.0.0.1:${port}`;
+  const specialRole = localSpecialRolesEnabled() && Object.values(localSpecialRoleSpecs()).some(spec => spec.port === port && spec.actorId === identity.actorId && spec.roleBundle === identity.roleBundle);
+  const riskPasskey = specialRole || (localAccessEnabled() && identity.roleBundle === "risk_operator" && [8937, 8947].includes(port));
+  const browserOrigin = `http://${riskPasskey ? "localhost" : "127.0.0.1"}:${port}`;
   const secureOrigin = `https://127.0.0.1:${port}`;
   const walletSignatureVerifier = new EvmWalletSignatureVerifier();
+  const ordinaryWalletEnrollment = ordinaryWalletEnrollmentAllowed && process.env.IPO_ONE_LOCAL_WALLET_SELF_SERVICE === "ordinary_verified_wallets" &&
+    ["human_borrower", "principal_controller"].includes(identity.roleBundle);
+  let enrollmentReferenceKey;
+  if (ordinaryWalletEnrollment) {
+    const path = process.env.IPO_ONE_LOCAL_AUTH_REFERENCE_V2_FILE;
+    if (!path) throw new Error("Local wallet enrollment requires a durable v2 reference key file");
+    enrollmentReferenceKey = (await readFile(path, "utf8")).trim();
+    if (!/^[A-Za-z0-9_-]{43}$/.test(enrollmentReferenceKey)) throw new Error("Local enrollment reference key is invalid");
+  }
+
   return createPostgresHumanAccessComposition({
     browserOrigin,
+    ...(localAccessEnabled() ? { localPasskeys: true, localPasskeyFactory: options => new LocalRiskPasskeys(options) } : {}),
+    ...(specialRole ? { localSpecialRoles: true, ...(port === 8942 ? { localIndependentOperationsReviewer: true } : {}) } : {}),
     encryptionKey: authenticationMaterial.encryptionKey,
     encryptionKeyRef: "local-secret://authentication/encryption-key",
     oidcProviders: [],
     policyVersion: identity.createContext().policyVersion,
     pool: authenticationPool,
     profile: "local_no_funds",
+    ...(localAccessEnabled() && (["capital_partner_operator", "risk_operator"].includes(identity.roleBundle) || specialRole)
+      ? { localInvitedWalletRole: identity.roleBundle } : {}),
     referenceHashKey: authenticationMaterial.referenceHashKey,
     referenceHashKeyRef:
       "local-secret://authentication/reference-hash-key",
-    runtimeConfig: localRuntimeConfig(),
+    ...(ordinaryWalletEnrollment ? {
+      referenceHashKey: enrollmentReferenceKey,
+      referenceHashKeyRef: "local-secret://authentication/reference-hash-key-v2",
+      referenceHashMode: "overlap_v2_write_v1_lookup",
+      legacyReferenceHashKey: authenticationMaterial.referenceHashKey,
+      legacyReferenceHashKeyRef: "local-secret://authentication/reference-hash-key-v1",
+      publicBetaWalletRoleProfiles: Object.fromEntries(["human_borrower", "principal_controller"].map(role => [role, localAccessEnabled()
+        ? localAccessCapabilities(PRODUCTION_BOOTSTRAP_PROFILES[role].capabilities)
+        : PRODUCTION_BOOTSTRAP_PROFILES[role].capabilities]))
+    } : {}),
+    runtimeConfig: localRuntimeConfig({ ordinaryWalletEnrollment }),
     systemActorId: authenticationMaterial.systemActorId,
     tenantId: profile.tenantId,
     wallet: {
       issuer: secureOrigin,
       clientId: identity.clientId,
-      domain: `127.0.0.1:${port}`,
-      uri: secureOrigin,
+      domain: `${riskPasskey ? "localhost" : "127.0.0.1"}:${port}`,
+      uri: riskPasskey ? `https://localhost:${port}` : secureOrigin,
       signatureVerifier: {
         verify: (input) => walletSignatureVerifier.verifyMessage(input)
       }
@@ -216,11 +256,19 @@ export async function createPrivatePilotRuntime({
     );
   }
   assertPort("basePort", basePort);
+  if (localAccessEnabled()) assertLocalAccessDatabase(ownerConnectionString, basePort);
+  if (localSpecialRolesEnabled()) {
+    if (!localAccessEnabled()) throw new Error("WEB-027M requires the existing local access gate");
+    assertLocalSpecialRoleDatabase(ownerConnectionString, basePort);
+  }
+  const specialRoleInvitations = localSpecialRolesEnabled() ? await loadLocalSpecialRoleInvitations() : undefined;
   const checkedProfile = profile ?? await loadPrivatePilotProfile();
   const password = await loadOrCreatePrivatePilotDatabaseSecret();
   const authentication = createLocalPilotIdentities({
     profile: checkedProfile,
-    referenceHashKey: Buffer.from(password, "base64url")
+    referenceHashKey: Buffer.from(password, "base64url"),
+    localAccessRepair: localAccessEnabled(),
+    localSpecialRoles: localSpecialRolesEnabled()
   });
   const [serverMaterial, invitation] =
     await loadLocalDurableAuthenticationMaterial();
@@ -238,13 +286,17 @@ export async function createPrivatePilotRuntime({
     identities: authentication.identities,
     password,
     profile: authentication.profile,
-    creditRegistryObservationArtifactPath
+    creditRegistryObservationArtifactPath,
+    localAccessRepair: localAccessEnabled(),
+    basePort
   });
   const durableAuthentication = await provisionPrivatePilotAuthentication({
     ownerConnectionString,
     identities: authentication.identities,
     profile: authentication.profile,
     basePort,
+    localPasskeys: localAccessEnabled(),
+    specialRoleInvitations,
     serverMaterial,
     invitation
   });
@@ -263,8 +315,10 @@ export async function createPrivatePilotRuntime({
       hash: "#capital-partners"
     }
   ];
+  if (localSpecialRolesEnabled()) profiles.push(...Object.entries(localSpecialRoleSpecs()).map(([name, spec]) => ({ name, identity: authentication.identities[name], port: spec.port, hash: spec.hash })));
   const hosts = [];
   let gateway;
+  let principalAgentRuntime;
   try {
     const humanAccessProfiles = [];
     for (const profile of profiles) {
@@ -277,13 +331,28 @@ export async function createPrivatePilotRuntime({
       });
       humanAccessProfiles.push({ profile, humanAccess });
     }
+    // Workload credentials keep their existing v1 identity references. Human
+    // self-enrollment uses v2 independently and cannot rotate Agent authority.
+    const workloadCredentialRegistry = humanAccessProfiles.find(
+      ({ profile }) => profile.name === "risk"
+    ).humanAccess.credentialRegistry;
     gateway = createGateway(pool, authentication, {
       credentialRegistry:
         humanAccessProfiles[0].humanAccess.credentialRegistry,
       referenceHasher: createReferenceHasher(
         durableAuthentication.referenceHashKey
       ),
-      meteredUsageProvider
+      meteredUsageProvider,
+      ...(localSpecialRolesEnabled() ? { approvalRuntimeFactory:createLocalApprovalRuntimeFactory({
+        verifyRecordedProof:createLocalApprovalProofVerifier({ pool:durableAuthentication.pool, tenantId:authentication.profile.tenantId, systemActorId:durableAuthentication.systemActorId })
+      }) } : {})
+    });
+    if (localAccessEnabled()) principalAgentRuntime = createLocalPrincipalAgentRuntime({
+      ownerConnectionString, basePort, tenantId: authentication.profile.tenantId,
+      encryptionKey: durableAuthentication.encryptionKey,
+      referenceHasher: createReferenceHasher(durableAuthentication.referenceHashKey),
+      agentCapabilities: authentication.identities.agent.capabilities,
+      gateway, networkContext, expiresAt: invitation.credentialExpiresAt
     });
     const evidenceAnchors = evidenceAnchorContractAddress
       ? Object.freeze({
@@ -311,7 +380,7 @@ export async function createPrivatePilotRuntime({
         policyVersion: authentication.identities.agent.createContext()
           .policyVersion,
         audience: localAgentAudience,
-        credentialRegistry: humanAccess.credentialRegistry,
+        credentialRegistry: workloadCredentialRegistry,
         replayCache: humanAccess.machineReplayCache,
         referenceHasher: createReferenceHasher(
           durableAuthentication.referenceHashKey
@@ -340,9 +409,25 @@ export async function createPrivatePilotRuntime({
           networkContextProvider: async () => networkContext
         });
       }
-      const createAgentSession = async (manifest) => {
+      async function runtimeForPrincipal(context, subjectId) {
+        const material = await principalAgentRuntime?.materialFor(context, subjectId);
+        if (!material) return { authenticate: authenticateLocalAgent, account: localAgentAccount };
+        const authenticator = new LocalDurableAgentAuthenticator({
+          tenantId: authentication.profile.tenantId, clientId: material.clientId,
+          policyVersion: context.policyVersion, audience: localAgentAudience,
+          credentialRegistry: workloadCredentialRegistry, replayCache: humanAccess.machineReplayCache,
+          referenceHasher: createReferenceHasher(durableAuthentication.referenceHashKey)
+        });
+        return { account: material.account, authenticate: async () => authenticator.authenticate({
+          proof: await createLocalAgentProof({ keyMaterial: material.keyMaterial,
+            tenantId: authentication.profile.tenantId, clientId: material.clientId,
+            policyVersion: context.policyVersion, audience: localAgentAudience })
+        }) };
+      }
+      const createAgentSession = async (manifest, principalContext) => {
+        const runtime = await runtimeForPrincipal(principalContext, manifest.subjectId);
         async function authenticationContextProvider() {
-          const context = await authenticateLocalAgent();
+          const context = await runtime.authenticate();
           if (
             context.actorType !== ActorType.AGENT ||
             await verifyAgentSubjectBinding({
@@ -371,15 +456,26 @@ export async function createPrivatePilotRuntime({
             createAgentSession,
             gateway,
             networkContext,
-            async proveAccount(challenge) {
+            enrollment: principalAgentRuntime,
+            async proveAccount(challenge, principalContext) {
+              // Authorize the exact Principal-owned Subject before asking its
+              // local workload to sign; a role alone cannot select an Agent.
+              const principalClient = new HumanTenantCommandClient({ gateway, authenticationContextProvider: async () => principalContext, networkContextProvider: async () => networkContext });
+              await principalClient.execute({
+                operationId: "pilotReadAgentAccountBinding",
+                resource: { resourceType: "subject", resourceId: challenge.subjectId }, payload: {},
+                requestId: `request-proof-owner-${globalThis.crypto.randomUUID()}`,
+                correlationId: `correlation-proof-owner-${globalThis.crypto.randomUUID()}`
+              });
+              const runtime = await runtimeForPrincipal(principalContext, challenge.subjectId);
               const proof = preparePrivatePilotAgentProof(
                 challenge,
-                localAgentAccount
+                runtime.account
               );
-              const signature = await localAgentAccount.signTypedData(
+              const signature = await runtime.account.signTypedData(
                 proof.typedData
               );
-              const client = createLocalAgentClient(authenticateLocalAgent);
+              const client = createLocalAgentClient(runtime.authenticate);
               const result = await client.submitAccountProof({
                 subjectId: proof.subjectId,
                 payload: {
@@ -399,6 +495,7 @@ export async function createPrivatePilotRuntime({
           })
         : undefined;
       const host = createTenantPilotHost({
+        localRiskHostname: localAccessEnabled() && ([8937, 8947].includes(profile.port) || (localSpecialRolesEnabled() && Object.hasOwn(localSpecialRoleSpecs(), profile.name))),
         gateway,
         humanBff: humanAccess.humanSessionBff,
         machineAuthenticator: {
@@ -440,7 +537,8 @@ export async function createPrivatePilotRuntime({
     await Promise.allSettled(hosts.map(({ host }) => host.close()));
     await Promise.allSettled([
       pool.end(),
-      durableAuthentication.pool.end()
+      durableAuthentication.pool.end(),
+      principalAgentRuntime?.close()
     ]);
     throw error;
   }
@@ -466,7 +564,8 @@ export async function createPrivatePilotRuntime({
       await Promise.allSettled(hosts.map(({ host }) => host.close()));
       await Promise.allSettled([
         pool.end(),
-        durableAuthentication.pool.end()
+        durableAuthentication.pool.end(),
+      principalAgentRuntime?.close()
       ]);
     }
   });
@@ -514,15 +613,23 @@ export async function createPrivatePilotGateway(
   ownerConnectionString,
   {
     profile,
+    basePort = Number(process.env.IPO_ONE_PILOT_PORT || 8787),
     creditRegistryObservationArtifactPath =
       process.env.IPO_ONE_CREDIT_REGISTRY_OBSERVATION_ARTIFACT
   } = {}
 ) {
+  if (localAccessEnabled()) assertLocalAccessDatabase(ownerConnectionString, basePort);
+  if (localSpecialRolesEnabled()) {
+    if (!localAccessEnabled()) throw new Error("WEB-027M requires the existing local access gate");
+    assertLocalSpecialRoleDatabase(ownerConnectionString, basePort);
+  }
+  const specialRoleInvitations = localSpecialRolesEnabled() ? await loadLocalSpecialRoleInvitations() : undefined;
   const checkedProfile = profile ?? await loadPrivatePilotProfile();
   const password = await loadOrCreatePrivatePilotDatabaseSecret();
   const authentication = createLocalPilotIdentities({
     profile: checkedProfile,
-    referenceHashKey: Buffer.from(password, "base64url")
+    referenceHashKey: Buffer.from(password, "base64url"),
+    localAccessRepair: localAccessEnabled()
   });
   const meteredUsageProvider = createLocalSyntheticMeteredProvider({
     keyMaterial: await loadOrCreateLocalSyntheticMeteredProviderMaterial()
@@ -532,7 +639,9 @@ export async function createPrivatePilotGateway(
     identities: authentication.identities,
     password,
     profile: authentication.profile,
-    creditRegistryObservationArtifactPath
+    creditRegistryObservationArtifactPath,
+    localAccessRepair: localAccessEnabled(),
+    basePort
   });
   return Object.freeze({
     authentication,
@@ -552,11 +661,18 @@ export async function createPrivatePilotDurableAgentGateway(
       process.env.IPO_ONE_CREDIT_REGISTRY_OBSERVATION_ARTIFACT
   } = {}
 ) {
+  if (localAccessEnabled()) assertLocalAccessDatabase(ownerConnectionString, basePort);
+  if (localSpecialRolesEnabled()) {
+    if (!localAccessEnabled()) throw new Error("WEB-027M requires the existing local access gate");
+    assertLocalSpecialRoleDatabase(ownerConnectionString, basePort);
+  }
+  const specialRoleInvitations = localSpecialRolesEnabled() ? await loadLocalSpecialRoleInvitations() : undefined;
   const checkedProfile = profile ?? await loadPrivatePilotProfile();
   const password = await loadOrCreatePrivatePilotDatabaseSecret();
   const authentication = createLocalPilotIdentities({
     profile: checkedProfile,
-    referenceHashKey: Buffer.from(password, "base64url")
+    referenceHashKey: Buffer.from(password, "base64url"),
+    localAccessRepair: localAccessEnabled()
   });
   const meteredUsageProvider = createLocalSyntheticMeteredProvider({
     keyMaterial: await loadOrCreateLocalSyntheticMeteredProviderMaterial()
@@ -568,7 +684,9 @@ export async function createPrivatePilotDurableAgentGateway(
     identities: authentication.identities,
     password,
     profile: authentication.profile,
-    creditRegistryObservationArtifactPath
+    creditRegistryObservationArtifactPath,
+    localAccessRepair: localAccessEnabled(),
+    basePort
   });
   const durableAuthentication = await provisionPrivatePilotAuthentication({
     ownerConnectionString,
@@ -582,6 +700,7 @@ export async function createPrivatePilotDurableAgentGateway(
     const humanAccess = await createLocalHumanAccess({
       authenticationPool: durableAuthentication.pool,
       authenticationMaterial: durableAuthentication,
+      ordinaryWalletEnrollmentAllowed: false,
       identity: authentication.identities.controller,
       port: basePort + 1,
       profile: authentication.profile

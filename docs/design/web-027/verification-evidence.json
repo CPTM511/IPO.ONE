@@ -1,0 +1,710 @@
+{
+  "schemaVersion": "web027_local_acceptance_record.v1",
+  "verdict": "BLOCKED — NOT COMPLETE",
+  "runtime": {
+    "source": "68c5036a50b2fcb3a5eea67f6f11e38e5193ba9b",
+    "image": "ipo-one-web027:68c5036a50b2",
+    "candidate": "ipo-one-web027-candidate",
+    "database": "ipo_one_web027_candidate",
+    "ports": [
+      8935,
+      8936,
+      8937,
+      8938
+    ],
+    "sourceDatabaseUnchanged": true,
+    "founderRuntimeUnchanged": true,
+    "restoredDumpSha256": "3f760ab5626a5fcbbdf6160b29a82904463f4abba8ec68a67091b651ccddede0",
+    "existingMainMigrationsApplied": [
+      "0074_metered_usage_runtime_privileges",
+      "0075_metered_usage_system_worker_capability"
+    ],
+    "mode": "local_no_funds",
+    "browserVerification": "pending",
+    "previousSource": "1af3db851698a871d7f1418ae19fa8ca6a838a9c",
+    "previousContainer": "ipo-one-web027-candidate-1af3db851698",
+    "databasePreserved": true,
+    "reviewedMigrations": [],
+    "localAccessRepair": "web027j_v1"
+  },
+  "build": {
+    "source": "68c5036a50b2fcb3a5eea67f6f11e38e5193ba9b",
+    "image": "ipo-one-web027:68c5036a50b2",
+    "imageId": "sha256:4a018b59367b56e6e42ad98a9ee3600ab26bf665a1d7cac2147c854d8874d470",
+    "runtimeFiles": [
+      "apps/private-pilot/src/local-access-repair.js",
+      "apps/private-pilot/src/local-pilot-identities.js",
+      "apps/private-pilot/src/local-principal-agent-runtime.js",
+      "apps/private-pilot/src/local-reference-agent-http.js",
+      "apps/private-pilot/src/private-pilot-database.js",
+      "apps/private-pilot/src/private-pilot-runtime.js",
+      "apps/private-pilot/src/production-bootstrap.js",
+      "apps/private-pilot/src/vercel-golden-flow-agent.js",
+      "apps/private-pilot/src/vercel-sandbox-cron.js",
+      "apps/tenant-api/src/human-access-routes.js",
+      "apps/tenant-api/src/postgres-human-access-composition.js",
+      "apps/tenant-api/src/production-tenant-host.js",
+      "apps/web/src/app.js",
+      "apps/web/src/index.html",
+      "apps/web/src/web-012b.css",
+      "apps/web/src/workspace-experience.css",
+      "apps/web/src/workspace-experience.js",
+      "db/migrations/0074_metered_usage_runtime_privileges.down.sql",
+      "db/migrations/0074_metered_usage_runtime_privileges.up.sql",
+      "db/migrations/0075_metered_usage_system_worker_capability.down.sql",
+      "db/migrations/0075_metered_usage_system_worker_capability.up.sql",
+      "db/migrations/0076_invited_wallet_role_enrollment.down.sql",
+      "db/migrations/0076_invited_wallet_role_enrollment.up.sql",
+      "db/migrations/0077_local_ordinary_wallet_access.down.sql",
+      "db/migrations/0077_local_ordinary_wallet_access.up.sql",
+      "db/migrations/0078_local_principal_agent_runtime.down.sql",
+      "db/migrations/0078_local_principal_agent_runtime.up.sql",
+      "modules/agentic-execution/src/postgres-wallet-execution-application.js",
+      "modules/authentication/src/human-wallet-bff.js",
+      "modules/authentication/src/postgres-human-authentication.js",
+      "modules/authentication/src/wallet-login-transaction-store.js",
+      "modules/authentication/src/wallet-workspace-roles.js",
+      "modules/tenant-command-gateway/src/execution-account-binding-handlers.js",
+      "modules/tenant-command-gateway/src/metered-usage-handlers.js",
+      "modules/tenant-command-gateway/src/official-report-handlers.js",
+      "modules/tenant-command-gateway/src/postgres-live-policy-adapter.js",
+      "modules/tenant-command-gateway/src/wallet-execution-handlers.js",
+      "packages/api-contract/index.d.ts",
+      "schemas/v2/tenant-protocol-result.schema.json"
+    ],
+    "dependencyChanges": false
+  },
+  "worker": {
+    "source": "68c5036a50b2fcb3a5eea67f6f11e38e5193ba9b",
+    "image": "ipo-one-web027:68c5036a50b2",
+    "name": "ipo-one-web027-candidate-worker",
+    "database": "ipo_one_web027_candidate",
+    "mode": "synthetic_outbox_only",
+    "chainSigner": false
+  },
+  "localAudit": {
+    "installedSourceFilesMatch": true,
+    "installedRuntimeFileCount": 39,
+    "health": [
+      {
+        "port": 8935,
+        "status": 200
+      },
+      {
+        "port": 8936,
+        "status": 200
+      },
+      {
+        "port": 8937,
+        "status": 200
+      },
+      {
+        "port": 8938,
+        "status": 200
+      }
+    ],
+    "source": "68c5036a50b2fcb3a5eea67f6f11e38e5193ba9b",
+    "readOnly": true,
+    "results": {
+      "subjectStates": [
+        {
+          "count": 4,
+          "status": "active",
+          "subject_type": "agent"
+        },
+        {
+          "count": 3,
+          "status": "pending",
+          "subject_type": "human"
+        }
+      ],
+      "roleDenials": [
+        {
+          "count": 12,
+          "reason_code": "actor_capability_rejected",
+          "operation_id": "pilotReadServicingQueueReference"
+        },
+        {
+          "count": 12,
+          "reason_code": "actor_capability_rejected",
+          "operation_id": "pilotReadTenantRiskPortfolioReference"
+        }
+      ],
+      "agentRuntimes": [
+        {
+          "count": 3,
+          "status": "revoked",
+          "credential_status": "revoked"
+        }
+      ],
+      "legacyRotation": [
+        {
+          "count": 11,
+          "status": "revoked"
+        }
+      ],
+      "newRotation": [
+        {
+          "count": 13,
+          "status": "active"
+        }
+      ]
+    },
+    "rotation": {
+      "count": 9,
+      "onlyAdded": [
+        "official_report.create.owned",
+        "official_report.read.owned",
+        "official_report.retrieve.owned",
+        "official_report.revoke.owned",
+        "wallet.account_binding.prepare.owned",
+        "wallet.account_binding.read.owned",
+        "wallet.account_binding.revoke.owned",
+        "wallet.account_binding.submit.owned",
+        "wallet.capabilities.discover"
+      ],
+      "existingCapabilitiesPreserved": true
+    }
+  },
+  "ordinaryOperations": {
+    "source": "68c5036a50b2fcb3a5eea67f6f11e38e5193ba9b",
+    "apiMocks": false,
+    "fixtureQuery": false,
+    "operations": [
+      {
+        "role": "borrower",
+        "name": "portfolio",
+        "passed": true,
+        "result": {
+          "status": "fully_repaid",
+          "outstanding": "0",
+          "readAsOf": "2026-09-06T15:43:01.629Z"
+        }
+      },
+      {
+        "role": "borrower",
+        "name": "report-json",
+        "passed": true,
+        "result": {
+          "format": "json",
+          "downloadDigestMatches": true,
+          "revocationSurvivesRefresh": true
+        }
+      },
+      {
+        "role": "borrower",
+        "name": "report-csv",
+        "passed": true,
+        "result": {
+          "format": "csv",
+          "downloadDigestMatches": true,
+          "revocationSurvivesRefresh": true
+        }
+      },
+      {
+        "role": "borrower",
+        "name": "wallet-capability-discovery",
+        "passed": true,
+        "result": {
+          "serverDescriptor": true,
+          "noTransactions": true,
+          "supportedChains": [
+            "eip155:84532",
+            "eip155:1952"
+          ]
+        }
+      },
+      {
+        "role": "borrower",
+        "name": "execution-binding",
+        "passed": false,
+        "error": "walletReadAccountBindings: 404 authorization_denied"
+      },
+      {
+        "role": "borrower",
+        "name": "credit-track-record",
+        "passed": true,
+        "result": {
+          "serverRead": true,
+          "schemaVersion": "tenant_owned_credit_state_view.v1"
+        }
+      },
+      {
+        "role": "borrower",
+        "name": "decision-passport",
+        "passed": true,
+        "result": {
+          "freshUnacceptedDecision": true,
+          "issued": true,
+          "read": true,
+          "exactQaVerifier": true,
+          "verified": true,
+          "revoked": true
+        }
+      },
+      {
+        "role": "borrower",
+        "name": "owned-evidence",
+        "passed": true,
+        "result": {
+          "count": 31,
+          "hasMore": false
+        }
+      },
+      {
+        "role": "borrower",
+        "name": "feedback",
+        "passed": true,
+        "result": {
+          "recorded": true
+        }
+      },
+      {
+        "role": "borrower",
+        "name": "case",
+        "passed": true,
+        "result": {
+          "listed": true
+        }
+      },
+      {
+        "role": "controller",
+        "name": "portfolio",
+        "passed": true,
+        "result": {
+          "status": "fully_repaid",
+          "outstanding": "0",
+          "readAsOf": "2026-09-06T15:43:08.348Z"
+        }
+      },
+      {
+        "role": "controller",
+        "name": "report-json",
+        "passed": true,
+        "result": {
+          "format": "json",
+          "downloadDigestMatches": true,
+          "revocationSurvivesRefresh": true
+        }
+      },
+      {
+        "role": "controller",
+        "name": "report-csv",
+        "passed": true,
+        "result": {
+          "format": "csv",
+          "downloadDigestMatches": true,
+          "revocationSurvivesRefresh": true
+        }
+      },
+      {
+        "role": "controller",
+        "name": "wallet-capability-discovery",
+        "passed": true,
+        "result": {
+          "serverDescriptor": true,
+          "noTransactions": true,
+          "supportedChains": [
+            "eip155:84532",
+            "eip155:1952"
+          ]
+        }
+      },
+      {
+        "role": "controller",
+        "name": "execution-binding",
+        "passed": true,
+        "result": {
+          "bound": true,
+          "read": true,
+          "capabilityRead": true,
+          "revoked": true,
+          "disconnected": true
+        }
+      },
+      {
+        "role": "controller",
+        "name": "credit-track-record",
+        "passed": true,
+        "result": {
+          "serverRead": true,
+          "schemaVersion": "tenant_owned_credit_state_view.v1"
+        }
+      }
+    ]
+  },
+  "invitedRoles": {
+    "source": "68c5036a50b2fcb3a5eea67f6f11e38e5193ba9b",
+    "apiMocks": false,
+    "results": [
+      {
+        "role": "risk_operator",
+        "invited": true,
+        "sessionRole": "risk_operator",
+        "login": true,
+        "refresh": true,
+        "logoutLogin": true,
+        "processRestart": true,
+        "visibleWorkspaceAndRefresh": true,
+        "workspaceStatus": "Authenticated"
+      },
+      {
+        "role": "risk_operator",
+        "invited": false,
+        "denied": true,
+        "code": "authentication_credential_rejected"
+      },
+      {
+        "role": "capital_partner_operator",
+        "invited": true,
+        "sessionRole": "capital_partner_operator",
+        "login": true,
+        "refresh": true,
+        "logoutLogin": true,
+        "processRestart": true,
+        "visibleWorkspaceAndRefresh": true,
+        "workspaceStatus": "Authenticated"
+      },
+      {
+        "role": "capital_partner_operator",
+        "invited": false,
+        "denied": true,
+        "code": "authentication_credential_rejected"
+      }
+    ],
+    "errors": [],
+    "operationResults": [
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRiskPortfolioReference",
+        "status": 404,
+        "code": "authorization_denied"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueueReference",
+        "status": 404,
+        "code": "authorization_denied"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRiskPortfolioReference",
+        "status": 404,
+        "code": "authorization_denied"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueueReference",
+        "status": 404,
+        "code": "authorization_denied"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRiskPortfolioReference",
+        "status": 404,
+        "code": "authorization_denied"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueueReference",
+        "status": 404,
+        "code": "authorization_denied"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRiskPortfolioReference",
+        "status": 404,
+        "code": "authorization_denied"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueueReference",
+        "status": 404,
+        "code": "authorization_denied"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRiskPortfolioReference",
+        "status": 404,
+        "code": "authorization_denied"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueueReference",
+        "status": 404,
+        "code": "authorization_denied"
+      },
+      {
+        "port": "8938",
+        "operationId": "pilotReadCapitalPartnerSelf",
+        "status": 200,
+        "schemaVersion": "tenant_capital_partner_self_view.v1"
+      },
+      {
+        "port": "8938",
+        "operationId": "pilotReadCapitalPartnerPassportInbox",
+        "status": 200,
+        "schemaVersion": "tenant_capital_partner_passport_inbox_view.v1"
+      },
+      {
+        "port": "8938",
+        "operationId": "pilotReadCapitalPartnerPortfolio",
+        "status": 200,
+        "schemaVersion": "tenant_capital_partner_portfolio_view.v1"
+      },
+      {
+        "port": "8938",
+        "operationId": "pilotReadCapitalPartnerSelf",
+        "status": 200,
+        "schemaVersion": "tenant_capital_partner_self_view.v1"
+      },
+      {
+        "port": "8938",
+        "operationId": "pilotReadCapitalPartnerPassportInbox",
+        "status": 200,
+        "schemaVersion": "tenant_capital_partner_passport_inbox_view.v1"
+      },
+      {
+        "port": "8938",
+        "operationId": "pilotReadCapitalPartnerPortfolio",
+        "status": 200,
+        "schemaVersion": "tenant_capital_partner_portfolio_view.v1"
+      },
+      {
+        "port": "8938",
+        "operationId": "pilotReadCapitalPartnerSelf",
+        "status": 200,
+        "schemaVersion": "tenant_capital_partner_self_view.v1"
+      },
+      {
+        "port": "8938",
+        "operationId": "pilotReadCapitalPartnerPassportInbox",
+        "status": 200,
+        "schemaVersion": "tenant_capital_partner_passport_inbox_view.v1"
+      },
+      {
+        "port": "8938",
+        "operationId": "pilotReadCapitalPartnerPortfolio",
+        "status": 200,
+        "schemaVersion": "tenant_capital_partner_portfolio_view.v1"
+      },
+      {
+        "port": "8938",
+        "operationId": "pilotReadCapitalPartnerSelf",
+        "status": 200,
+        "schemaVersion": "tenant_capital_partner_self_view.v1"
+      },
+      {
+        "port": "8938",
+        "operationId": "pilotReadCapitalPartnerPassportInbox",
+        "status": 200,
+        "schemaVersion": "tenant_capital_partner_passport_inbox_view.v1"
+      },
+      {
+        "port": "8938",
+        "operationId": "pilotReadCapitalPartnerPortfolio",
+        "status": 200,
+        "schemaVersion": "tenant_capital_partner_portfolio_view.v1"
+      },
+      {
+        "port": "8938",
+        "operationId": "pilotReadCapitalPartnerSelf",
+        "status": 200,
+        "schemaVersion": "tenant_capital_partner_self_view.v1"
+      },
+      {
+        "port": "8938",
+        "operationId": "pilotReadCapitalPartnerPassportInbox",
+        "status": 200,
+        "schemaVersion": "tenant_capital_partner_passport_inbox_view.v1"
+      },
+      {
+        "port": "8938",
+        "operationId": "pilotReadCapitalPartnerPortfolio",
+        "status": 200,
+        "schemaVersion": "tenant_capital_partner_portfolio_view.v1"
+      }
+    ]
+  },
+  "freshAgent": {
+    "source": "68c5036a50b2fcb3a5eea67f6f11e38e5193ba9b",
+    "apiMocks": false,
+    "results": [
+      {
+        "freshPrincipalLifecycle": true,
+        "fullyRepaid": true,
+        "visibleClicks": true
+      },
+      {
+        "restartRecovery": true,
+        "credentialRevocation": true,
+        "revocationAfterRefresh": true
+      }
+    ],
+    "actionEvidence": [
+      {
+        "selector": "#createLocalSandboxAgentBtn",
+        "label": "Create my sandbox Agent",
+        "at": "2026-09-06T15:43:11.991Z"
+      },
+      {
+        "selector": "#createAccountChallengeBtn",
+        "label": "Create signing request",
+        "at": "2026-09-06T15:43:12.286Z"
+      },
+      {
+        "selector": "#proveAccountOnlineBtn",
+        "label": "Ask registered test Agent to prove",
+        "at": "2026-09-06T15:43:12.486Z"
+      },
+      {
+        "selector": "#createDraftMandateBtn",
+        "label": "Create Draft Mandate",
+        "at": "2026-09-06T15:43:12.804Z"
+      },
+      {
+        "selector": "#openAgentApplicationHandoffBtn",
+        "label": "Run local Agent application",
+        "at": "2026-09-06T15:43:13.008Z"
+      },
+      {
+        "selector": "#agentOnlineRunBtn",
+        "label": "Review and activate this Mandate",
+        "at": "2026-09-06T15:43:13.841Z"
+      },
+      {
+        "selector": "#activateMandateBtn",
+        "label": "Activate sandbox Mandate",
+        "at": "2026-09-06T15:43:13.887Z"
+      },
+      {
+        "selector": "#continueAgentCreditBtn",
+        "label": "Open Agent workspace",
+        "at": "2026-09-06T15:43:14.135Z"
+      },
+      {
+        "selector": "#agentOnlineRunBtn",
+        "label": "Complete sandbox Agent lifecycle",
+        "at": "2026-09-06T15:43:14.167Z"
+      },
+      {
+        "selector": "#agentOnlineReviewBtn",
+        "label": "Review Agent obligations",
+        "at": "2026-09-06T15:43:14.541Z"
+      },
+      {
+        "selector": "#agentOnlineRunBtn",
+        "label": "Verify Agent Evidence",
+        "at": "2026-09-06T15:43:14.931Z"
+      },
+      {
+        "selector": "#revokeLocalSandboxAgentBtn",
+        "label": "Revoke local runtime credential",
+        "at": "2026-09-06T15:43:18.859Z"
+      }
+    ]
+  },
+  "agentIsolation": {
+    "source": "1a5ce1b0ec3f15e544d23c18e8e3497f62f8a5b3",
+    "apiMocks": false,
+    "results": [
+      {
+        "duplicateCreationSameActor": true,
+        "crossPrincipalStatusPrivate": true,
+        "crossPrincipalRevokeDenied": "local_agent_enrollment_unavailable",
+        "crossPrincipalProofDenied": "authorization_denied",
+        "crossPrincipalReadDenied": "authorization_denied",
+        "ownerProofStillWorks": true
+      },
+      {
+        "revocationAfterProcessRestart": true,
+        "recreationDenied": "local_agent_enrollment_unavailable",
+        "revokedSigningDenied": "local_agent_enrollment_unavailable",
+        "logoutLoginRevocationRecovery": true
+      }
+    ],
+    "actionEvidence": [
+      {
+        "selector": "#createLocalSandboxAgentBtn",
+        "label": "Create my sandbox Agent",
+        "at": "2026-09-06T15:34:04.341Z"
+      },
+      {
+        "selector": "#createAccountChallengeBtn",
+        "label": "Create signing request",
+        "at": "2026-09-06T15:34:04.593Z"
+      },
+      {
+        "selector": "#proveAccountOnlineBtn",
+        "label": "Ask registered test Agent to prove",
+        "at": "2026-09-06T15:34:06.574Z"
+      },
+      {
+        "selector": "#revokeLocalSandboxAgentBtn",
+        "label": "Revoke local runtime credential",
+        "at": "2026-09-06T15:34:06.767Z"
+      }
+    ]
+  },
+  "capitalPartner": {
+    "source": "68c5036a50b2fcb3a5eea67f6f11e38e5193ba9b",
+    "apiMocks": false,
+    "fixtureQuery": false,
+    "operations": [
+      {
+        "sharedWithExactPartner": true,
+        "inboxSelection": true,
+        "issuedExactOffer": true,
+        "portfolioRefresh": true,
+        "withdrawal": true,
+        "passportRevocationRemovesAccess": true
+      }
+    ]
+  },
+  "checks": {
+    "postgres": {
+      "source": "68c5036a50b2fcb3a5eea67f6f11e38e5193ba9b",
+      "database": "ipo_one_web027_test_1788709503852",
+      "container": "ipo-one-web027-regression-1788709504101",
+      "isolated": true,
+      "exitCode": 0,
+      "passed": 99,
+      "failed": 0
+    },
+    "browser": {
+      "initialPassed": 24,
+      "affectedAgentRetestPassed": 5,
+      "totalDistinctCases": 29,
+      "fixtures": true
+    },
+    "ordinaryUnit": {
+      "initialPassed": 339,
+      "failedCaseRetestPassed": 1,
+      "effectiveDistinctCases": 340
+    },
+    "security": {
+      "passed": 35
+    },
+    "transport": {
+      "passed": 92
+    },
+    "migrations": {
+      "orderedPairs": 78
+    },
+    "schema": {
+      "contracts": 147
+    },
+    "sourceHashes": "39 changed runtime files match installed source"
+  },
+  "openGates": [
+    "K1 explicit local Human Subject activation",
+    "K2 real invited Risk MFA",
+    "complete semantic capability matrix including servicing and configured profiles",
+    "Founder local acceptance",
+    "formal deployed SHA/browser verification"
+  ],
+  "formalDeployment": false,
+  "productionFundsMoved": false,
+  "historicalRecord": "WEB-027J, retained at its explicit source",
+  "latestLocalFollowUp": "k2-verification-evidence.json"
+}

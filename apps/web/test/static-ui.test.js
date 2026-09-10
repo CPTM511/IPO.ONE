@@ -207,7 +207,9 @@ test("public Beta product includes authenticated Human and Agent workflows", asy
     "Recent credit activity",
     "Workspace details",
     "More tools",
-    "Public Beta · No Real Funds",
+    "No real money is moved.",
+    "Beta environment details",
+    "API reference",
     "Request Credit",
     "Repay &amp; Settle",
     "Credit Passport",
@@ -1498,8 +1500,8 @@ test("WEB-023 presents distinct Agent application and runtime handoff stages", a
     "post-activation navigation must open the browser-operable Agent workspace without a mutation"
   );
   assert.ok(html.includes("Run the Agent application"));
-  assert.ok(html.includes("Return after the Agent application produced its Offer workflow receipt."));
-  assert.ok(html.includes("activation unlocks runtime use of an existing Agent Offer"));
+  assert.ok(html.includes("Activation enables acceptance of this existing Offer. It cannot start a new application."));
+  assert.ok(html.includes("I authorize this exact sandbox Mandate for the existing Offer, within the limits shown."));
   assert.ok(js.includes("presentation?.identity?.applicationEligible === true"));
   assert.ok(js.includes("const runtimeReady = runtimeHandoff && economicOperationsAvailable"));
   assert.ok(js.includes('"Runtime ready · existing Offer required"'));
@@ -1947,7 +1949,9 @@ test("UX-004 keeps the user manual and primary browser actions in one operabilit
 
 test("every browser button has a discoverable action contract", async () => {
   const html = await readFile(new URL("../src/index.html", import.meta.url), "utf8");
-  const js = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const js = await readFile(new URL("../src/app.js", import.meta.url), "utf8") +
+    await readFile(new URL("../src/local-review-workspace.js", import.meta.url), "utf8") +
+    await readFile(new URL("../src/web-theme.js", import.meta.url), "utf8");
   const genericAction = /\bdata-(?:view|go-view|agent-guide-action|borrow-entry|human-guide-action|private-action|wallet-chain|wallet-workspace-role|auth-provider|trading-capital-view|scroll-target)=/;
   const buttons = [...html.matchAll(/<button\b[^>]*>/g)].map(
     (match) => match[0]
@@ -1955,6 +1959,8 @@ test("every browser button has a discoverable action contract", async () => {
   const missing = [];
   for (const button of buttons) {
     if (genericAction.test(button)) continue;
+    // Imported public presentation modules own these exact delegated controls.
+    if (/\bdata-web(?:009-(?:app-theme|theme|access|path|rail|code)|010-unpin)(?:[\s=>])/.test(button)) continue;
     const id = button.match(/\bid="([^"]+)"/)?.[1];
     if (
       !id ||

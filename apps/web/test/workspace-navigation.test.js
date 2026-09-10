@@ -38,8 +38,8 @@ test("legacy aliases and invalid or cross-role views require canonical replaceme
   });
   assert.deepEqual(resolveWorkspaceLocation("borrower", "not-a-view"), {
     kind: "product_view",
-    view: "overview",
-    canonicalFragment: "overview",
+    view: "request-credit",
+    canonicalFragment: "request-credit",
     requiresReplace: true
   });
 });

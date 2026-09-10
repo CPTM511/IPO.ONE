@@ -150,3 +150,28 @@ test("workerAdmitMeteredUsage never requests an UPDATE-authority row lock on imm
   assert.equal(result.liveStateVersion, 10);
   assert.deepEqual(result.evaluatedChecks, policy.liveChecks);
 });
+
+for (const operationId of ["walletPrepareAccountBinding","walletSubmitAccountBinding","walletReadAccountBindings","walletRevokeAccountBinding"]) {
+  test(`${operationId} checks active Subject and exact test-chain binding state`,async()=>{
+    let subjectStatus="active", bindingSubject=resource.resourceId;
+    const repository={async getProjectionStateInTransaction(_client,type){return type==="subject"
+      ? {aggregateVersion:3,value:{subjectType:"agent",status:subjectStatus}}
+      : {aggregateVersion:2,value:{subjectId:bindingSubject,schemaVersion:"account_binding.v3",status:"active",chainId:"eip155:84532"}};}};
+    let accountId="eip155:84532:0x1111111111111111111111111111111111111111";
+    const policy=policyRegistry.getAuthenticated(operationId);
+    const evaluate=()=>createPostgresTenantLivePolicyAdapter({client,coreRepository:repository,handler:{operationId},payload:{accountId,accountBindingId:"account_bound"}})
+      .evaluate({policy,resource:{...resource,status:"active"},authenticationContext:{actorType:"human"},now:new Date()});
+    assert.deepEqual((await evaluate()).evaluatedChecks,policy.liveChecks);
+    subjectStatus="frozen";await assert.rejects(evaluate,{code:"authorization_live_policy_rejected"});subjectStatus="active";
+    if(operationId.includes("Prepare")||operationId.includes("Submit")) {accountId=accountId.replace("84532","1");await assert.rejects(evaluate,{code:"authorization_live_policy_rejected"});}
+    if(operationId.includes("Revoke")){bindingSubject="another_subject";await assert.rejects(evaluate,{code:"authorization_live_policy_rejected"});}
+  });
+}
+test("wallet discovery reads the configured non-executing descriptor and rejects a widened adapter",async()=>{
+  const operationId="walletDiscoverCapabilities",policy=policyRegistry.getAuthenticated(operationId);
+  const value={items:[{adapterId:"local_sandbox",enabled:true,externalCallsEnabled:false,transactionsAllowed:false,sandboxOnly:true,productionAuthority:false,fundsAuthority:false,supportedChains:["eip155:84532","eip155:1952"]}]};
+  const evaluate=()=>createPostgresTenantLivePolicyAdapter({client,coreRepository,handler:{operationId,readCapabilityDescriptor:async()=>value},payload:{}})
+    .evaluate({policy,resource:{resourceType:"wallet_adapter",resourceId:"adapter_local_sandbox",status:"active"}});
+  assert.deepEqual((await evaluate()).evaluatedChecks,policy.liveChecks);
+  value.items[0].transactionsAllowed=true;await assert.rejects(evaluate,{code:"authorization_live_policy_rejected"});
+});

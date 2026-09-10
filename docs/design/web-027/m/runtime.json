@@ -1,0 +1,92 @@
+{
+  "source": "205fe9b7ef6726e00ce107777c4d73c1041df6b4",
+  "verifiedAt": "2026-09-07T09:39:41.847Z",
+  "installedRuntimeFiles": 82,
+  "health": [
+    {
+      "origin": "http://127.0.0.1:8935",
+      "status": 200
+    },
+    {
+      "origin": "http://127.0.0.1:8936",
+      "status": 200
+    },
+    {
+      "origin": "http://localhost:8937",
+      "status": 200
+    },
+    {
+      "origin": "http://127.0.0.1:8938",
+      "status": 200
+    },
+    {
+      "origin": "http://localhost:8939",
+      "status": 200
+    },
+    {
+      "origin": "http://localhost:8940",
+      "status": 200
+    },
+    {
+      "origin": "http://localhost:8941",
+      "status": 200
+    }
+  ],
+  "current": [
+    {
+      "name": "ipo-one-web027-candidate",
+      "image": "ipo-one-web027:205fe9b7ef67",
+      "running": true,
+      "restart": "unless-stopped"
+    },
+    {
+      "name": "ipo-one-web027-candidate-worker",
+      "image": "ipo-one-web027:205fe9b7ef67",
+      "running": true,
+      "restart": "unless-stopped"
+    }
+  ],
+  "founder": [
+    {
+      "name": "ipo-one-web026h-review",
+      "image": "ipo-one-web026h:0211f75",
+      "running": true
+    },
+    {
+      "name": "ipo-one-web026h-worker",
+      "image": "ipo-one-web026h:0211f75",
+      "running": true
+    }
+  ],
+  "dependency": {
+    "package": "@simplewebauthn/server@14.0.1",
+    "lockedClosure": [
+      "@simplewebauthn+server@14.0.1",
+      "@hexagon+base64@1.1.28",
+      "@levischuck+tiny-cbor@0.2.11",
+      "@peculiar+asn1-android@2.9.4",
+      "@peculiar+asn1-schema@2.9.4",
+      "@peculiar+utils@2.0.3",
+      "tslib@2.8.1",
+      "asn1js@3.0.10",
+      "pvtsutils@1.3.6",
+      "pvutils@1.2.0",
+      "@peculiar+asn1-ecc@2.9.4",
+      "@peculiar+asn1-x509@2.9.4",
+      "@peculiar+asn1-rsa@2.9.4",
+      "@peculiar+asn1-x509-post-quantum@2.9.4",
+      "@peculiar+asn1-asym-key@2.9.4",
+      "@peculiar+asn1-pkcs8@2.9.4",
+      "@peculiar+x509@2.1.0",
+      "@peculiar+asn1-cms@2.9.4",
+      "@peculiar+asn1-x509-attr@2.9.4",
+      "@peculiar+asn1-csr@2.9.4",
+      "@peculiar+asn1-pkcs9@2.9.4",
+      "@peculiar+asn1-pfx@2.9.4",
+      "tsyringe@4.10.0",
+      "tslib@1.14.1",
+      "reflect-metadata@0.2.2"
+    ],
+    "lockSha256": "8aca10f9e2b97d73a749a1fe28ca03740947566681d98377552731d7e7bf92ff"
+  }
+}

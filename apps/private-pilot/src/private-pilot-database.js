@@ -1,3 +1,5 @@
+import { assertLocalSpecialRoleDatabase, localSpecialRoleSpecs, localSpecialRolesEnabled } from "./local-special-role-access.js";
+import { assertLocalAccessDatabase, rotateLocalAccessCredentials } from "./local-access-repair.js";
 import { randomBytes } from "node:crypto";
 import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
@@ -95,6 +97,7 @@ async function provisionApplicationRole(ownerPool, password) {
   await ownerPool.query(`GRANT CONNECT ON DATABASE ${database} TO ${APP_ROLE}`);
   await ownerPool.query(`GRANT USAGE ON SCHEMA public TO ${APP_ROLE}`);
   await ownerPool.query(`GRANT SELECT ON ALL TABLES IN SCHEMA public TO ${APP_ROLE}`);
+  await ownerPool.query(`REVOKE ALL ON local_principal_agent_runtimes FROM ${APP_ROLE}`);
   await ownerPool.query(`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${APP_ROLE}`);
   await ownerPool.query(`GRANT UPDATE (id) ON actors, memberships, access_grants TO ${APP_ROLE}`);
   await ownerPool.query(`GRANT UPDATE (status) ON obligations, credit_lines TO ${APP_ROLE}`);
@@ -187,9 +190,15 @@ async function provisionApplicationRole(ownerPool, password) {
        reconciliation_runs, reconciliation_discrepancies
      TO ${APP_ROLE}`
   );
+  if (localSpecialRolesEnabled()) {
+    if (database !== "ipo_one_web027_candidate") throw new Error("Local approval writes require the reviewed candidate database");
+    await ownerPool.query(`GRANT INSERT ON approval_proposals, approval_decisions, approval_executions TO ${APP_ROLE}`);
+    await ownerPool.query(`GRANT UPDATE (status, version, approved_at, rejected_at, canceled_at, expired_at,
+      superseded_at, superseded_by_proposal_id, executed_at, execution_id, updated_at) ON approval_proposals TO ${APP_ROLE}`);
+  }
 }
 
-async function provisionAuthenticationRole(ownerPool, password) {
+async function provisionAuthenticationRole(ownerPool, password, localPasskeys = false) {
   const quotedPassword = (
     await ownerPool.query("SELECT quote_literal($1) AS value", [password])
   ).rows[0].value;
@@ -268,6 +277,10 @@ async function provisionAuthenticationRole(ownerPool, password) {
   await ownerPool.query(
     `GRANT INSERT, UPDATE ON authentication_sessions TO ${quotedRole}`
   );
+  if (localPasskeys) {
+    await ownerPool.query(`GRANT SELECT, INSERT, UPDATE ON authentication_passkeys, authentication_passkey_challenges TO ${quotedRole}`);
+    await ownerPool.query(`GRANT SELECT, INSERT ON authentication_passkey_evidence, authentication_passkey_audit TO ${quotedRole}`);
+  }
   await ownerPool.query(
     `GRANT INSERT ON authentication_session_invalidations TO ${quotedRole}`
   );
@@ -311,7 +324,7 @@ async function seedIdentity(ownerPool, identity, profile, now) {
     `INSERT INTO actors(
        id, actor_hash, actor_type, status, created_at, updated_at, schema_version
      ) VALUES ($1, $2, $3, 'active', $4, $4, 'actor.v1')
-     ON CONFLICT (id) DO UPDATE SET status = 'active', updated_at = EXCLUDED.updated_at`,
+     ON CONFLICT (id) DO NOTHING`,
     [identity.actorId, hashId("private_pilot_actor", identity.actorId), identity.actorType, now]
   );
   const context = createTenantSecurityContext({
@@ -340,11 +353,14 @@ async function seedIdentity(ownerPool, identity, profile, now) {
        status = 'active',
        updated_at = EXCLUDED.updated_at,
        version = memberships.version + 1
-     WHERE memberships.capabilities IS DISTINCT FROM EXCLUDED.capabilities
+     WHERE memberships.status = 'active'
+       AND memberships.valid_from <= EXCLUDED.updated_at
+       AND (memberships.expires_at IS NULL OR memberships.expires_at > EXCLUDED.updated_at)
+       AND (memberships.capabilities IS DISTINCT FROM EXCLUDED.capabilities
         OR memberships.client_ids IS DISTINCT FROM EXCLUDED.client_ids
         OR memberships.policy_version IS DISTINCT FROM EXCLUDED.policy_version
         OR memberships.controller_actor_id IS DISTINCT FROM EXCLUDED.controller_actor_id
-        OR memberships.status IS DISTINCT FROM EXCLUDED.status`,
+        OR memberships.status IS DISTINCT FROM EXCLUDED.status)`,
     [
       identity.membershipId,
       hashId("private_pilot_membership", identity.membershipId),
@@ -377,8 +393,11 @@ async function seedLocalHumanRoleEnrollment(client, {
   credential
 }) {
   if (
-    actor.actorType !== ActorType.HUMAN ||
-    ![RoleBundle.HUMAN_BORROWER, RoleBundle.PRINCIPAL_CONTROLLER]
+    // A retired credential is historical. Never recreate its authority during
+    // startup; verified v2 rebinds retain their own durable role enrollment.
+    credential.status !== "active" ||
+    ![ActorType.HUMAN, ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR, ActorType.AUDITOR].includes(actor.actorType) ||
+    ![RoleBundle.HUMAN_BORROWER, RoleBundle.PRINCIPAL_CONTROLLER, RoleBundle.CAPITAL_PARTNER_OPERATOR, RoleBundle.RISK_OPERATOR, RoleBundle.OPERATIONS_OPERATOR, RoleBundle.AUDITOR]
       .includes(actor.roleBundle)
   ) {
     return;
@@ -443,6 +462,10 @@ async function seedAuthenticationCredential(client, {
   invitationLabel,
   now
 }) {
+  const membership = await client.query(`SELECT m.status FROM memberships m JOIN actors a ON a.id=m.actor_id
+    WHERE m.tenant_id=$1 AND m.actor_id=$2 AND m.status='active' AND a.status='active'
+      AND m.valid_from<=$3 AND (m.expires_at IS NULL OR m.expires_at>$3)`, [tenantId,actor.actorId,now]);
+  if (!membership.rowCount) return;
   const subjectRefHash = referenceHasher.hash(
     "subject",
     `${issuer}\0${externalSubject}`
@@ -488,8 +511,9 @@ async function seedAuthenticationCredential(client, {
       WHERE tenant_id = $1
         AND issuer = $2
         AND client_id = $3
-        AND subject_ref_hash = $4`,
-    [tenantId, issuer, actor.clientId, subjectRefHash]
+        AND (subject_ref_hash = $4 OR (actor_id = $5 AND reference_hash_key_version = 'v2'))
+      ORDER BY reference_hash_key_version DESC LIMIT 1`,
+    [tenantId, issuer, actor.clientId, subjectRefHash, actor.actorId]
   );
   if (existing.rowCount === 1) {
     const stored = existing.rows[0];
@@ -498,7 +522,8 @@ async function seedAuthenticationCredential(client, {
       stored.actor_type !== actor.actorType ||
       stored.client_authentication_method !== clientAuthenticationMethod ||
       stored.sender_constraint_method !== senderConstraintMethod ||
-      stored.sender_constraint_ref_hash !== senderConstraintRefHash ||
+      (stored.reference_hash_key_version !== "v2" && stored.sender_constraint_ref_hash !== senderConstraintRefHash) ||
+      (actor.durableCredentialId !== undefined && stored.id !== actor.durableCredentialId) ||
       stored.policy_version !== AUTHORIZATION_POLICY_VERSION ||
       JSON.stringify(stored.roles) !== JSON.stringify([actor.roleBundle]) ||
       JSON.stringify(stored.allowed_capabilities) !==
@@ -516,7 +541,15 @@ async function seedAuthenticationCredential(client, {
     });
     return stored;
   }
-  const credentialId = createOperationalId("credential");
+  if (/^client_web027[jk]_/.test(actor.clientId)) {
+    const historical = await client.query(`SELECT 1 FROM authentication_credentials
+      WHERE tenant_id=$1 AND issuer=$2 AND actor_id=$3 AND client_id=ANY($4::text[]) LIMIT 1`,
+      [tenantId,issuer,actor.actorId,[`client_phase7_${actor.actorId}`,`client_web027j_${actor.actorId}`]]);
+    // A generation change must not re-enroll a revoked or expired identity.
+    // Only the reviewed rotation can create a replacement for existing records.
+    if (historical.rowCount) return;
+  }
+  const credentialId = actor.durableCredentialId ?? createOperationalId("credential");
   const inserted = await client.query(
     `INSERT INTO authentication_credentials(
        id, tenant_id, actor_id, actor_type, issuer, subject_ref_hash,
@@ -674,7 +707,9 @@ export async function provisionPrivatePilotDatabase({
   identities,
   password,
   profile,
-  creditRegistryObservationArtifactPath
+  creditRegistryObservationArtifactPath,
+  localAccessRepair = false,
+  basePort
 }) {
   const checkedProfile = assertPrivatePilotProfile(profile);
   const ownerPool = createPostgresPool({
@@ -686,9 +721,18 @@ export async function provisionPrivatePilotDatabase({
     await migrateUp({ pool: ownerPool });
     const now = new Date();
     await seedTenant(ownerPool, checkedProfile, now);
+    if (localAccessRepair) {
+      const manifest = await rotateLocalAccessCredentials({ pool: ownerPool, tenantId: checkedProfile.tenantId, identities, basePort, now });
+      if (manifest.length) console.info(JSON.stringify({ schemaVersion: "local_access_rotation_manifest.v1", entries: manifest }));
+    }
     for (const identity of Object.values(identities)) {
       await seedIdentity(ownerPool, identity, checkedProfile, now);
     }
+    if (localAccessRepair) await withTenantTransaction(ownerPool, createTenantSecurityContext({
+      tenantId: checkedProfile.tenantId, actorId: identities.controller.actorId, policyVersion: AUTHORIZATION_POLICY_VERSION, source:"local_test"
+    }), client => client.query(`INSERT INTO authorization_resources(tenant_id,resource_type,resource_id,status,version,created_at,updated_at,schema_version)
+      VALUES($1,'wallet_adapter','adapter_local_sandbox','active',1,$2,$2,'authorization_resource.v1')
+      ON CONFLICT (tenant_id,resource_type,resource_id) DO NOTHING`, [checkedProfile.tenantId,now]));
     await seedCapitalPartnerProfile(
       ownerPool,
       identities.capitalPartner,
@@ -732,6 +776,8 @@ export async function provisionPrivatePilotDatabase({
 }
 
 export async function provisionPrivatePilotAuthentication({
+  localPasskeys = false,
+  specialRoleInvitations,
   ownerConnectionString,
   identities,
   profile,
@@ -740,6 +786,8 @@ export async function provisionPrivatePilotAuthentication({
   invitation
 }) {
   const checkedProfile = assertPrivatePilotProfile(profile);
+  if (localPasskeys) assertLocalAccessDatabase(ownerConnectionString, basePort);
+  if (specialRoleInvitations) assertLocalSpecialRoleDatabase(ownerConnectionString, basePort);
   if (
     !Number.isSafeInteger(basePort) ||
     basePort < 1_024 ||
@@ -782,20 +830,17 @@ export async function provisionPrivatePilotAuthentication({
       source: "system_worker"
     });
     await withTenantTransaction(ownerPool, context, async (client) => {
-      for (const [index, name] of [
-        "borrower",
-        "controller",
-        "risk",
-        "capitalPartner"
-      ].entries()) {
+      const hostBindings = ["borrower", "controller", "risk", "capitalPartner"].map((name, index) => ({ name, port: basePort + index, walletAddress: invitation.walletAddress }));
+      if (specialRoleInvitations) hostBindings.push(...Object.entries(localSpecialRoleSpecs()).map(([name, spec]) => ({ name, port: spec.port, walletAddress: specialRoleInvitations[name] })));
+      for (const { name, port, walletAddress } of hostBindings) {
         const actor = identities[name];
-        const issuer = `https://127.0.0.1:${basePort + index}`;
+        const issuer = `https://127.0.0.1:${port}`;
         await seedAuthenticationCredential(client, {
           tenantId: checkedProfile.tenantId,
           actor,
           issuer,
           externalSubject:
-            `eip155:84532:${invitation.walletAddress.toLowerCase()}`,
+            `eip155:84532:${walletAddress.toLowerCase()}`,
           clientAuthenticationMethod: ClientAuthenticationMethod.SIWE,
           senderConstraintMethod: SenderConstraintMethod.HOST_SESSION,
           senderThumbprint: referenceHasher.hash(
@@ -842,7 +887,8 @@ export async function provisionPrivatePilotAuthentication({
     });
     await provisionAuthenticationRole(
       ownerPool,
-      serverMaterial.authenticationRolePassword
+      serverMaterial.authenticationRolePassword,
+      localPasskeys
     );
   } finally {
     await ownerPool.end();
@@ -857,7 +903,7 @@ export async function provisionPrivatePilotAuthentication({
     applicationName: "ipo-one-private-pilot-authentication"
   });
   try {
-    await assertPostgresAuthenticationRole(pool);
+    await assertPostgresAuthenticationRole(pool, { localPasskeys });
   } catch (error) {
     await pool.end();
     throw error;

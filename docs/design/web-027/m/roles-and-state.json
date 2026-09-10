@@ -1,0 +1,92 @@
+{
+  "database": "ipo_one_web027_candidate",
+  "roles": [
+    {
+      "name": "operations",
+      "actorId": "actor_web027m_operations",
+      "credentialId": "credential_f4224b12-e6ff-45ca-b42b-54fbb275df19",
+      "role": "operations_operator",
+      "status": "active",
+      "capabilities": [
+        "servicing.queue.read",
+        "servicing.restructure.sandbox",
+        "servicing.repurchase.sandbox",
+        "servicing.writeoff.sandbox",
+        "approval.propose",
+        "approval.read",
+        "approval.cancel"
+      ],
+      "nativePasskeys": 1
+    },
+    {
+      "name": "auditor",
+      "actorId": "actor_web027m_auditor",
+      "credentialId": "credential_28f5c825-9118-460c-87d0-91c0dd614ca8",
+      "role": "auditor",
+      "status": "active",
+      "capabilities": [
+        "risk.read.tenant",
+        "pilot.case.read.tenant",
+        "approval.read"
+      ],
+      "nativePasskeys": 1
+    },
+    {
+      "name": "riskReviewer",
+      "actorId": "actor_web027m_risk_reviewer",
+      "credentialId": "credential_f1edebc9-ca11-4e21-9bf2-49c12a38e41f",
+      "role": "risk_operator",
+      "status": "active",
+      "capabilities": [
+        "approval.read",
+        "approval.decide",
+        "servicing.queue.read"
+      ],
+      "nativePasskeys": 1
+    }
+  ],
+  "migrations": 82,
+  "localServicingProposals": 0,
+  "plans": [
+    {
+      "id": "obligation_ad6fb93d-d18a-479a-8e58-f56a328be9a9",
+      "status": "active",
+      "execution_status": "executed",
+      "amount_minor": "100",
+      "outstanding_minor": "100",
+      "first_payment_at": "2026-09-08T09:33:43.789Z",
+      "maturity_at": "2026-09-08T09:33:43.789Z",
+      "days_past_due": 0,
+      "servicing_classification": "current"
+    },
+    {
+      "id": "obligation_355d2cf4-4c17-41e5-adc1-e0ae5236a33a",
+      "status": "active",
+      "execution_status": "executed",
+      "amount_minor": "100",
+      "outstanding_minor": "100",
+      "first_payment_at": "2026-09-08T09:35:34.204Z",
+      "maturity_at": "2026-09-08T09:35:34.204Z",
+      "days_past_due": 0,
+      "servicing_classification": "current"
+    },
+    {
+      "id": "obligation_c3746224-101c-4de6-a512-54cba5c7fc51",
+      "status": "active",
+      "execution_status": "executed",
+      "amount_minor": "100",
+      "outstanding_minor": "100",
+      "first_payment_at": "2026-09-08T09:35:37.822Z",
+      "maturity_at": "2026-09-08T09:35:37.822Z",
+      "days_past_due": 0,
+      "servicing_classification": "current"
+    }
+  ],
+  "frozenSubject": {
+    "id": "subject_36e5b0ed-a977-4f0d-af75-11919d67401d",
+    "status": "suspended"
+  },
+  "readOnly": true,
+  "source": "205fe9b7ef6726e00ce107777c4d73c1041df6b4",
+  "verifiedAt": "2026-09-07T09:39:41.474Z"
+}

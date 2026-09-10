@@ -39,6 +39,26 @@
   },
   "operationBindings": [
     {
+      "operationId": "pilotActivateSandboxHumanSubject",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_sandbox_human_subject_activated.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/human-subject-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/app.js",
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/sandbox-human-activation.test.js",
+        "scripts/web027k-human.mjs"
+      ]
+    },
+    {
       "operationId": "tradingCreateAccountBindingChallenge",
       "requestSchemaVersion": "tenant_protocol_request.v1",
       "responseSchemaVersion": "tenant_trading_account_binding_challenge_created.v2",
@@ -2379,6 +2399,126 @@
         "modules/tenant-command-gateway/test/venue-execution-handlers.test.js",
         "packages/sdk/test/venue-execution-client.test.js"
       ]
+    },
+    {
+      "operationId": "pilotCancelApproval",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_approval_canceled.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/local-review-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/local-review-workspace.js",
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/local-review-contract.test.js",
+        "apps/private-pilot/test/local-special-role-access.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotDecideApproval",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_approval_decided.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/local-review-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/local-review-workspace.js",
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/local-review-contract.test.js",
+        "apps/private-pilot/test/local-special-role-access.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotProposeApproval",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_approval_proposed.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/local-review-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/local-review-workspace.js",
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/local-review-contract.test.js",
+        "apps/private-pilot/test/local-special-role-access.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotReadApproval",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_approval_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/local-review-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/local-review-workspace.js",
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/local-review-contract.test.js",
+        "apps/private-pilot/test/local-special-role-access.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotReadApprovalInbox",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_approval_inbox.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/local-review-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/local-review-workspace.js",
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/local-review-contract.test.js",
+        "apps/private-pilot/test/local-special-role-access.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotReadRiskAgentDirectory",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_risk_agent_directory.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/local-review-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/local-review-workspace.js",
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/local-review-contract.test.js",
+        "apps/private-pilot/test/local-special-role-access.test.js"
+      ]
     }
   ],
   "destinations": [
@@ -2466,6 +2606,32 @@
       "label": "Request Credit",
       "order": 2,
       "actions": [
+        {
+          "actionId": "request_credit.activate_sandbox_human",
+          "label": "Explicitly activate the current local synthetic Human profile",
+          "prototypeLabels": [
+            "Activate sandbox profile"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotActivateSandboxHumanSubject"
+          ],
+          "authorityReferences": [
+            "docs/codex/tasks/WEB_027K_LOCAL_PREREQUISITES_REVIEW.md",
+            "docs/architecture/ADR-WEB-027K1-LOCAL-HUMAN-ACTIVATION.md"
+          ],
+          "uiAdapters": [
+            "apps/web/src/app.js"
+          ],
+          "testFiles": [
+            "modules/tenant-command-gateway/test/sandbox-human-activation.test.js",
+            "scripts/web027k-human.mjs"
+          ],
+          "truthBoundary": "Founder-approved WEB-027K1 exact isolated candidate/proof only. Current owned pending synthetic Subject, active Principal/Consent/approved reference, unchanged version and no adverse/frozen state. Explicit confirmation grants no credit, KYC or funds authority. Hosted activation remains closed.",
+          "nextTaskIds": [],
+          "humanGateRequired": false
+        },
         {
           "actionId": "request_credit.establish_human_subject_and_consent",
           "label": "Create and read the Human Subject, Consent, and offchain identity reference",
@@ -4325,6 +4491,35 @@
           "truthBoundary": "No generic emergency mutation, unfreeze, approval bypass, or limit-increase operation is approved.",
           "nextTaskIds": [
             "V9-008"
+          ],
+          "humanGateRequired": true
+        },
+        {
+          "actionId": "risk_operations.local_invited_servicing_review",
+          "label": "Read invited approval inbox, propose and review exact sandbox servicing actions, and discover Agents for protective freeze",
+          "prototypeLabels": [],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotProposeApproval",
+            "pilotReadApproval",
+            "pilotDecideApproval",
+            "pilotCancelApproval",
+            "pilotReadApprovalInbox",
+            "pilotReadRiskAgentDirectory"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/web/src/local-review-workspace.js",
+            "apps/web/src/app.js"
+          ],
+          "testFiles": [
+            "modules/tenant-command-gateway/test/local-review-contract.test.js",
+            "apps/private-pilot/test/local-special-role-access.test.js"
+          ],
+          "truthBoundary": "Exact WEB-027M candidate gate only; existing two independent approvers remain mandatory. The proposer has no approval.decide. No legitimately matured adverse plan or separate Operations approver has yet been established for final execution acceptance. No hosted or real-funds availability is claimed.",
+          "nextTaskIds": [
+            "WEB-027M"
           ],
           "humanGateRequired": true
         }

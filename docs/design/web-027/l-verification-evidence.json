@@ -1,0 +1,890 @@
+{
+  "task": "WEB-027L",
+  "source": "3ecbf4bb93f948ced12f9d6a7b230270d0f29e6e",
+  "verifiedAt": "2026-09-07T05:25:58.678Z",
+  "verdict": "BLOCKED — NOT COMPLETE",
+  "scope": "Delegated local synthetic role acceptance; no formal deployment",
+  "founderDelegatedAcceptance": true,
+  "apiMocks": false,
+  "fixtureQuery": false,
+  "realFunds": false,
+  "physicalDeviceClaim": false,
+  "fixes": [
+    "Multiple valid Human applications are returned as bounded owner-authorized review options; visible keyboard/click selection revalidates exact terms before acceptance.",
+    "Risk Case controls are disabled while recovery/transition is pending; explicit assign/uphold/correct operations persist.",
+    "Canonical nested Capital portfolio summaries render; anchored/pending evidence counts use actual server fields; missing coverage stays unavailable.",
+    "Owned Capital Facility details are visible, reauthorized and cleared on session change."
+  ],
+  "capital": [
+    {
+      "step": "partner-issued",
+      "creditOfferId": "credit_offer_046176ec-75f0-4004-aae3-4fc8cadfeb54",
+      "approvedPrincipalMinor": "2300"
+    },
+    {
+      "step": "human-recovered",
+      "health": 200,
+      "status": "Lifecycle complete",
+      "principal": "—"
+    },
+    {
+      "step": "exact-lender-offer-accepted",
+      "creditOfferId": "credit_offer_046176ec-75f0-4004-aae3-4fc8cadfeb54",
+      "obligationId": "obligation_0df7edb9-2ccc-4bb6-96c3-a531b15cd6a7"
+    },
+    {
+      "step": "capital-facility-fully-repaid",
+      "visible": "Credit plan\n$21.00 repaid\nShared Obligation · synthetic funds\nStatus\nFully Repaid · Current\nOutstanding\n$0.00\nEvidence\n0 anchored / 10 pending\nView credit details\nTechnical references\nCredit plan\n$23.00 repaid\nShared Obligation · synthetic funds\nStatus\nFully Repaid · Current\nOutstanding\n$0.00\nEvidence\n0 anchored / 10 pending\nView credit details\nTechnical references\nCredit plan\n$23.00 repaid\nShared Obligation · synthetic funds\nStatus\nFully Repaid · Current\nOutstanding\n$0.00\nEvidence\n0 anchored / 9 pending\nView credit details\nTechnical references"
+    },
+    {
+      "step": "owned-Facility-details",
+      "receipt": {
+        "facility": {
+          "facilityId": "facility_b4dc402a4fa4d66cb63ee82883b90111d7d38b899d86a57f6ca29d77f37cb993",
+          "capitalPartnerId": "capital_partner_4532c7456323a51390bb401ea32e5789b2f4793709dccd27e9e5764fbe5e6ded",
+          "creditOfferId": "credit_offer_046176ec-75f0-4004-aae3-4fc8cadfeb54",
+          "obligationId": "obligation_0df7edb9-2ccc-4bb6-96c3-a531b15cd6a7",
+          "subjectId": "subject_6fe01ec1-c146-436f-ba59-0ecfc5ea13d9",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "facilityLimitMinor": "25000",
+          "utilizedMinor": "2300",
+          "outstandingMinor": "0",
+          "repaidMinor": "2300",
+          "availableMinor": "22700",
+          "status": "fully_repaid",
+          "servicingClassification": "current",
+          "daysPastDue": 0,
+          "nextPayment": null,
+          "scheduleHash": "0xbd1042139028865ed683c3fd983c376fa0246d20affccf6161a6fc0e2f49000f",
+          "latestServicingActionId": "sandbox_servicing_action_b576359f9aedc6f641fa4ab11d7a15aacb86e7257cd68a96a4a95fdc4f905085",
+          "evidenceCoverage": {
+            "requiredEventCount": 10,
+            "anchoredEventCount": 0,
+            "pendingEventCount": 10,
+            "exceptionEventCount": 0,
+            "status": "pending",
+            "chainId": "eip155:84532",
+            "schemaVersion": "evidence_anchor_coverage.v1"
+          },
+          "asOf": "2026-09-07T05:19:03.609Z",
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "schemaVersion": "facility_view.v1"
+        },
+        "schemaVersion": "tenant_capital_partner_facility_view.v1"
+      }
+    },
+    {
+      "step": "both-sides-refresh-durable",
+      "pass": true
+    },
+    {
+      "step": "logout-login-durable",
+      "pass": true
+    }
+  ],
+  "risk": {
+    "virtualAuthenticator": true,
+    "results": [
+      {
+        "name": "Risk visible Case assign",
+        "receipt": {
+          "pilotCase": {
+            "pilotCaseId": "pilot_case_11df35447ee373fa554187ac235775a66cdcc4cdec9ec72062792b4d3856b988",
+            "entryMode": "human",
+            "targetType": "decision",
+            "targetId": "risk_decision_f747a194879b241fb497e48f10577e54e9e48c5f43e6b52c1126be4b8fa422db",
+            "reasonCode": "context_missing",
+            "status": "assigned",
+            "sequence": 2,
+            "filedAt": "2026-09-07T05:19:07.826Z",
+            "updatedAt": "2026-09-07T05:19:10.139Z",
+            "assigned": true,
+            "resolution": null,
+            "correctionCode": null,
+            "safety": {
+              "originalRecordImmutable": true,
+              "additiveCorrectionOnly": true,
+              "freeTextAccepted": false,
+              "piiIncluded": false,
+              "sandboxOnly": true,
+              "productionAuthority": false,
+              "economicMutationAuthorized": false
+            },
+            "subjectId": "subject_6fe01ec1-c146-436f-ba59-0ecfc5ea13d9",
+            "schemaVersion": "tenant_pilot_case_view.v1"
+          },
+          "schemaVersion": "tenant_pilot_case_transitioned.v1"
+        }
+      },
+      {
+        "name": "Risk visible Case uphold",
+        "receipt": {
+          "pilotCase": {
+            "pilotCaseId": "pilot_case_11df35447ee373fa554187ac235775a66cdcc4cdec9ec72062792b4d3856b988",
+            "entryMode": "human",
+            "targetType": "decision",
+            "targetId": "risk_decision_f747a194879b241fb497e48f10577e54e9e48c5f43e6b52c1126be4b8fa422db",
+            "reasonCode": "context_missing",
+            "status": "resolved_upheld",
+            "sequence": 3,
+            "filedAt": "2026-09-07T05:19:07.826Z",
+            "updatedAt": "2026-09-07T05:19:10.246Z",
+            "assigned": true,
+            "resolution": "uphold",
+            "correctionCode": null,
+            "safety": {
+              "originalRecordImmutable": true,
+              "additiveCorrectionOnly": true,
+              "freeTextAccepted": false,
+              "piiIncluded": false,
+              "sandboxOnly": true,
+              "productionAuthority": false,
+              "economicMutationAuthorized": false
+            },
+            "subjectId": "subject_6fe01ec1-c146-436f-ba59-0ecfc5ea13d9",
+            "schemaVersion": "tenant_pilot_case_view.v1"
+          },
+          "schemaVersion": "tenant_pilot_case_transitioned.v1"
+        }
+      },
+      {
+        "name": "Risk visible Case assign",
+        "receipt": {
+          "pilotCase": {
+            "pilotCaseId": "pilot_case_08696e28a9c3a9e0088a6a09cd4f5ffa297f50e21b8a4eafa5ee7478e5342e0a",
+            "entryMode": "human",
+            "targetType": "decision",
+            "targetId": "risk_decision_f747a194879b241fb497e48f10577e54e9e48c5f43e6b52c1126be4b8fa422db",
+            "reasonCode": "record_inaccurate",
+            "status": "assigned",
+            "sequence": 2,
+            "filedAt": "2026-09-07T05:19:08.039Z",
+            "updatedAt": "2026-09-07T05:19:10.326Z",
+            "assigned": true,
+            "resolution": null,
+            "correctionCode": null,
+            "safety": {
+              "originalRecordImmutable": true,
+              "additiveCorrectionOnly": true,
+              "freeTextAccepted": false,
+              "piiIncluded": false,
+              "sandboxOnly": true,
+              "productionAuthority": false,
+              "economicMutationAuthorized": false
+            },
+            "subjectId": "subject_6fe01ec1-c146-436f-ba59-0ecfc5ea13d9",
+            "schemaVersion": "tenant_pilot_case_view.v1"
+          },
+          "schemaVersion": "tenant_pilot_case_transitioned.v1"
+        }
+      },
+      {
+        "name": "Risk visible Case correct",
+        "receipt": {
+          "pilotCase": {
+            "pilotCaseId": "pilot_case_08696e28a9c3a9e0088a6a09cd4f5ffa297f50e21b8a4eafa5ee7478e5342e0a",
+            "entryMode": "human",
+            "targetType": "decision",
+            "targetId": "risk_decision_f747a194879b241fb497e48f10577e54e9e48c5f43e6b52c1126be4b8fa422db",
+            "reasonCode": "record_inaccurate",
+            "status": "resolved_corrected",
+            "sequence": 3,
+            "filedAt": "2026-09-07T05:19:08.039Z",
+            "updatedAt": "2026-09-07T05:19:10.430Z",
+            "assigned": true,
+            "resolution": "correct",
+            "correctionCode": "status_context_added",
+            "safety": {
+              "originalRecordImmutable": true,
+              "additiveCorrectionOnly": true,
+              "freeTextAccepted": false,
+              "piiIncluded": false,
+              "sandboxOnly": true,
+              "productionAuthority": false,
+              "economicMutationAuthorized": false
+            },
+            "subjectId": "subject_6fe01ec1-c146-436f-ba59-0ecfc5ea13d9",
+            "schemaVersion": "tenant_pilot_case_view.v1"
+          },
+          "schemaVersion": "tenant_pilot_case_transitioned.v1"
+        }
+      },
+      {
+        "name": "Both sides recover terminal Case status",
+        "humanText": "Decision · Record InaccurateOpen · updated Sep 7, 1:19 PM\nDecision · Context MissingOpen · updated Sep 7, 1:19 PM\nDecision · Record InaccurateResolved Corrected · updated Sep 7, 1:13 PM · Status Context Added\nDecision · Context MissingResolved Upheld · updated Sep 7, 1:13 PM\nDecision · Record InaccurateResolved Corrected · updated Sep 7, 12:59 PM · Status Context Added\nDecision · Context MissingResolved Upheld · updated Sep 7, 12:55 PM\nServicing Action · Record InaccurateOpen · updated Sep 6, 11:43 PM\nServicing Action · Record InaccurateOpen · updated Sep 6, 11:40 PM\nServicing Action · Record InaccurateOpen · updated Sep 6, 11:37 PM\nServicing Action · Record InaccurateOpen · updated Sep 6, 11:29 PM\nServicing Action · Record InaccurateOpen · updated Sep 6, 11:20 PM\nServicing Action · Record InaccurateOpen · updated Sep 6, 8:53 PM\nServicing Action · Record InaccurateOpen · updated Sep 6, 8:52 PM\nDecision · Record InaccurateOpen · updated Sep 6, 8:49 PM\nDecision · Record InaccurateOpen · updated Sep 6, 8:47 PM\nDecision · Record InaccurateOpen · updated Sep 6, 8:34 PM\nServicing Action · Record InaccurateOpen · updated Sep 6, 8:25 PM\nDecision · Context MissingOpen · updated Aug 29, 8:36 PM"
+      },
+      {
+        "name": "Current servicing queue observed",
+        "count": "0"
+      },
+      {
+        "name": "Visible current Pool boundary read",
+        "text": "Aggregate state loaded; no address or liquidation submission authority was returned.",
+        "status": "Aggregate server state loaded"
+      }
+    ],
+    "operationResults": [
+      {
+        "port": "8935",
+        "operationId": "pilotReadWorkspaceResume",
+        "status": 200,
+        "schemaVersion": "tenant_workspace_resume_view.v2"
+      },
+      {
+        "port": "8935",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200,
+        "schemaVersion": "tenant_human_subject_view.v1"
+      },
+      {
+        "port": "8935",
+        "operationId": "pilotReadCreditApplication",
+        "status": 200,
+        "schemaVersion": "tenant_credit_application_view.v2"
+      },
+      {
+        "port": "8935",
+        "operationId": "pilotReadOwnObligation",
+        "status": 200,
+        "schemaVersion": "tenant_owned_obligation_view.v1"
+      },
+      {
+        "port": "8935",
+        "operationId": "pilotCreateConsent",
+        "status": 200,
+        "schemaVersion": "tenant_consent_created.v1"
+      },
+      {
+        "port": "8935",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200,
+        "schemaVersion": "tenant_human_subject_view.v1"
+      },
+      {
+        "port": "8935",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200,
+        "schemaVersion": "tenant_human_subject_view.v1"
+      },
+      {
+        "port": "8935",
+        "operationId": "pilotRequestCredit",
+        "status": 200,
+        "schemaVersion": "tenant_credit_intent_created.v1"
+      },
+      {
+        "port": "8935",
+        "operationId": "pilotReadCreditApplication",
+        "status": 200,
+        "schemaVersion": "tenant_credit_application_view.v2"
+      },
+      {
+        "port": "8935",
+        "operationId": "pilotEvaluateCreditApplication",
+        "status": 200,
+        "schemaVersion": "tenant_credit_application_evaluated.v2"
+      },
+      {
+        "port": "8935",
+        "operationId": "pilotFileCase",
+        "status": 200,
+        "schemaVersion": "tenant_pilot_case_filed.v1"
+      },
+      {
+        "port": "8935",
+        "operationId": "pilotListOwnCases",
+        "status": 200,
+        "schemaVersion": "tenant_pilot_case_list.v1"
+      },
+      {
+        "port": "8935",
+        "operationId": "pilotFileCase",
+        "status": 200,
+        "schemaVersion": "tenant_pilot_case_filed.v1"
+      },
+      {
+        "port": "8935",
+        "operationId": "pilotListOwnCases",
+        "status": 200,
+        "schemaVersion": "tenant_pilot_case_list.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRiskPortfolioReference",
+        "status": 404,
+        "code": "authorization_denied"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueueReference",
+        "status": 404,
+        "code": "authorization_denied"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRiskPortfolioReference",
+        "status": 200,
+        "schemaVersion": "tenant_risk_portfolio_reference_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRisk",
+        "status": 200,
+        "schemaVersion": "tenant_risk_portfolio_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueueReference",
+        "status": 200,
+        "schemaVersion": "tenant_servicing_queue_reference_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueue",
+        "status": 200,
+        "schemaVersion": "tenant_servicing_queue_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadCaseQueue",
+        "status": 200,
+        "schemaVersion": "tenant_pilot_case_queue.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotTransitionCase",
+        "status": 200,
+        "schemaVersion": "tenant_pilot_case_transitioned.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadCaseQueue",
+        "status": 200,
+        "schemaVersion": "tenant_pilot_case_queue.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotTransitionCase",
+        "status": 200,
+        "schemaVersion": "tenant_pilot_case_transitioned.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadCaseQueue",
+        "status": 200,
+        "schemaVersion": "tenant_pilot_case_queue.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotTransitionCase",
+        "status": 200,
+        "schemaVersion": "tenant_pilot_case_transitioned.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadCaseQueue",
+        "status": 200,
+        "schemaVersion": "tenant_pilot_case_queue.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotTransitionCase",
+        "status": 200,
+        "schemaVersion": "tenant_pilot_case_transitioned.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRiskPortfolioReference",
+        "status": 200,
+        "schemaVersion": "tenant_risk_portfolio_reference_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRisk",
+        "status": 200,
+        "schemaVersion": "tenant_risk_portfolio_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueueReference",
+        "status": 200,
+        "schemaVersion": "tenant_servicing_queue_reference_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueue",
+        "status": 200,
+        "schemaVersion": "tenant_servicing_queue_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadCaseQueue",
+        "status": 200,
+        "schemaVersion": "tenant_pilot_case_queue.v1"
+      },
+      {
+        "port": "8935",
+        "operationId": "pilotListOwnCases",
+        "status": 200,
+        "schemaVersion": "tenant_pilot_case_list.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadSecuredPoolRisk",
+        "status": 200,
+        "schemaVersion": "tenant_secured_pool_risk_view.v1"
+      }
+    ],
+    "errors": []
+  },
+  "agent": {
+    "source": "3ecbf4bb93f948ced12f9d6a7b230270d0f29e6e",
+    "apiMocks": false,
+    "results": [
+      {
+        "freshPrincipalLifecycle": true,
+        "fullyRepaid": true,
+        "visibleClicks": true
+      },
+      {
+        "restartRecovery": true,
+        "credentialRevocation": true,
+        "revocationAfterRefresh": true
+      }
+    ],
+    "actionEvidence": [
+      {
+        "selector": "#createLocalSandboxAgentBtn",
+        "label": "Create my sandbox Agent",
+        "at": "2026-09-07T05:22:44.295Z"
+      },
+      {
+        "selector": "#createAccountChallengeBtn",
+        "label": "Create signing request",
+        "at": "2026-09-07T05:22:44.578Z"
+      },
+      {
+        "selector": "#proveAccountOnlineBtn",
+        "label": "Ask registered test Agent to prove",
+        "at": "2026-09-07T05:22:44.776Z"
+      },
+      {
+        "selector": "#createDraftMandateBtn",
+        "label": "Create Draft Mandate",
+        "at": "2026-09-07T05:22:44.992Z"
+      },
+      {
+        "selector": "#openAgentApplicationHandoffBtn",
+        "label": "Run local Agent application",
+        "at": "2026-09-07T05:22:45.195Z"
+      },
+      {
+        "selector": "#agentOnlineRunBtn",
+        "label": "Review and activate this Mandate",
+        "at": "2026-09-07T05:22:46.035Z"
+      },
+      {
+        "selector": "#activateMandateBtn",
+        "label": "Activate sandbox Mandate",
+        "at": "2026-09-07T05:22:46.081Z"
+      },
+      {
+        "selector": "#continueAgentCreditBtn",
+        "label": "Open Agent workspace",
+        "at": "2026-09-07T05:22:46.328Z"
+      },
+      {
+        "selector": "#agentOnlineRunBtn",
+        "label": "Complete sandbox Agent lifecycle",
+        "at": "2026-09-07T05:22:46.352Z"
+      },
+      {
+        "selector": "#agentOnlineReviewBtn",
+        "label": "Review Agent obligations",
+        "at": "2026-09-07T05:22:46.728Z"
+      },
+      {
+        "selector": "#agentOnlineRunBtn",
+        "label": "Verify Agent Evidence",
+        "at": "2026-09-07T05:22:47.083Z"
+      },
+      {
+        "selector": "#revokeLocalSandboxAgentBtn",
+        "label": "Revoke local runtime credential",
+        "at": "2026-09-07T05:22:51.027Z"
+      }
+    ]
+  },
+  "recovery": {
+    "source": "3ecbf4bb93f948ced12f9d6a7b230270d0f29e6e",
+    "apiMocks": false,
+    "results": [
+      {
+        "name": "Keyboard Offer selection revalidates without accepting",
+        "count": 11,
+        "labels": [
+          "Sandbox evaluation · $25.00 · 9% APR · 2 payments · Sep 7, 1:19:07 PM · Review Offer",
+          "Sandbox evaluation · $25.00 · 9% APR · 2 payments · Sep 7, 1:13:48 PM · Review Offer",
+          "Sandbox evaluation · $22.00 · 9% APR · 2 payments · Sep 7, 12:53:13 PM · Review Offer",
+          "Sandbox evaluation · $20.00 · 9% APR · 2 payments · Sep 6, 11:44:15 PM · Review Offer",
+          "Sandbox evaluation · $20.00 · 9% APR · 2 payments · Sep 6, 11:43:04 PM · Review Offer",
+          "Sandbox evaluation · $20.00 · 9% APR · 2 payments · Sep 6, 11:40:26 PM · Review Offer",
+          "Sandbox evaluation · $20.00 · 9% APR · 2 payments · Sep 6, 11:37:42 PM · Review Offer",
+          "Sandbox evaluation · $20.00 · 9% APR · 2 payments · Sep 6, 11:29:43 PM · Review Offer",
+          "Sandbox evaluation · $20.00 · 9% APR · 2 payments · Sep 6, 11:20:01 PM · Review Offer",
+          "Sandbox evaluation · $20.00 · 9% APR · 2 payments · Sep 6, 8:53:57 PM · Review Offer",
+          "Sandbox evaluation · $20.00 · 9% APR · 2 payments · Sep 6, 8:49:04 PM · Review Offer"
+        ]
+      },
+      {
+        "name": "Human Offer choices fit",
+        "width": 1440,
+        "theme": "light"
+      },
+      {
+        "name": "Human Offer choices fit",
+        "width": 1440,
+        "theme": "dark"
+      },
+      {
+        "name": "Human Offer choices fit",
+        "width": 390,
+        "theme": "light"
+      },
+      {
+        "name": "Human Offer choices fit",
+        "width": 390,
+        "theme": "dark"
+      },
+      {
+        "name": "Human Offer choices fit",
+        "width": 320,
+        "theme": "light"
+      },
+      {
+        "name": "Human Offer choices fit",
+        "width": 320,
+        "theme": "dark"
+      },
+      {
+        "name": "Human Pool visible read boundary",
+        "text": "BASE SEPOLIA · ONE EXACT MARKET · TEST ASSETS ONLY\n\nSecured Pool, read from server truth.\n\nThe same canonical Pool state supports Human liquidity and secured-credit positions. IPO.ONE verifies the approved deployment and reads a safe block; this page cannot sign or submit a transaction.\n\nDeployment known · state unavailable\n\nINDEPENDENT TRUTH AXES\n\nWhat IPO.ONE can verify right now\n\nA deployed contract can remain true even when RPC, indexer, reconciliation, or a private AccountBinding is unavailable.\n\nRefresh Pool state\nDeployment\nDeployment configured\nExact onchain verification is currently unavailable\nRPC\nUnavailable\npool rpc adapter unavailable\nIndexer\nUnavailable\npool indexer state unavailable\nReconciliation\nUnavailable\nreconciliation unavailable\nMarket\nUnavailable\nNo market amount is asserted\nSubmission\nDisabled by task authority\nNo signer or transaction primitive\n\nPUBLIC MARKET · TEST USDC / WETH\n\nCurrent read-only market\n\n0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da · exact deployment known; live market values unavailable\n\nNo real funds\nAvailable liquidity\nUnavailable\nTest USDC asset units\nGross debt\nUnavailable\nTest USDC asset units\nUtilization\nUnavailable\nServer-derived basis points\nLP claim\nUnavailable\nTest USDC asset units\nContract\n0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da\nMarket ID\nUnavailable\nSafe block\nUnavailable\nObserved\nUnavailable\nOracle\nunavailable · observation time unavailable\nNew-risk control\nNew risk frozen · protocol unknown\n\nPRIVATE POSITION · SUBJECT + ACCOUNTBINDING REQUIRED\n\nMy authorized Pool position\n\nPublic market data never grants access to a private position. IPO.ONE returns position values only for the authenticated Actor's owned Subject and active execution AccountBinding.\n\nNo authorized AccountBinding\nAccountBinding\nUnavailable for current Subject\nMy position\nUnavailable\nSupply claim\nUnavailable\nHealth\nUnavailable\nRead-only scenario review\n\nDeployment truth loaded with an explicitly degraded RPC or indexer state. Private position and chain submission remain unavailable."
+      },
+      {
+        "name": "Metered Resource deployment state",
+        "text": "The hosted synthetic Metered Resource is not enabled for this deployment role. No external Provider or real funds are available."
+      },
+      {
+        "name": "Capital exact Facility survives Agent-triggered process restart",
+        "pass": true
+      }
+    ],
+    "network": [
+      {
+        "operationId": "pilotReadOwnSecuredPool",
+        "status": 200,
+        "schemaVersion": "tenant_secured_pool_workspace.v1"
+      },
+      {
+        "operationId": "pilotReadOwnSecuredPool",
+        "status": 200,
+        "schemaVersion": "tenant_secured_pool_workspace.v1"
+      }
+    ]
+  },
+  "audit": {
+    "memberships": [
+      {
+        "role_bundle": "agent_runtime",
+        "status": "active",
+        "count": 9
+      },
+      {
+        "role_bundle": "capital_partner_operator",
+        "status": "active",
+        "count": 1
+      },
+      {
+        "role_bundle": "human_borrower",
+        "status": "active",
+        "count": 33
+      },
+      {
+        "role_bundle": "principal_controller",
+        "status": "active",
+        "count": 1
+      },
+      {
+        "role_bundle": "risk_operator",
+        "status": "active",
+        "count": 1
+      },
+      {
+        "role_bundle": "system_worker",
+        "status": "active",
+        "count": 3
+      }
+    ],
+    "privilegedCapabilities": [
+      {
+        "role_bundle": "capital_partner_operator",
+        "cap": "capital_partner.facility.read.own"
+      },
+      {
+        "role_bundle": "capital_partner_operator",
+        "cap": "capital_partner.offer.create.own"
+      },
+      {
+        "role_bundle": "capital_partner_operator",
+        "cap": "capital_partner.offer.manage.own"
+      },
+      {
+        "role_bundle": "capital_partner_operator",
+        "cap": "capital_partner.portfolio.read.own"
+      },
+      {
+        "role_bundle": "capital_partner_operator",
+        "cap": "credit_passport.verify.bound"
+      },
+      {
+        "role_bundle": "risk_operator",
+        "cap": "credit_registry.evidence.read.tenant"
+      },
+      {
+        "role_bundle": "risk_operator",
+        "cap": "pilot.case.read.tenant"
+      },
+      {
+        "role_bundle": "risk_operator",
+        "cap": "pilot.case.transition.tenant"
+      },
+      {
+        "role_bundle": "risk_operator",
+        "cap": "pilot.feedback.read.tenant"
+      },
+      {
+        "role_bundle": "risk_operator",
+        "cap": "pilot.health.read"
+      },
+      {
+        "role_bundle": "risk_operator",
+        "cap": "pilot.readiness.read.tenant"
+      },
+      {
+        "role_bundle": "risk_operator",
+        "cap": "pool.risk.read.tenant"
+      },
+      {
+        "role_bundle": "risk_operator",
+        "cap": "risk.freeze"
+      },
+      {
+        "role_bundle": "risk_operator",
+        "cap": "risk.read.tenant"
+      },
+      {
+        "role_bundle": "risk_operator",
+        "cap": "servicing.queue.read"
+      },
+      {
+        "role_bundle": "system_worker",
+        "cap": "approval.expire"
+      },
+      {
+        "role_bundle": "system_worker",
+        "cap": "local_non_funds_repository"
+      },
+      {
+        "role_bundle": "system_worker",
+        "cap": "projection_repair.execute"
+      },
+      {
+        "role_bundle": "system_worker",
+        "cap": "projection_repair.plan"
+      },
+      {
+        "role_bundle": "system_worker",
+        "cap": "reconciliation.read"
+      },
+      {
+        "role_bundle": "system_worker",
+        "cap": "reconciliation.run"
+      },
+      {
+        "role_bundle": "system_worker",
+        "cap": "repayment.execute"
+      },
+      {
+        "role_bundle": "system_worker",
+        "cap": "servicing.advance.sandbox"
+      },
+      {
+        "role_bundle": "system_worker",
+        "cap": "trading.settlement.run.worker"
+      },
+      {
+        "role_bundle": "system_worker",
+        "cap": "worker.inbox.process"
+      },
+      {
+        "role_bundle": "system_worker",
+        "cap": "worker.metered_usage.admit"
+      },
+      {
+        "role_bundle": "system_worker",
+        "cap": "worker.outbox.publish"
+      }
+    ],
+    "cases": [
+      {
+        "status": "open",
+        "count": 12,
+        "no_economic_authority": true
+      },
+      {
+        "status": "resolved_corrected",
+        "count": 3,
+        "no_economic_authority": true
+      },
+      {
+        "status": "resolved_upheld",
+        "count": 3,
+        "no_economic_authority": true
+      }
+    ],
+    "migrations": 81,
+    "source": "3ecbf4bb93f948ced12f9d6a7b230270d0f29e6e"
+  },
+  "runtime": {
+    "source": "3ecbf4bb93f948ced12f9d6a7b230270d0f29e6e",
+    "verifiedAt": "2026-09-07T05:23:53.417Z",
+    "installedRuntimeFiles": 63,
+    "health": [
+      {
+        "origin": "http://127.0.0.1:8935",
+        "status": 200
+      },
+      {
+        "origin": "http://127.0.0.1:8936",
+        "status": 200
+      },
+      {
+        "origin": "http://localhost:8937",
+        "status": 200
+      },
+      {
+        "origin": "http://127.0.0.1:8938",
+        "status": 200
+      }
+    ],
+    "current": [
+      {
+        "name": "ipo-one-web027-candidate",
+        "image": "ipo-one-web027:3ecbf4bb93f9",
+        "running": true,
+        "restart": "unless-stopped"
+      },
+      {
+        "name": "ipo-one-web027-candidate-worker",
+        "image": "ipo-one-web027:3ecbf4bb93f9",
+        "running": true,
+        "restart": "unless-stopped"
+      }
+    ],
+    "founder": [
+      {
+        "name": "ipo-one-web026h-review",
+        "image": "ipo-one-web026h:0211f75",
+        "running": true
+      },
+      {
+        "name": "ipo-one-web026h-worker",
+        "image": "ipo-one-web026h:0211f75",
+        "running": true
+      }
+    ],
+    "dependency": {
+      "package": "@simplewebauthn/server@14.0.1",
+      "lockedClosure": [
+        "@simplewebauthn+server@14.0.1",
+        "@hexagon+base64@1.1.28",
+        "@levischuck+tiny-cbor@0.2.11",
+        "@peculiar+asn1-android@2.9.4",
+        "@peculiar+asn1-schema@2.9.4",
+        "@peculiar+utils@2.0.3",
+        "tslib@2.8.1",
+        "asn1js@3.0.10",
+        "pvtsutils@1.3.6",
+        "pvutils@1.2.0",
+        "@peculiar+asn1-ecc@2.9.4",
+        "@peculiar+asn1-x509@2.9.4",
+        "@peculiar+asn1-rsa@2.9.4",
+        "@peculiar+asn1-x509-post-quantum@2.9.4",
+        "@peculiar+asn1-asym-key@2.9.4",
+        "@peculiar+asn1-pkcs8@2.9.4",
+        "@peculiar+x509@2.1.0",
+        "@peculiar+asn1-cms@2.9.4",
+        "@peculiar+asn1-x509-attr@2.9.4",
+        "@peculiar+asn1-csr@2.9.4",
+        "@peculiar+asn1-pkcs9@2.9.4",
+        "@peculiar+asn1-pfx@2.9.4",
+        "tsyringe@4.10.0",
+        "tslib@1.14.1",
+        "reflect-metadata@0.2.2"
+      ],
+      "lockSha256": "8aca10f9e2b97d73a749a1fe28ca03740947566681d98377552731d7e7bf92ff"
+    }
+  },
+  "tests": {
+    "frontendAndWorkspace": {
+      "source": "3ecbf4bb93f948ced12f9d6a7b230270d0f29e6e",
+      "passed": 213,
+      "failed": 0
+    },
+    "postgres": {
+      "source": "bf0275686b4016a455d21938a4c83009540cac53",
+      "database": "ipo_one_web027_test_1788757667834",
+      "container": "ipo-one-web027-regression-1788757668154",
+      "isolated": true,
+      "exitCode": 0,
+      "passed": 99,
+      "failed": 0,
+      "disposableRuntimeCleaned": true,
+      "unchangedBackendOnFinalSource": true
+    },
+    "schemas": 147,
+    "tenantProtocolOperations": 116,
+    "contractTypes": "pass",
+    "sourceAndBoundaryLint": "pass",
+    "webBundle": "pass",
+    "traceability": "pass; 14 destinations, 77 actions, 116 operations; not a completion percentage"
+  },
+  "remaining": [
+    {
+      "item": "Operations/Auditor and distinct approval role",
+      "state": "No deployed membership or browser flow; reviewed local prerequisite proposal prepared",
+      "review": "docs/codex/tasks/WEB_027M_SPECIAL_ROLE_ACCEPTANCE_REVIEW.md"
+    },
+    {
+      "item": "Freeze and matured dual-control servicing mutations",
+      "state": "No adverse queue position; freeze UI currently only selects queue cases; not exercised"
+    },
+    {
+      "item": "Pool",
+      "state": "Human/Risk read controls verified; RPC/indexer/reconciliation unavailable; submission remains disabled"
+    },
+    {
+      "item": "Metered Provider and venue",
+      "state": "Metered Resource unavailable for this deployment role; no new provider/venue authority"
+    },
+    {
+      "item": "Physical wallet/Passkey, full assistive technology and real browser zoom",
+      "state": "Not represented by virtual authenticator, viewport or CSS checks"
+    },
+    {
+      "item": "Formal hosted exact-SHA acceptance",
+      "state": "No promotion or formal hosted acceptance performed"
+    }
+  ]
+}

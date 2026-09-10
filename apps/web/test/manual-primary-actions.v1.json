@@ -90,7 +90,7 @@
       "journey": "agent-authority",
       "view": "request-credit",
       "id": "activateMandateBtn",
-      "labels": ["Activate exact Sandbox Mandate"]
+      "labels": ["Activate sandbox Mandate"]
     },
     {
       "journey": "agent",

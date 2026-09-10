@@ -24,6 +24,9 @@ import {
 } from "./agent-reference-workflows.js";
 
 export const LOCAL_REFERENCE_AGENT_HTTP_ROUTES = Object.freeze({
+  enrollmentStatus: "/local/v1/reference-agent/enrollment/status",
+  enrollmentCreate: "/local/v1/reference-agent/enrollment/create",
+  enrollmentRevoke: "/local/v1/reference-agent/enrollment/revoke",
   accountProof: "/local/v1/reference-agent/account-proof",
   application: "/local/v1/reference-agent/application",
   continuation: "/local/v1/reference-agent/continuation",
@@ -408,7 +411,8 @@ export function createLocalReferenceAgentHttpService({
   createAgentSession,
   gateway,
   networkContext,
-  proveAccount
+  proveAccount,
+  enrollment
 }) {
   if (
     typeof createAgentSession !== "function" ||
@@ -441,13 +445,33 @@ export function createLocalReferenceAgentHttpService({
         );
       }
       assertPrincipal(authenticationContext);
+      if (url.pathname.startsWith("/local/v1/reference-agent/enrollment/")) {
+        const body = await readJson();
+        const revoke = url.pathname === LOCAL_REFERENCE_AGENT_HTTP_ROUTES.enrollmentRevoke;
+        if (!body || typeof body !== "object" || !exactKeys(body, revoke ? ["schemaVersion", "actorId"] : ["schemaVersion"]) ||
+            body.schemaVersion !== "local_principal_agent_runtime_request.v1" || (revoke && !IDENTIFIER.test(body.actorId ?? ""))) invalid("Exact local Agent enrollment request required");
+        if (!enrollment) {
+          if (url.pathname === LOCAL_REFERENCE_AGENT_HTTP_ROUTES.enrollmentStatus) return sendJson(200, { available:false, schemaVersion:"local_principal_agent_runtime_view.v1" });
+          throw new DomainError("local_agent_enrollment_unavailable", "Local Agent enrollment is not configured");
+        }
+        const value = url.pathname === LOCAL_REFERENCE_AGENT_HTTP_ROUTES.enrollmentCreate
+          ? await enrollment.create(authenticationContext)
+          : revoke ? await enrollment.revoke(authenticationContext, body) : await enrollment.status(authenticationContext);
+        return sendJson(200, value);
+      }
       const input = assertBody(await readJson(), url.pathname);
       if (url.pathname === LOCAL_REFERENCE_AGENT_HTTP_ROUTES.accountProof) {
-        const proof = await proveAccount(input.challenge);
+        const proof = await proveAccount(input.challenge, authenticationContext);
+        // AgentTenantCommandClient returns Subject.status, not subjectStatus.
+        // Reject an incomplete result instead of displaying a false success.
+        if (proof.subjectId !== input.subjectId || proof.status !== "active" ||
+            !proof.accountBinding || proof.challengeConsumed !== true) {
+          throw new DomainError("local_agent_account_proof_incomplete", "The Agent account proof did not return an active verified binding");
+        }
         return sendJson(200, {
           status: "account_bound",
           subjectId: proof.subjectId,
-          subjectStatus: proof.subjectStatus,
+          subjectStatus: proof.status,
           accountBinding: proof.accountBinding,
           challengeConsumed: proof.challengeConsumed,
           sandboxOnly: true,
@@ -485,7 +509,7 @@ export function createLocalReferenceAgentHttpService({
         );
       }
 
-      const session = await createAgentSession(manifest);
+      const session = await createAgentSession(manifest, authenticationContext);
       try {
         if (url.pathname === LOCAL_REFERENCE_AGENT_HTTP_ROUTES.continuation) {
           const result = await session.client.resumeWorkspace({

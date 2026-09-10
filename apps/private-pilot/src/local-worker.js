@@ -16,6 +16,7 @@ import {
 } from "../../../modules/event-indexer/src/index.js";
 import { DomainError } from "../../../packages/domain/src/index.js";
 import { createPrivatePilotGateway } from "./private-pilot-runtime.js";
+import { runLocalServicingClock } from "./local-servicing-clock.js";
 import {
   createEvidenceAnchorTestnetAttestor
 } from "./evidence-anchor-testnet-attestor.js";
@@ -263,6 +264,8 @@ async function startLocalWorker(environment = process.env) {
       const reconciliationBucket = Math.floor(now / reconciliationIntervalMs);
       const reconcile = reconciliationBucket !== lastReconciliationBucket;
       try {
+        await runLocalServicingClock({pool,tenantId:authentication.profile.tenantId,
+          policyVersion:riskIdentity.createContext().policyVersion});
         const result = await runLocalWorkerCycle({
           repository,
           reconciliationService,

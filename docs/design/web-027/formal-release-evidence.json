@@ -1,0 +1,1014 @@
+{
+  "schemaVersion": "web027_formal_release_evidence.v1",
+  "recordedAt": "2026-09-10T15:07:32.076707+00:00",
+  "verdict": "BLOCKED \u2014 NOT COMPLETE",
+  "release": {
+    "source": "2327b8cb6400c2ec587247f8aef1eae0a696d446",
+    "deployment": "dpl_EfBMLuMH8zFtEZ1t5FdrJg4N1zv4",
+    "url": "https://ipo.one",
+    "profile": "public_authenticated_no_funds_beta",
+    "schemaMigrations": 76,
+    "migrationProfile": "web027_wallet_expiry_recovery_v2",
+    "schemaMutation": false,
+    "appliedMigration": null,
+    "manualAccountEdit": false,
+    "sandboxEconomicWrites": false,
+    "localCredentialsPublished": false,
+    "productionEnvironmentUnchanged": true,
+    "browserEntry": {
+      "bundled": true,
+      "sourceModules": 37,
+      "bytes": 592491
+    }
+  },
+  "ci": [
+    "https://github.com/CPTM511/IPO.ONE/actions/runs/34491729506",
+    "https://github.com/CPTM511/IPO.ONE/actions/runs/34491723183"
+  ],
+  "verified": {
+    "walletLogin": "Historical signed-but-locked Human fix is retained. Current repair permits a verified expired ordinary v2 wallet identity to recover under public-Beta policy, without replacing its Actor or reviving revoked authority.",
+    "humanLifecycle": "Subject, Consent, explainable Offer, explicit acceptance, synthetic execution, full repayment, owner Evidence",
+    "humanRecovery": [
+      {
+        "phase": "login",
+        "visible": true,
+        "lifecycle": "Fully Repaid",
+        "repaid": "$24.50",
+        "evidence": "10 Owner/controller-authorized Evidence events loaded from the complete bounded server timeline. Latest events are shown first; digests are not blockchain transactions."
+      },
+      {
+        "phase": "refresh",
+        "visible": true,
+        "lifecycle": "Fully Repaid",
+        "repaid": "$24.50",
+        "evidence": "10 Owner/controller-authorized Evidence events loaded from the complete bounded server timeline. Latest events are shown first; digests are not blockchain transactions."
+      },
+      {
+        "phase": "relogin",
+        "visible": true,
+        "lifecycle": "Fully Repaid",
+        "repaid": "$24.50",
+        "evidence": "10 Owner/controller-authorized Evidence events loaded from the complete bounded server timeline. Latest events are shown first; digests are not blockchain transactions."
+      }
+    ],
+    "canonicalObligation": {
+      "obligation": {
+        "obligationId": "obligation_e46c25fb-5e8a-4b00-b98d-328516c7f0c0",
+        "obligationHash": "0xcbb32554178520a8ddea3d4a0592d7e8d00b1dcbbadf18e9610569e64cc4e5b4",
+        "subjectId": "subject_b5323f08-62e1-4ca9-adbb-b593891a850f",
+        "principalId": "principal_4b3b362d-011b-4caa-8129-f0ce17a360d0",
+        "creditIntentId": "credit_intent_e8883932-4405-4eb7-968f-b5c373a28afc",
+        "riskDecisionId": "risk_decision_8890fd3bb2368ad923303152e65c3b1ace14e35924423d3d40e697cf60c6c3b1",
+        "creditOfferId": "credit_offer_0f550bcefba21e611e5d00b6e164cce3efddda858259f1db925f13cb1cd8c83f",
+        "creditOfferAcceptanceId": "credit_offer_acceptance_beff5ad976484eb77a8be29ea7c1a55c8b1165c18d01aea6d98c2a0ea549c5e6",
+        "authorityType": "consent",
+        "authorityId": "consent_5eae7764-f115-425a-b0fd-9871f2f951b9",
+        "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+        "originalPrincipalMinor": "2450",
+        "outstandingPrincipalMinor": "0",
+        "annualRateBps": 900,
+        "originationFeeMinor": "0",
+        "accruedInterestMinor": "0",
+        "outstandingInterestMinor": "0",
+        "accruedFeesMinor": "0",
+        "outstandingFeesMinor": "0",
+        "totalRepaidMinor": "2450",
+        "repaymentFrequency": "monthly",
+        "installmentCount": 2,
+        "firstPaymentAt": "2026-10-08T13:47:12.030Z",
+        "maturityAt": "2026-11-07T13:47:12.030Z",
+        "scheduleVersion": "obligation_schedule.v1",
+        "scheduleHash": "0xd986715c34615df0f1b00bdc94a5a4351fffb708364a7ca97153bb8a8f07c4a1",
+        "scheduleSequence": 1,
+        "installments": [
+          {
+            "installmentId": "obligation_installment_43b30241d9eb40c8555005e056071c5d90a3ad3c3b32d4772efa5b85d6d13d08",
+            "obligationId": "obligation_e46c25fb-5e8a-4b00-b98d-328516c7f0c0",
+            "installmentNumber": 1,
+            "dueAt": "2026-10-08T13:47:12.030Z",
+            "scheduledPrincipalMinor": "1225",
+            "scheduledInterestMinor": "0",
+            "scheduledFeeMinor": "0",
+            "paidPrincipalMinor": "1225",
+            "paidInterestMinor": "0",
+            "paidFeeMinor": "0",
+            "status": "paid",
+            "scheduleVersion": "obligation_schedule.v1",
+            "scheduleSequence": 1,
+            "schemaVersion": "obligation_installment.v1"
+          },
+          {
+            "installmentId": "obligation_installment_4d3616955395fb7f5c6a930a084996d192e44eeca460f2a713d3064726ade330",
+            "obligationId": "obligation_e46c25fb-5e8a-4b00-b98d-328516c7f0c0",
+            "installmentNumber": 2,
+            "dueAt": "2026-11-07T13:47:12.030Z",
+            "scheduledPrincipalMinor": "1225",
+            "scheduledInterestMinor": "0",
+            "scheduledFeeMinor": "0",
+            "paidPrincipalMinor": "1225",
+            "paidInterestMinor": "0",
+            "paidFeeMinor": "0",
+            "status": "paid",
+            "scheduleVersion": "obligation_schedule.v1",
+            "scheduleSequence": 1,
+            "schemaVersion": "obligation_installment.v1"
+          }
+        ],
+        "executionStatus": "executed",
+        "sandboxExecutionReceiptId": "sandbox_execution_receipt_a6126a49edde1628f722703a7d7d8630818cb6685988195e321619d2661e4892",
+        "executedAt": "2026-09-08T13:47:18.124Z",
+        "lastAccruedAt": "2026-09-08T13:47:18.124Z",
+        "interestAccrualRemainder": "0",
+        "withdrawable": false,
+        "sandboxOnly": true,
+        "productionFundsMoved": false,
+        "status": "fully_repaid",
+        "servicingClassification": "current",
+        "daysPastDue": 0,
+        "oldestUnpaidInstallmentId": null,
+        "servicingEffectiveAt": "2026-09-08T13:47:20.397Z",
+        "servicingReasonCode": "servicing_current",
+        "servicingPolicyVersion": "sandbox-servicing-policy.v1",
+        "servicingOwnerCode": "sandbox_platform",
+        "writtenOffPrincipalMinor": "0",
+        "writtenOffInterestMinor": "0",
+        "writtenOffFeesMinor": "0",
+        "acceptedAt": "2026-09-08T13:47:13.415Z",
+        "createdAt": "2026-09-08T13:47:13.415Z",
+        "updatedAt": "2026-09-08T13:47:20.397Z",
+        "schemaVersion": "obligation.v2"
+      },
+      "latestServicingAction": {
+        "servicingActionId": "sandbox_servicing_action_548c8ed4dfc2c9e0ef9df0af67794564b4484673ceabe1647f873152c4f86e44",
+        "servicingActionHash": "0x548c8ed4dfc2c9e0ef9df0af67794564b4484673ceabe1647f873152c4f86e44",
+        "obligationId": "obligation_e46c25fb-5e8a-4b00-b98d-328516c7f0c0",
+        "subjectId": "subject_b5323f08-62e1-4ca9-adbb-b593891a850f",
+        "actionType": "advance",
+        "previousStatus": "active",
+        "nextStatus": "fully_repaid",
+        "previousClassification": "current",
+        "nextClassification": "current",
+        "daysPastDue": 0,
+        "oldestUnpaidInstallmentId": null,
+        "reasonCode": "servicing_current",
+        "source": "repayment",
+        "policyVersion": "sandbox-servicing-policy.v1",
+        "scheduleSequenceBefore": 1,
+        "scheduleSequenceAfter": 1,
+        "balancesBefore": {
+          "totalRepaidMinor": "0",
+          "outstandingFeesMinor": "0",
+          "outstandingInterestMinor": "0",
+          "outstandingPrincipalMinor": "2450"
+        },
+        "balancesAfter": {
+          "totalRepaidMinor": "2450",
+          "outstandingFeesMinor": "0",
+          "outstandingInterestMinor": "0",
+          "outstandingPrincipalMinor": "0"
+        },
+        "effectiveAt": "2026-09-08T13:47:20.397Z",
+        "sandboxOnly": true,
+        "productionFundsMoved": false,
+        "schemaVersion": "sandbox_servicing_action.v1"
+      },
+      "asOf": "2026-09-08T16:14:01.750Z",
+      "sandboxOnly": true,
+      "productionFundsMoved": false,
+      "withdrawable": false,
+      "schemaVersion": "tenant_owned_obligation_view.v1"
+    },
+    "agent": {
+      "source": "f4b883f2799fa8b22d708cc0dadaa24966c464fe",
+      "verificationDeployment": "dpl_FekWn6uuhUPNq1Qc7z5AHBXx4jwy",
+      "origin": "https://ipo.one",
+      "transport": "Real HTTPS with signed ES256 access tokens and request-bound DPoP; MCP wrapper uses the same deployed service.",
+      "existingObligationId": "obligation_870106db-af9f-49bf-b331-e803c4fda321",
+      "originalPrincipalMinor": "10000",
+      "totalRepaidMinor": "10008",
+      "quantity": "250",
+      "chargeMinor": "500",
+      "status": "fully_repaid_with_evidence",
+      "duplicateRepaymentReplayed": true,
+      "evidenceCount": 24,
+      "freshProcessTerminalRecovery": true,
+      "worker": {
+        "claimed": 16,
+        "published": 16,
+        "outcomeMaterialized": 1,
+        "creditStateUpdated": 1,
+        "reconciliation": "passed"
+      },
+      "sandboxOnly": true,
+      "productionFundsMoved": false
+    },
+    "humanLifecycleSource": "7e83916eb9e18153f59b9aa86d8df4c6e74bdb5e",
+    "humanRecoverySource": "2327b8cb6400c2ec587247f8aef1eae0a696d446",
+    "canonicalObligationSource": "f4b883f2799fa8b22d708cc0dadaa24966c464fe",
+    "walletExpiryRegression": {
+      "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
+      "focusedTests": 9,
+      "postgresTests": 100,
+      "realSignatures": true,
+      "actualAuthenticationDatabaseRole": true,
+      "concurrentRecoveryOnce": true,
+      "originalIdentityRetained": true,
+      "revokedAndDisabledRejected": true,
+      "independentRoleExpiryRetained": true,
+      "oldSessionInvalidated": true,
+      "rollbackTested": true
+    },
+    "originalWalletRecovery": {
+      "observedAt": "2026-09-10",
+      "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
+      "nativeBrowser": "Authenticated Principal workspace; login modal dismissed",
+      "canonicalAudit": "One verified-SIWE recovery event at 2026-09-10T07:32:38.269Z; same credential and Actor, credential/ordinary roles version 2, active with no invitation expiry.",
+      "ownedAgentClickAcceptance": false
+    },
+    "startup": {
+      "source": "2327b8cb6400c2ec587247f8aef1eae0a696d446",
+      "normalPublicPaintCases": [
+        "1440-light-cold",
+        "1440-light-reload",
+        "1440-dark-cold",
+        "1440-dark-reload",
+        "390-light-cold",
+        "390-light-reload",
+        "390-dark-cold",
+        "390-dark-reload"
+      ],
+      "faultInjectedPublicPaintCases": [
+        "1440-light-cold",
+        "1440-light-reload",
+        "1440-dark-cold",
+        "1440-dark-reload",
+        "390-light-cold",
+        "390-light-reload",
+        "390-dark-cold",
+        "390-dark-reload"
+      ],
+      "normalRecoveryPhases": [
+        "public entry",
+        "login",
+        "refresh",
+        "public entry",
+        "relogin"
+      ],
+      "faultInjectedRecoveryPhases": [
+        "public entry",
+        "login",
+        "refresh",
+        "public entry",
+        "relogin"
+      ],
+      "failedPaintStates": 0,
+      "visibleFailureTitles": 0,
+      "optionalErrorObservations": 13,
+      "optionalErrorsBeforeReady": 13,
+      "faultInjection": "Deliberately missing same-origin optional script; real 404 responses, no API/asset mocks. The Founder browser specific failing script is unknown.",
+      "apiMocks": false,
+      "assetMocks": false,
+      "actualHostedCompiledAsset": true,
+      "ownedEntryMarkerVerified": true,
+      "focusedBrowserCases": 11,
+      "normalPaintArtifact": "output/playwright/web-027/formal/startup-paint/result.json",
+      "faultPaintArtifact": "output/playwright/web-027/startup-error/formal-paint-fault/result.json",
+      "faultRecoveryArtifact": "output/playwright/web-027/startup-error/formal-recovery-fault/human-recovery.json",
+      "principalArtifact": "output/playwright/web-027/startup-error/formal-principal/result.json",
+      "baselineFailureArtifact": "output/playwright/web-027/startup-error/formal-before-fix/1440-light-reload-observation.json"
+    },
+    "sidebarFooter": {
+      "source": "2327b8cb6400c2ec587247f8aef1eae0a696d446",
+      "apiMocks": false,
+      "checks": [
+        {
+          "step": "visible API reference opens real specification",
+          "status": 200,
+          "openapi": "3.1.2",
+          "pathCount": 5
+        },
+        {
+          "step": "environment details and compact footer",
+          "width": 1440,
+          "theme": "light",
+          "visible": true,
+          "mobileKeyboardDetailsReachable": null
+        },
+        {
+          "step": "environment details and compact footer",
+          "width": 1440,
+          "theme": "dark",
+          "visible": true,
+          "mobileKeyboardDetailsReachable": null
+        },
+        {
+          "step": "environment details and compact footer",
+          "width": 390,
+          "theme": "light",
+          "visible": true,
+          "mobileKeyboardDetailsReachable": true
+        },
+        {
+          "step": "environment details and compact footer",
+          "width": 390,
+          "theme": "dark",
+          "visible": true,
+          "mobileKeyboardDetailsReachable": true
+        }
+      ],
+      "keyboardDismissal": true,
+      "mobileKeyboardFocusVerified": true,
+      "topbarSessionStatusVisible": true,
+      "apiLinkPreservesCurrentView": true,
+      "primaryNavigationSurvivesCollapsedMoreTools": true,
+      "unitTests": 205,
+      "focusedBrowserCases": 3,
+      "fixtureWidths": [
+        1440,
+        390,
+        320
+      ],
+      "fixtureRoles": [
+        "Human",
+        "Agent",
+        "Capital",
+        "Risk"
+      ]
+    },
+    "workspaceContrast": {
+      "source": "9b388b2702ae82b21e65798d9e9a6dbe6dc9f613",
+      "thresholds": {
+        "normalText": 4.5,
+        "largeText": 3
+      },
+      "widths": [
+        1440,
+        390
+      ],
+      "themes": [
+        "dark",
+        "light"
+      ],
+      "formal": [
+        {
+          "role": "human",
+          "states": 49,
+          "renderedTextSamples": 5201,
+          "contrastFailures": 0,
+          "manualSurfaceExceptions": 0,
+          "darkPreferenceSurvivedRefresh": true
+        },
+        {
+          "role": "principal",
+          "states": 49,
+          "renderedTextSamples": 5243,
+          "contrastFailures": 0,
+          "manualSurfaceExceptions": 0,
+          "darkPreferenceSurvivedRefresh": true
+        }
+      ],
+      "local": [
+        {
+          "role": "human",
+          "states": 57,
+          "renderedTextSamples": 7140,
+          "contrastFailures": 0,
+          "manualSurfaceExceptions": 0,
+          "darkPreferenceSurvivedRefresh": true
+        },
+        {
+          "role": "principal",
+          "states": 49,
+          "renderedTextSamples": 5915,
+          "contrastFailures": 0,
+          "manualSurfaceExceptions": 0,
+          "darkPreferenceSurvivedRefresh": true
+        }
+      ],
+      "apiMocks": false,
+      "assetMocks": false,
+      "fixtureRoles": [
+        "Human",
+        "Agent",
+        "Capital",
+        "Risk"
+      ],
+      "fixtureScope": "Component contrast only; privileged hosted role acceptance is not inferred. Hidden and disabled controls are excluded from text contrast measurement.",
+      "formalArtifact": "output/playwright/web-027/formal/contrast/result.json",
+      "localArtifact": "output/playwright/web-027/dark-contrast/local-final/result.json",
+      "retainedStartupRecovery": {
+        "source": "9b388b2702ae82b21e65798d9e9a6dbe6dc9f613",
+        "phases": [
+          "public entry",
+          "login",
+          "refresh",
+          "public entry",
+          "relogin"
+        ],
+        "artifact": "output/playwright/web-027/formal/human-recovery.json"
+      }
+    }
+  },
+  "notVerified": [
+    "Original Principal owned-Agent navigation and record recovery by visible clicks on the final hosted SHA remain unverified. Original OKX login was observed authenticated before this startup repair and its canonical identity recovery was confirmed read-only. Concurrent user browser interaction prevented further original-account clicks; no identity or wallet was substituted."
+  ],
+  "localEvidence": "docs/design/web-027/n-verification-evidence.json",
+  "rollback": {
+    "deployment": "dpl_9Thjh3YJCzr9YR29fTZJc3qe6gqh",
+    "source": "9b388b2702ae82b21e65798d9e9a6dbe6dc9f613",
+    "databaseRollbackRequired": false,
+    "schemaMigrations": 76,
+    "preserveRecoveredIdentitiesAndAuditHistory": true
+  },
+  "artifacts": [
+    {
+      "path": "output/playwright/web-027/formal/baseline.json",
+      "sha256": "4e907361da23871ef2cbb504872f898ce14ee3795d229e7731cf1d73befb7915"
+    },
+    {
+      "path": "output/playwright/web-027/formal/human-recovery.json",
+      "source": "2327b8cb6400c2ec587247f8aef1eae0a696d446",
+      "sha256": "5f21b4acaae4a4066439d93439fc274e09e6d5a9b48723055f3e66df345a542d",
+      "previousArtifactSha256": "a54e76e47f3ae11143f727fe6f2ee61a9b7d92689ec347481c997a9fc939a187"
+    },
+    {
+      "path": "output/playwright/web-027/formal/human-recovery-before-wait-correction.json",
+      "sha256": "8ae24f533657983040be07deacb512cb1e792a40321c8f2fc448cbe51444c797"
+    },
+    {
+      "path": "output/playwright/web-027/formal/principal.json",
+      "sha256": "4b4c553fa24a14d448bdb257917f2427d695518970e6f08a213416b72af452a4"
+    },
+    {
+      "path": "output/playwright/web-027/formal/agent-read.json",
+      "sha256": "bb96d651ff1245073c106f50a8d5a4f93a82617b9a1fc6efee3a2c147fe27cf3"
+    },
+    {
+      "path": "output/playwright/web-027/formal/agent-runtime.json",
+      "sha256": "28a7f086e13e3a0e4eadfb0336f8af2bdad7b13953e9a446492cf3847d187a0e"
+    },
+    {
+      "path": "output/playwright/web-027/formal/agent-recovery.json",
+      "sha256": "703ac76678f2c7dcd5397c94588a9330d66b6c34578009da5710c25fc96f27b1"
+    },
+    {
+      "path": "output/playwright/web-027/formal/agent-worker.json",
+      "sha256": "b58c20031e960676fa496e8e34e03a29c0ab3f2a94eb732793cfde7f6285d208"
+    },
+    {
+      "path": "output/playwright/web-027/formal/agent-credential-revocation.json",
+      "sha256": "7878173ea7762e12bc3756b49d1f394eb9f80acb14d101fc5ca59bd643aadb56"
+    },
+    {
+      "path": "output/playwright/web-027/formal/agent-credential-rejection.json",
+      "sha256": "607e26781f7b9267ccd888de97bbf5dad7d7e19a0d3db00ceb5ca62f6a409122"
+    },
+    {
+      "path": "output/playwright/web-027/formal/final-health.json",
+      "sha256": "3ca52c506c8b24ee412b548d70cc36565d1e5545896662c1d948a4d75b7f513c"
+    },
+    {
+      "path": "output/playwright/web-027/formal/cleanup.json",
+      "sha256": "66a2044f4dde99e50581b972404aa54380468511284e51af2494825aef1f1b0c"
+    },
+    {
+      "path": "output/playwright/web-027/formal/wallet-expiry-migration.json",
+      "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
+      "sha256": "d412ed71c6982320153153bf68c309ee7e6187d8d338b62fe4092af970869c42"
+    },
+    {
+      "path": "output/playwright/web-027/formal/wallet-expiry-health.json",
+      "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
+      "sha256": "629ef0f2c05a4732ea5cdd70269907bb25c7c2c2bd49a7e30b346fef6be88197"
+    },
+    {
+      "path": "output/playwright/web-027/formal/wallet-expiry-test-cleanup.json",
+      "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
+      "sha256": "0398068742d3fb32b072ef84d0c05c1322e4c5a410ceb12ca9c92206666ed409"
+    },
+    {
+      "path": "output/playwright/web-027/formal/wallet-expiry-unit.log",
+      "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
+      "sha256": "3e0a767c895356dd36bf837047e386bd5852aa58771d695309bfb22e6d8b324a"
+    },
+    {
+      "path": "output/playwright/web-027/formal/wallet-expiry-postgres-final.log",
+      "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
+      "sha256": "c3b5392afd91f5d9773b4cc92f58b65dea0fdd414931aed87e9175be652053b4"
+    },
+    {
+      "path": "output/playwright/web-027/formal/startup-formal-baseline.json",
+      "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
+      "sha256": "c860f1537000219eacf38b571b642264a9331e380a2b66ef475014806daa71d0"
+    },
+    {
+      "path": "output/playwright/web-027/formal/original-wallet-recovered.json",
+      "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
+      "sha256": "6535b6761c4a78c266233761e18b2de673017799b951f5bd285fea55adafc204"
+    },
+    {
+      "path": "output/playwright/web-027/formal/startup-health.json",
+      "source": "5ede04b45877cdfe483940e18dfc9bcaf907e30b",
+      "sha256": "d01c9d105ce25a68af76ce8fd1053f13c3a29bc7395b3449ddbe7a5e44fd26c0"
+    },
+    {
+      "path": "output/playwright/web-027/formal/startup-ci.json",
+      "source": "5ede04b45877cdfe483940e18dfc9bcaf907e30b",
+      "sha256": "92c7e354a0b32a33b6c3595c596ea5988d2d7a8daebcaf74a9bdde21e97c9eed"
+    },
+    {
+      "path": "output/playwright/web-027/startup/compiled-local/recovery.json",
+      "source": "5ede04b45877cdfe483940e18dfc9bcaf907e30b",
+      "sha256": "76a556c36f5c8ff65ddcee6dfdfc3dd0fc4c8a5b6915da72bb6c68bc08305222"
+    },
+    {
+      "path": "output/playwright/web-027/formal/startup-web-tests.log",
+      "source": "f4f0ee9ff9b0248135b0fc864583f04d9083588e",
+      "sha256": "b53b8b2a38f218c1df4cce66b31c9ca8e7b9ed9ffb211ecb9ae34b3cb8229d22"
+    },
+    {
+      "path": "output/playwright/web-027/formal/startup-noscript.log",
+      "source": "f4f0ee9ff9b0248135b0fc864583f04d9083588e",
+      "sha256": "2296a1552d997ad298b326ea77a41cbfd7f8491fedeb4ba824d14506ad4f866f"
+    },
+    {
+      "path": "output/playwright/web-027/footer-focus-before.log",
+      "source": "ee1d85ebd2db0c4d8f05e8b2110f8e731fc525e5",
+      "sha256": "a60d93514c97c0798f7482f7725ee39ff6cd3d0334c548269c4fb38132a3e8e5"
+    },
+    {
+      "path": "output/playwright/web-027/formal/footer-first-human-recovery.json",
+      "source": "e6b098814af647f7201ab1cb7da8f45318e9ca98",
+      "sha256": "54d06301e150f03d469b33458bac898ceaf3a4258089634ea1897e4808e4c16d"
+    },
+    {
+      "path": "output/playwright/web-027/formal/footer-navigation-debug.json",
+      "source": "e6b098814af647f7201ab1cb7da8f45318e9ca98",
+      "sha256": "b90c45401e95a8fe5a41f7ddc8189e4ac5eec43425d48b49a742aea87331c3e7"
+    },
+    {
+      "path": "output/playwright/web-027/footer-navigation-before.log",
+      "source": "e6b098814af647f7201ab1cb7da8f45318e9ca98",
+      "sha256": "e85e2e38a37d63ea5734e36150de5a83a8a94248cbb528ab74bae6c3f52dd283"
+    },
+    {
+      "path": "output/playwright/web-027/formal/human-recovery-startup-5ede04b.json",
+      "source": "5ede04b45877cdfe483940e18dfc9bcaf907e30b",
+      "sha256": "bfb1ce84e1682badfb24e246149c06979825ea33da739a60cbb86c9fcd864fce"
+    },
+    {
+      "path": "output/playwright/web-027/formal/footer-health.json",
+      "source": "55c6019475c1e2990fee1199674545e0f4526b79",
+      "sha256": "b8a012ac82784c4e3f66549156ea10e15363816dc3bacfa7b47c235ae7f0aef5"
+    },
+    {
+      "path": "output/playwright/web-027/formal/footer-ci.json",
+      "source": "55c6019475c1e2990fee1199674545e0f4526b79",
+      "sha256": "a1333d3d4e562c3aee1e3e2a6f28ccb4348a3f51bb883b573e19ee2dbce1d27c"
+    },
+    {
+      "path": "output/playwright/web-027/footer/compiled-local/recovery.json",
+      "source": "55c6019475c1e2990fee1199674545e0f4526b79",
+      "sha256": "605afeea2acc9348806e5fb07cd7ef7c382bcb9fa13a65c163b324c9900f0ad7"
+    },
+    {
+      "path": "output/playwright/web-027/footer-web-tests-final.log",
+      "source": "55c6019475c1e2990fee1199674545e0f4526b79",
+      "sha256": "47dfea9cb5234c26d93cc57fb466e0802ae89a1a16cd5e0b9f9431e647b422a2"
+    },
+    {
+      "path": "output/playwright/web-027/footer-browser-final.log",
+      "source": "55c6019475c1e2990fee1199674545e0f4526b79",
+      "sha256": "01573b9e04ac9eca23a4a4e9edfcf6b2e90d817a9686c3941141ffdf6ff6a1aa"
+    },
+    {
+      "path": "output/playwright/web-027/formal/human-recovery-footer-55c6019.json",
+      "sha256": "289d000e389b5d8f84705a8d77671c83c920dd44e1948b6559c4ad7c1dc1aace",
+      "source": "55c6019475c1e2990fee1199674545e0f4526b79"
+    },
+    {
+      "path": "output/playwright/web-027/formal/quiet-startup-health.json",
+      "sha256": "defb3ba2c0f008060679f759360c0befafa4e1d6bff212db2c5e07d70cee21c3",
+      "source": "3246672c38dd94d9b29d9d4a98a8d65764fffe11"
+    },
+    {
+      "path": "output/playwright/web-027/formal/startup-paint/result.json",
+      "source": "2327b8cb6400c2ec587247f8aef1eae0a696d446",
+      "sha256": "4ba95a9653bd75025f047f716be341c0b9579c1ad557b3b6ebfdcec4f4946a85",
+      "previousArtifactSha256": "13049609cbb1ec44dc23b57603e1db200f9fab0754aa099a1541df13543e9ff5"
+    },
+    {
+      "path": "output/playwright/web-027/startup-flash/ci-final.json",
+      "sha256": "2ec0d39305625bd680cf3770742fd5c3abef7d4ff54df07d461dc6e71eb1260f",
+      "source": "3246672c38dd94d9b29d9d4a98a8d65764fffe11"
+    },
+    {
+      "path": "output/playwright/web-027/startup-flash/browser-tests-final.log",
+      "sha256": "f950182bb7c50a171bae6b542c686f2bac26ee69187bb1d4646040df98172156",
+      "source": "3246672c38dd94d9b29d9d4a98a8d65764fffe11"
+    },
+    {
+      "path": "output/playwright/web-027/startup-flash/formal-before-regression.log",
+      "sha256": "4a45a2145121f8d886d1de2c113f102b87e545d67c44042fd9b4d7d24b2e6e73",
+      "source": "55c6019475c1e2990fee1199674545e0f4526b79"
+    },
+    {
+      "path": "output/playwright/web-027/formal/human-recovery-quiet-3246672.json",
+      "sha256": "6a407fe1e83627fe2936c347507e2d7540bfba2a7b527a58883929376b16cc25",
+      "source": "3246672c38dd94d9b29d9d4a98a8d65764fffe11"
+    },
+    {
+      "path": "output/playwright/web-027/formal/dark-contrast-health.json",
+      "sha256": "0fbd7955ac073bffd9dce56a47aba49aee2d702e4020c90523934a4f88a19a0e",
+      "source": "9b388b2702ae82b21e65798d9e9a6dbe6dc9f613"
+    },
+    {
+      "path": "output/playwright/web-027/formal/contrast/result.json",
+      "sha256": "a4a070778a249d03f3013f0df54b020b7bc98a1dd192336ec98bbbb8807e95aa",
+      "source": "9b388b2702ae82b21e65798d9e9a6dbe6dc9f613"
+    },
+    {
+      "path": "output/playwright/web-027/dark-contrast/local-final/result.json",
+      "sha256": "e67527710946875a6d49f24c1b14374782f8354a603cc6595bdd611260990b9c",
+      "source": "9b388b2702ae82b21e65798d9e9a6dbe6dc9f613"
+    },
+    {
+      "path": "output/playwright/web-027/dark-contrast/final-contrast.log",
+      "sha256": "bf33067057cab0b55b4d4dc931a815d42b20afa5c966b2cd6102a59cdc512e0f",
+      "source": "9b388b2702ae82b21e65798d9e9a6dbe6dc9f613"
+    },
+    {
+      "path": "output/playwright/web-027/dark-contrast/web-tests.log",
+      "sha256": "a48efb188469a48a95fb8e2bd9b2e03cd8fc86c0e5e91dbecf6b703a6c5db96c",
+      "source": "5c52373465838eddb383081a7deae0ee972f8ca1"
+    },
+    {
+      "path": "output/playwright/web-027/dark-contrast/source-lint.log",
+      "sha256": "c9847eaa0db70ba711c6e1d7416d0cd26e275443fdfc940201388239ed0d0c66",
+      "source": "5c52373465838eddb383081a7deae0ee972f8ca1"
+    },
+    {
+      "path": "output/playwright/web-027/formal/human-recovery-contrast-9b388b2.json",
+      "source": "9b388b2702ae82b21e65798d9e9a6dbe6dc9f613",
+      "sha256": "a54e76e47f3ae11143f727fe6f2ee61a9b7d92689ec347481c997a9fc939a187"
+    },
+    {
+      "path": "output/playwright/web-027/formal/startup-paint-quiet-3246672/result.json",
+      "source": "3246672c38dd94d9b29d9d4a98a8d65764fffe11",
+      "sha256": "13049609cbb1ec44dc23b57603e1db200f9fab0754aa099a1541df13543e9ff5"
+    },
+    {
+      "path": "output/playwright/web-027/formal/startup-errors-health.json",
+      "source": "2327b8cb6400c2ec587247f8aef1eae0a696d446",
+      "sha256": "e459acb652c2a63b34ffabdba4c127f905718416a37be8ea931046d3a53e3dae"
+    },
+    {
+      "path": "output/playwright/web-027/startup-error/formal-paint-fault/result.json",
+      "source": "2327b8cb6400c2ec587247f8aef1eae0a696d446",
+      "sha256": "f953de709972938e4821e268e5742a6a7d50665f0884fac8bf3ade344d7c8d96"
+    },
+    {
+      "path": "output/playwright/web-027/startup-error/formal-recovery-fault/human-recovery.json",
+      "source": "2327b8cb6400c2ec587247f8aef1eae0a696d446",
+      "sha256": "3a49e51bc782c602ea35cb52ede92a65b411df497f3252d368c859e8c4ff17e8"
+    },
+    {
+      "path": "output/playwright/web-027/startup-error/formal-principal/result.json",
+      "source": "2327b8cb6400c2ec587247f8aef1eae0a696d446",
+      "sha256": "99e74e64c866af87b868319e1b130af70710f8c71170c1c0bf81aa2e6f5a3d0b"
+    },
+    {
+      "path": "output/playwright/web-027/startup-error/local/result.json",
+      "source": "2327b8cb6400c2ec587247f8aef1eae0a696d446",
+      "sha256": "14eb502039f83d69dd0f888e53896b23b49d8e375ad350d10ac25f4a116f9ce6"
+    },
+    {
+      "path": "output/playwright/web-027/startup-error/formal-before-fix/1440-light-reload-observation.json",
+      "source": "9b388b2702ae82b21e65798d9e9a6dbe6dc9f613",
+      "sha256": "22ede45760a38c3c694d4f92d2bb6a1b9d2e928e6ee5fd4e548d066602f59a22"
+    },
+    {
+      "path": "output/playwright/web-027/startup-error/baseline-tests.log",
+      "source": "9b388b2702ae82b21e65798d9e9a6dbe6dc9f613",
+      "sha256": "a50775cf810b24e6432aa47aba36fb176ca6cd6707d212a74b9630fb96b559e0",
+      "note": "New reproducer against the pre-repair startup runtime; both public and authenticated cases failed as expected."
+    },
+    {
+      "path": "output/playwright/web-027/startup-error/startup-tests.log",
+      "source": "2327b8cb6400c2ec587247f8aef1eae0a696d446",
+      "sha256": "c18015e0583970371242a43451677f2fedcf07075767b5a5236ec63edc52716e"
+    },
+    {
+      "path": "output/playwright/web-027/startup-error/web-tests.log",
+      "source": "2327b8cb6400c2ec587247f8aef1eae0a696d446",
+      "sha256": "2317442b683a48e8749b047471a05b2459c77f4b9773fb78c93049da5f22495d"
+    },
+    {
+      "path": "output/playwright/web-027/startup-error/source-lint.log",
+      "source": "2327b8cb6400c2ec587247f8aef1eae0a696d446",
+      "sha256": "e471d527f289d3d3111a737b3159e652f5200585bc14975b66cde9bfb5981175"
+    },
+    {
+      "path": "output/playwright/web-027/startup-error/ci-final.json",
+      "source": "2327b8cb6400c2ec587247f8aef1eae0a696d446",
+      "sha256": "668002c90574540114eced8d362849c7708f9d1234bbd4723ccd6d97789c57c6"
+    }
+  ],
+  "cleanup": {
+    "completedAt": "2026-09-08T16:12:25.481Z",
+    "temporaryCredentialRevoked": true,
+    "temporaryPrivateKeyDestroyed": true,
+    "temporaryCronSecretDestroyed": true,
+    "temporaryDeploymentIdsRemoved": [
+      "dpl_4PwkEkrLrhaMpJ8f8ifoSDm68wDJ",
+      "dpl_3YgRb55mCTJLcfoF89nZMDqq2WXA",
+      "dpl_FekWn6uuhUPNq1Qc7z5AHBXx4jwy"
+    ],
+    "originalCredentialAndMembershipsUnchanged": true,
+    "projectEnvironmentUnchanged": true,
+    "disposablePostgresDatabaseAndRunnerRemoved": true,
+    "localReviewRuntimesRetained": true
+  },
+  "verificationLimits": [
+    "Human original lifecycle was executed on 7e83916; current 2327b8cb6400c2ec587247f8aef1eae0a696d446 was verified through visible login, refresh, logout/login, fully-repaid record and owner Evidence recovery. Unrelated-script fault injection and normal startup are separately recorded; other historical evidence retains its source.",
+    "Agent machine acceptance remains source-bound to f4b883f and its temporary existing-identity credential. The credential and private key were revoked/destroyed afterward. No permanent Agent runner was installed, and no full Agent lifecycle rerun is claimed for this wallet repair.",
+    "Local privileged-role and servicing results remain local evidence, with the unchanged hosted configuration and capability scope evaluated separately."
+  ],
+  "previousRelease": {
+    "source": "f4b883f2799fa8b22d708cc0dadaa24966c464fe",
+    "deployment": "dpl_8a3mueaSiCnnxNThJnVuh1nGi3MZ",
+    "url": "https://ipo.one",
+    "profile": "public_authenticated_no_funds_beta",
+    "schemaMigrations": 75,
+    "schemaMutation": false,
+    "sandboxBusinessWrites": true,
+    "temporaryExistingAgentCredentialOnly": true,
+    "localCredentialsPublished": false,
+    "defaultProductionEnvironmentRestored": true,
+    "ci": [
+      "https://github.com/CPTM511/IPO.ONE/actions/runs/34247071263",
+      "https://github.com/CPTM511/IPO.ONE/actions/runs/34247076892"
+    ],
+    "recordedAt": "2026-09-08T16:15:41.687Z"
+  },
+  "walletRepairCleanup": {
+    "at": "2026-09-09T15:49:51.044Z",
+    "removed": [
+      {
+        "container": "ipo-one-web027-regression-1788967951258",
+        "database": "ipo_one_web027_test_1788967950953",
+        "removed": true
+      },
+      {
+        "container": "ipo-one-web027-regression-1788967840039",
+        "database": "ipo_one_web027_test_1788967839536",
+        "removed": true
+      }
+    ],
+    "businessDatabaseAndRuntimesRetained": true
+  },
+  "previousWalletRepairRelease": {
+    "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
+    "deployment": "dpl_6C4nXHCG4P5QUhVdJ755xd88ZShK",
+    "url": "https://ipo.one",
+    "profile": "public_authenticated_no_funds_beta",
+    "schemaMigrations": 76,
+    "migrationProfile": "web027_wallet_expiry_recovery_v2",
+    "schemaMutation": true,
+    "appliedMigration": "0084_verified_ordinary_wallet_expiry_recovery",
+    "manualAccountEdit": false,
+    "sandboxEconomicWrites": false,
+    "localCredentialsPublished": false,
+    "productionEnvironmentUnchanged": true,
+    "ci": [
+      "https://github.com/CPTM511/IPO.ONE/actions/runs/34370933134",
+      "https://github.com/CPTM511/IPO.ONE/actions/runs/34370928578"
+    ],
+    "rollback": {
+      "deployment": "dpl_8a3mueaSiCnnxNThJnVuh1nGi3MZ",
+      "source": "f4b883f2799fa8b22d708cc0dadaa24966c464fe",
+      "databaseRollbackRequired": true,
+      "migrationDown": "0084_verified_ordinary_wallet_expiry_recovery",
+      "preserveRecoveredIdentitiesAndAuditHistory": true
+    }
+  },
+  "repairVerdict": "PASS \u2014 DEPLOYED AND USER-VERIFIED",
+  "repairScope": "False startup error on public entry and wallet/session recovery caused by unrelated script resource errors.",
+  "previousStartupRelease": {
+    "source": "5ede04b45877cdfe483940e18dfc9bcaf907e30b",
+    "deployment": "dpl_ESCjVFTwCyBFJxWvZuwuB2F8Layn",
+    "url": "https://ipo.one",
+    "profile": "public_authenticated_no_funds_beta",
+    "schemaMigrations": 76,
+    "migrationProfile": "web027_wallet_expiry_recovery_v2",
+    "schemaMutation": false,
+    "appliedMigration": null,
+    "manualAccountEdit": false,
+    "sandboxEconomicWrites": false,
+    "localCredentialsPublished": false,
+    "productionEnvironmentUnchanged": true,
+    "browserEntry": {
+      "bundled": true,
+      "sourceModules": 37,
+      "bytes": 592130
+    },
+    "ci": [
+      "https://github.com/CPTM511/IPO.ONE/actions/runs/34453112244",
+      "https://github.com/CPTM511/IPO.ONE/actions/runs/34453108728"
+    ],
+    "recoveryArtifact": "output/playwright/web-027/formal/human-recovery-startup-5ede04b.json"
+  },
+  "previousSidebarRelease": {
+    "source": "55c6019475c1e2990fee1199674545e0f4526b79",
+    "deployment": "dpl_EZptaVTiDpNn1LN85sA4zKppEpiW",
+    "url": "https://ipo.one",
+    "profile": "public_authenticated_no_funds_beta",
+    "schemaMigrations": 76,
+    "migrationProfile": "web027_wallet_expiry_recovery_v2",
+    "schemaMutation": false,
+    "appliedMigration": null,
+    "manualAccountEdit": false,
+    "sandboxEconomicWrites": false,
+    "localCredentialsPublished": false,
+    "productionEnvironmentUnchanged": true,
+    "browserEntry": {
+      "bundled": true,
+      "sourceModules": 37,
+      "bytes": 592491
+    },
+    "ci": [
+      "https://github.com/CPTM511/IPO.ONE/actions/runs/34468963186",
+      "https://github.com/CPTM511/IPO.ONE/actions/runs/34468958609"
+    ],
+    "recoveryArtifact": "output/playwright/web-027/formal/human-recovery-footer-55c6019.json",
+    "repairVerdict": "PASS \u2014 DEPLOYED AND USER-VERIFIED",
+    "repairScope": "Founder-approved compact sidebar footer, on-demand environment details and API reference in More tools; delegated visible browser acceptance on the actual deployed SHA."
+  },
+  "repairStates": {
+    "CODE": {
+      "source": "2327b8cb6400c2ec587247f8aef1eae0a696d446"
+    },
+    "RUNTIME": {
+      "source": "2327b8cb6400c2ec587247f8aef1eae0a696d446",
+      "matchedLocalFiles": 90,
+      "healthyRoleEndpoints": 8
+    },
+    "DEPLOYED": {
+      "source": "2327b8cb6400c2ec587247f8aef1eae0a696d446",
+      "deployment": "dpl_EfBMLuMH8zFtEZ1t5FdrJg4N1zv4",
+      "assetHashesMatched": true,
+      "ownedEntryMarkerVerified": true
+    },
+    "REACHABLE": {
+      "publicVisibleEntryCases": 8,
+      "authenticatedVisibleRecoveryPhases": 3,
+      "principalVisibleNavigationVerified": true
+    },
+    "VERIFIED": {
+      "source": "2327b8cb6400c2ec587247f8aef1eae0a696d446",
+      "normalPaintArtifact": "output/playwright/web-027/formal/startup-paint/result.json",
+      "faultPaintArtifact": "output/playwright/web-027/startup-error/formal-paint-fault/result.json",
+      "recoveryArtifact": "output/playwright/web-027/formal/human-recovery.json",
+      "faultRecoveryArtifact": "output/playwright/web-027/startup-error/formal-recovery-fault/human-recovery.json"
+    }
+  },
+  "previousQuietStartupRelease": {
+    "release": {
+      "source": "3246672c38dd94d9b29d9d4a98a8d65764fffe11",
+      "deployment": "dpl_H6bnc1ddaBsNdNd9GCggV2UHS6xg",
+      "url": "https://ipo.one",
+      "profile": "public_authenticated_no_funds_beta",
+      "schemaMigrations": 76,
+      "migrationProfile": "web027_wallet_expiry_recovery_v2",
+      "schemaMutation": false,
+      "appliedMigration": null,
+      "manualAccountEdit": false,
+      "sandboxEconomicWrites": false,
+      "localCredentialsPublished": false,
+      "productionEnvironmentUnchanged": true,
+      "browserEntry": {
+        "bundled": true,
+        "sourceModules": 37,
+        "bytes": 592491
+      }
+    },
+    "ci": [
+      "https://github.com/CPTM511/IPO.ONE/actions/runs/34477335848",
+      "https://github.com/CPTM511/IPO.ONE/actions/runs/34477328970"
+    ],
+    "repairStates": {
+      "CODE": {
+        "source": "3246672c38dd94d9b29d9d4a98a8d65764fffe11"
+      },
+      "RUNTIME": {
+        "source": "3246672c38dd94d9b29d9d4a98a8d65764fffe11",
+        "matchedLocalFiles": 90,
+        "healthyRoleEndpoints": 8
+      },
+      "DEPLOYED": {
+        "source": "3246672c38dd94d9b29d9d4a98a8d65764fffe11",
+        "deployment": "dpl_H6bnc1ddaBsNdNd9GCggV2UHS6xg",
+        "assetHashesMatched": true
+      },
+      "REACHABLE": {
+        "publicVisibleEntryCases": 8,
+        "authenticatedVisibleRecoveryPhases": 3
+      },
+      "VERIFIED": {
+        "source": "3246672c38dd94d9b29d9d4a98a8d65764fffe11",
+        "paintArtifact": "output/playwright/web-027/formal/startup-paint-quiet-3246672/result.json",
+        "recoveryArtifact": "output/playwright/web-027/formal/human-recovery-quiet-3246672.json"
+      }
+    },
+    "recoveryArtifact": "output/playwright/web-027/formal/human-recovery-quiet-3246672.json",
+    "recoverySha256": "6a407fe1e83627fe2936c347507e2d7540bfba2a7b527a58883929376b16cc25",
+    "startup": {
+      "source": "3246672c38dd94d9b29d9d4a98a8d65764fffe11",
+      "legacyVisibleFrames": 0,
+      "loadingInterstitialFrames": 0,
+      "earlyFeedbackFrames": 0,
+      "publicPageDuringAuthenticatedRecoveryFrames": 0,
+      "publicPaintCases": [
+        "1440-light-cold",
+        "1440-light-reload",
+        "1440-dark-cold",
+        "1440-dark-reload",
+        "390-light-cold",
+        "390-light-reload",
+        "390-dark-cold",
+        "390-dark-reload"
+      ],
+      "authenticatedPhases": [
+        "public entry",
+        "login",
+        "refresh",
+        "public entry",
+        "relogin"
+      ],
+      "apiMocks": false,
+      "assetMocks": false,
+      "actualHostedCompiledAsset": true,
+      "tests": "Eight focused startup cases; retained footer regression; 205 web/static tests; both required final-source CI runs passed. Actual formal desktop/mobile Light/Dark cold/reload frames and visible login controls; authenticated login/refresh/relogin and durable record/Evidence recovery.",
+      "authenticatedRecoveryArtifact": "output/playwright/web-027/formal/human-recovery-quiet-3246672.json"
+    },
+    "paintArtifact": "output/playwright/web-027/formal/startup-paint-quiet-3246672/result.json"
+  },
+  "previousContrastRelease": {
+    "release": {
+      "source": "9b388b2702ae82b21e65798d9e9a6dbe6dc9f613",
+      "deployment": "dpl_9Thjh3YJCzr9YR29fTZJc3qe6gqh",
+      "url": "https://ipo.one",
+      "profile": "public_authenticated_no_funds_beta",
+      "schemaMigrations": 76,
+      "migrationProfile": "web027_wallet_expiry_recovery_v2",
+      "schemaMutation": false,
+      "appliedMigration": null,
+      "manualAccountEdit": false,
+      "sandboxEconomicWrites": false,
+      "localCredentialsPublished": false,
+      "productionEnvironmentUnchanged": true,
+      "browserEntry": {
+        "bundled": true,
+        "sourceModules": 37,
+        "bytes": 592491
+      }
+    },
+    "ci": [
+      "https://github.com/CPTM511/IPO.ONE/actions/runs/34481400400",
+      "https://github.com/CPTM511/IPO.ONE/actions/runs/34481392825"
+    ],
+    "repairStates": {
+      "CODE": {
+        "source": "9b388b2702ae82b21e65798d9e9a6dbe6dc9f613"
+      },
+      "RUNTIME": {
+        "source": "9b388b2702ae82b21e65798d9e9a6dbe6dc9f613",
+        "matchedLocalFiles": 90,
+        "healthyRoleEndpoints": 8
+      },
+      "DEPLOYED": {
+        "source": "9b388b2702ae82b21e65798d9e9a6dbe6dc9f613",
+        "deployment": "dpl_9Thjh3YJCzr9YR29fTZJc3qe6gqh",
+        "assetHashesMatched": true
+      },
+      "REACHABLE": {
+        "method": "Visible login, role-allowed navigation, disclosures and theme controls",
+        "formalRoles": [
+          "Human",
+          "Principal"
+        ],
+        "widths": [
+          1440,
+          390
+        ]
+      },
+      "VERIFIED": {
+        "source": "9b388b2702ae82b21e65798d9e9a6dbe6dc9f613",
+        "contrastArtifact": "output/playwright/web-027/formal/contrast/result.json",
+        "recoveryArtifact": "output/playwright/web-027/formal/human-recovery-contrast-9b388b2.json"
+      }
+    },
+    "recoveryArtifact": "output/playwright/web-027/formal/human-recovery-contrast-9b388b2.json",
+    "recoverySha256": "a54e76e47f3ae11143f727fe6f2ee61a9b7d92689ec347481c997a9fc939a187"
+  }
+}

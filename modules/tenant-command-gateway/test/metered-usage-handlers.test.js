@@ -142,7 +142,12 @@ function resources() {
   };
 }
 
-function context({ identityRows = [], identityLookupOptions, tenantId = "tenant_metered_001" } = {}) {
+function context({
+  identityRows = [],
+  identityLookupOptions,
+  ledgerAccountLookupClients,
+  tenantId = "tenant_metered_001"
+} = {}) {
   const values = resources();
   return {
     client: {},
@@ -160,7 +165,8 @@ function context({ identityRows = [], identityLookupOptions, tenantId = "tenant_
       async getMeteredUsageWindowChargeInTransaction() {
         return "1000";
       },
-      async getLedgerAccount() {
+      async getLedgerAccountInTransaction(client) {
+        ledgerAccountLookupClients?.push(client);
         return undefined;
       }
     },
@@ -200,9 +206,13 @@ test("plans one immutable Evidence/admission, Provider Spend reservation and bal
   const command = handler(currentPolicy);
   const input = payload(currentPolicy);
   const identityLookupOptions = [];
+  const ledgerAccountLookupClients = [];
+  const currentContext = context({ identityLookupOptions, ledgerAccountLookupClients });
   await command.preflight({ payload: input });
-  const plan = await command.plan({ ...context({ identityLookupOptions }), payload: input });
+  const plan = await command.plan({ ...currentContext, payload: input });
   assert.deepEqual(identityLookupOptions, [{ lock: false }]);
+  assert.equal(ledgerAccountLookupClients.length, 2);
+  assert.equal(ledgerAccountLookupClients.every((client) => client === currentContext.client), true);
   assert.equal(plan.aggregateId, "obligation_metered_001");
   assert.equal(plan.events[0].expectedVersion, 8);
   assert.equal(plan.response.admission.windowChargeBeforeMinor, "1000");

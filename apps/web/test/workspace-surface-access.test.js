@@ -9,10 +9,10 @@ import {
 
 test("controller exposes Principal and Agent surfaces without deferred role destinations", () => {
   const access = workspaceSurfaceAccess("controller");
-  assert.equal(access.defaultView, "overview");
+  assert.equal(access.defaultView, "agent-console");
   assert.deepEqual(
     [...access.primaryViews],
-    ["overview", "request-credit", "secured-pool", "agent-console"]
+    ["agent-console", "request-credit", "activity-proofs", "wallet-permissions"]
   );
   assert.equal(access.allowedViews.has("agent-console"), true);
   assert.equal(access.allowedViews.has("capital-partners"), false);
@@ -20,9 +20,9 @@ test("controller exposes Principal and Agent surfaces without deferred role dest
   assert.deepEqual(
     [...access.advancedViews],
     [
+      "overview",
+      "secured-pool",
       "obligations",
-      "wallet-permissions",
-      "activity-proofs",
       "credit-track-record",
       "reports-exports",
       "architecture"
@@ -48,7 +48,7 @@ test("borrower does not advertise Capital Partner or Risk", () => {
   const access = workspaceSurfaceAccess("borrower");
   assert.deepEqual(
     [...access.primaryViews],
-    ["overview", "request-credit", "secured-pool", "obligations"]
+    ["request-credit", "obligations", "activity-proofs", "wallet-permissions"]
   );
   assert.equal(access.allowedViews.has("request-credit"), true);
   assert.equal(access.allowedViews.has("capital-partners"), false);
@@ -56,10 +56,10 @@ test("borrower does not advertise Capital Partner or Risk", () => {
   assert.deepEqual(
     [...access.advancedViews],
     [
-      "activity-proofs",
+      "overview",
+      "secured-pool",
       "repay-settle",
       "credit-passport",
-      "wallet-permissions",
       "credit-track-record",
       "reports-exports"
     ]
@@ -124,9 +124,9 @@ test("every allowed view has one normal navigation control", async () => {
 });
 
 test("unavailable and invalid deep links canonicalize to the workspace default", () => {
-  assert.equal(canonicalWorkspaceView("controller", "capital-partners"), "overview");
+  assert.equal(canonicalWorkspaceView("controller", "capital-partners"), "agent-console");
   assert.equal(canonicalWorkspaceView("risk", "overview"), "risk-operations");
   assert.equal(canonicalWorkspaceView("capitalPartner", "risk-operations"), "capital-partners");
-  assert.equal(canonicalWorkspaceView("borrower", "not-a-view"), "overview");
+  assert.equal(canonicalWorkspaceView("borrower", "not-a-view"), "request-credit");
   assert.equal(canonicalWorkspaceView("controller", "agent-console"), "agent-console");
 });

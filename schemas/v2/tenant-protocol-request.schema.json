@@ -14,11 +14,18 @@
   "properties": {
     "operationId": {
       "enum": [
+        "pilotProposeApproval",
+        "pilotReadApproval",
+        "pilotDecideApproval",
+        "pilotCancelApproval",
+        "pilotReadApprovalInbox",
+        "pilotReadRiskAgentDirectory",
         "pilotAcceptCreditOffer",
         "pilotActivateSandboxMandate",
         "pilotCreateAgentAccountChallenge",
         "pilotCreateAgentSubject",
         "pilotCreateConsent",
+        "pilotActivateSandboxHumanSubject",
         "pilotCreateHumanSubject",
         "pilotCreateDraftMandate",
         "pilotCreateCreditPassportArtifact",
@@ -160,6 +167,9 @@
     },
     "reasonCode": {
       "enum": [
+        "approval_confirmed",
+        "approval_rejected",
+        "proposal_canceled",
         "credential_compromise",
         "human_withdrawal",
         "operator_request",
@@ -190,6 +200,336 @@
     }
   },
   "oneOf": [
+    {
+      "title": "pilotProposeApproval",
+      "properties": {
+        "operationId": {
+          "const": "pilotProposeApproval"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "command",
+            "expiresAt"
+          ],
+          "properties": {
+            "command": {
+              "$ref": "#/$defs/localApprovalCommand"
+            },
+            "expiresAt": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        }
+      },
+      "required": [
+        "idempotencyKey"
+      ],
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "purpose"
+            ]
+          },
+          {
+            "required": [
+              "approvalArtifact"
+            ]
+          },
+          {
+            "required": [
+              "resource"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "pilotReadApproval",
+      "properties": {
+        "operationId": {
+          "const": "pilotReadApproval"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {}
+        },
+        "resource": {
+          "$ref": "#/$defs/approvalResourceReference"
+        }
+      },
+      "required": [
+        "resource"
+      ],
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "purpose"
+            ]
+          },
+          {
+            "required": [
+              "approvalArtifact"
+            ]
+          },
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "pilotDecideApproval",
+      "properties": {
+        "operationId": {
+          "const": "pilotDecideApproval"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "expectedVersion",
+            "decision"
+          ],
+          "properties": {
+            "expectedVersion": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "decision": {
+              "enum": [
+                "approve",
+                "reject"
+              ]
+            }
+          }
+        },
+        "resource": {
+          "$ref": "#/$defs/approvalResourceReference"
+        },
+        "reasonCode": {
+          "enum": [
+            "approval_confirmed",
+            "approval_rejected"
+          ]
+        }
+      },
+      "required": [
+        "idempotencyKey",
+        "resource",
+        "reasonCode"
+      ],
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "purpose"
+            ]
+          },
+          {
+            "required": [
+              "approvalArtifact"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "pilotCancelApproval",
+      "properties": {
+        "operationId": {
+          "const": "pilotCancelApproval"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "expectedVersion"
+          ],
+          "properties": {
+            "expectedVersion": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "resource": {
+          "$ref": "#/$defs/approvalResourceReference"
+        },
+        "reasonCode": {
+          "const": "proposal_canceled"
+        }
+      },
+      "required": [
+        "idempotencyKey",
+        "resource",
+        "reasonCode"
+      ],
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "purpose"
+            ]
+          },
+          {
+            "required": [
+              "approvalArtifact"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "pilotReadApprovalInbox",
+      "properties": {
+        "operationId": {
+          "const": "pilotReadApprovalInbox"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {}
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "purpose"
+            ]
+          },
+          {
+            "required": [
+              "approvalArtifact"
+            ]
+          },
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          },
+          {
+            "required": [
+              "resource"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "pilotReadRiskAgentDirectory",
+      "properties": {
+        "operationId": {
+          "const": "pilotReadRiskAgentDirectory"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {}
+        },
+        "resource": {
+          "$ref": "#/$defs/riskPortfolioResourceReference"
+        }
+      },
+      "required": [
+        "resource"
+      ],
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "purpose"
+            ]
+          },
+          {
+            "required": [
+              "approvalArtifact"
+            ]
+          },
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "Activate sandbox Human profile",
+      "required": [
+        "resource",
+        "idempotencyKey"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "pilotActivateSandboxHumanSubject"
+        },
+        "resource": {
+          "$ref": "#/$defs/subjectResourceReference"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "consentId",
+            "identityReferenceId",
+            "expectedSubjectUpdatedAt",
+            "acknowledgement"
+          ],
+          "properties": {
+            "consentId": {
+              "$ref": "#/$defs/domainIdentifier"
+            },
+            "identityReferenceId": {
+              "$ref": "#/$defs/domainIdentifier"
+            },
+            "expectedSubjectUpdatedAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "acknowledgement": {
+              "const": "activate_synthetic_profile_no_credit_or_funds"
+            }
+          }
+        }
+      },
+      "not": {
+        "required": [
+          "reasonCode"
+        ]
+      }
+    },
     {
       "title": "Read Own Secured Pool Workspace",
       "required": ["resource"],
@@ -2862,6 +3202,122 @@
     }
   ],
   "$defs": {
+    "localApprovalCommand": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "operationId",
+            "payload",
+            "resource",
+            "reasonCode",
+            "idempotencyKey"
+          ],
+          "properties": {
+            "operationId": {
+              "const": "pilotRestructureSandboxObligation"
+            },
+            "payload": {
+              "$ref": "#/$defs/restructureSandboxObligationPayload"
+            },
+            "resource": {
+              "$ref": "#/$defs/obligationResourceReference"
+            },
+            "reasonCode": {
+              "const": "sandbox_hardship_restructure"
+            },
+            "idempotencyKey": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 256,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "operationId",
+            "payload",
+            "resource",
+            "reasonCode",
+            "idempotencyKey"
+          ],
+          "properties": {
+            "operationId": {
+              "const": "pilotRepurchaseSandboxObligation"
+            },
+            "payload": {
+              "$ref": "#/$defs/repurchaseSandboxObligationPayload"
+            },
+            "resource": {
+              "$ref": "#/$defs/obligationResourceReference"
+            },
+            "reasonCode": {
+              "const": "sandbox_contractual_repurchase"
+            },
+            "idempotencyKey": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 256,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "operationId",
+            "payload",
+            "resource",
+            "reasonCode",
+            "idempotencyKey"
+          ],
+          "properties": {
+            "operationId": {
+              "const": "pilotWriteOffSandboxObligation"
+            },
+            "payload": {
+              "$ref": "#/$defs/writeOffSandboxObligationPayload"
+            },
+            "resource": {
+              "$ref": "#/$defs/obligationResourceReference"
+            },
+            "reasonCode": {
+              "const": "sandbox_uncollectible_writeoff"
+            },
+            "idempotencyKey": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 256,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+            }
+          }
+        }
+      ]
+    },
+    "approvalResourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resourceType",
+        "resourceId"
+      ],
+      "properties": {
+        "resourceType": {
+          "const": "approval_proposal"
+        },
+        "resourceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]{0,255}$"
+        }
+      }
+    },
     "securedPoolActionReviewPayload": {
       "type": "object",
       "additionalProperties": false,
@@ -3058,6 +3514,7 @@
       "properties": {
         "resourceType": {
           "enum": [
+            "approval_proposal",
             "subject",
             "capital_partner_profile",
             "consent",

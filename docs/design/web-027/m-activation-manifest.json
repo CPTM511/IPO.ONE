@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "web027m_local_activation_manifest.v1",
+  "status": "activated_local_roles_verified_servicing_pending",
+  "preparedAt": "2026-09-07T08:44:53.013Z",
+  "database": "ipo_one_web027_candidate",
+  "gate": "IPO_ONE_LOCAL_SPECIAL_ROLES=web027m_v1",
+  "entries": [
+    {
+      "name": "operations",
+      "origin": "http://localhost:8939",
+      "actorId": "actor_web027m_operations",
+      "actorType": "operations_operator",
+      "role": "operations_operator",
+      "credentialId": "credential_f4224b12-e6ff-45ca-b42b-54fbb275df19",
+      "clientId": "client_web027m_actor_web027m_operations",
+      "invitedSyntheticWallet": "0x8daba1aca9e7fc438eac1a92054d4e702efb3fff",
+      "capabilities": [
+        "servicing.queue.read",
+        "servicing.restructure.sandbox",
+        "servicing.repurchase.sandbox",
+        "servicing.writeoff.sandbox",
+        "approval.propose",
+        "approval.read",
+        "approval.cancel"
+      ]
+    },
+    {
+      "name": "auditor",
+      "origin": "http://localhost:8940",
+      "actorId": "actor_web027m_auditor",
+      "actorType": "auditor",
+      "role": "auditor",
+      "credentialId": "credential_28f5c825-9118-460c-87d0-91c0dd614ca8",
+      "clientId": "client_web027m_actor_web027m_auditor",
+      "invitedSyntheticWallet": "0xb19488a0502e1eedaa55745d9ce55825d2600add",
+      "capabilities": [
+        "risk.read.tenant",
+        "pilot.case.read.tenant",
+        "approval.read"
+      ]
+    },
+    {
+      "name": "riskReviewer",
+      "origin": "http://localhost:8941",
+      "actorId": "actor_web027m_risk_reviewer",
+      "actorType": "risk_operator",
+      "role": "risk_operator",
+      "credentialId": "credential_f1edebc9-ca11-4e21-9bf2-49c12a38e41f",
+      "clientId": "client_web027m_actor_web027m_risk_reviewer",
+      "invitedSyntheticWallet": "0xfead183ac12ccaa0dbbb25a7a4cb7e84e822ae73",
+      "capabilities": [
+        "approval.read",
+        "approval.decide",
+        "servicing.queue.read"
+      ]
+    }
+  ],
+  "originalActorsChanged": false,
+  "realFunds": false,
+  "publicEnrollment": false,
+  "rollback": "Disable the three hosts and the local special-role gate; revoke these exact credentials, enrollments and sessions. Preserve all events, approvals and schedules. A restart must not reactivate revoked identities.",
+  "independentOperationsApprover": "not enrolled; approval.decide is not granted to the proposer",
+  "activatedSource": "205fe9b7ef6726e00ce107777c4d73c1041df6b4",
+  "verifiedAt": "2026-09-07T09:45:26.371Z",
+  "evidence": "m-verification-evidence.json"
+}

@@ -104,6 +104,7 @@ export const PilotCapability = Object.freeze({
   VENUE_EXECUTION_SUBMIT_OWNED: "venue.execution.submit.owned",
   VENUE_EXECUTION_READ_OWNED: "venue.execution.read.owned",
   HUMAN_SUBJECT_CREATE_SELF: "human_subject.create.self",
+  SUBJECT_ACTIVATE_SANDBOX_SELF: "subject.activate.sandbox.self",
   SUBJECT_READ_SELF: "subject.read.self",
   WORKSPACE_RESUME_SELF: "workspace.resume.self",
   CONSENT_CREATE_SELF: "consent.create.self",

@@ -437,6 +437,7 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
       "/evidence-receipt-presentation.js",
       "/human-credit-offer-workflow-receipt.js",
       "/human-sandbox-obligation-workflow-receipt.js",
+      "/local-review-workspace.js",
       "/obligation-portfolio-presentation.js",
       "/official-report-download.js",
       "/owned-evidence-presentation.js",
@@ -453,13 +454,20 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
       "/wallet-authority-lifecycle.js",
       "/wallet-provider-registry.js",
       "/wallet-sign-out.js",
+      "/workspace-experience.js",
       "/workspace-navigation.js",
       "/workspace-surface-access.js"
     ]);
-    for (const modulePath of relativeModules) {
+    for (const modulePath of [...relativeModules, "/web-theme.js", "/web-009-public-review.js", "/web-012b-presentation.js"]) {
       const moduleResponse = await fetch(`${baseUrl}${modulePath}`);
       assert.equal(moduleResponse.status, 200, `${modulePath} is missing from the fixed asset allowlist`);
       assert.match(moduleResponse.headers.get("content-type"), /^text\/javascript/);
+    }
+    for (const stylesheet of ["/web-012b.css", "/workspace-experience.css"]) {
+      const response = await fetch(`${baseUrl}${stylesheet}`);
+      assert.equal(response.status, 200);
+      assert.match(response.headers.get("content-type"), /^text\/css/);
+      assert.equal(response.headers.get("cache-control"), "no-store");
     }
 
     const handoffResponse = await fetch(`${baseUrl}/agent-handoff-manifest.js`);

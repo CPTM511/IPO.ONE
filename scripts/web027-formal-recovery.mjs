@@ -1,0 +1,100 @@
+// Read-only formal Human recovery through visible controls; no new credit is created.
+// No dates, clocks, canonical records, or API responses are replaced.
+import {chromium,expect} from "@playwright/test";
+import {privateKeyToAccount,generatePrivateKey} from "viem/accounts";
+import {readFile,writeFile,mkdir} from "node:fs/promises";
+import assert from "node:assert/strict";
+import {installOptionalScriptFailureProbe} from '../apps/web/test/support/startup-optional-script-probe.mjs';
+const state="/Users/cptmao/Documents/IPO.ONE/.ipo-one/web027-runtime",out=process.env.WEB027_RECOVERY_OUTPUT||"output/playwright/web-027/formal";
+const optionalScriptProbe=process.env.WEB027_STARTUP_OPTIONAL_SCRIPT_FAILURE==='1';
+await mkdir(out,{recursive:true});const source=(await(await fetch("https://ipo.one/readyz")).json()).releaseId;
+const browser=await chromium.launch({headless:true,proxy:{server:"http://127.0.0.1:7890",bypass:"127.0.0.1,localhost"}}),results=[],actions=[],contexts=[],startup=[];
+async function captureStartup(page,phase){
+ if(optionalScriptProbe)await expect.poll(()=>page.evaluate(()=>window.__ipoOptionalScriptFailures.length)).toBe(1);
+ const frames=await page.evaluate(()=>window.__web027StartupFrames??[]);
+ const optionalScriptFailures=await page.evaluate(()=>window.__ipoOptionalScriptFailures??[]);
+ startup.push({phase,frames,optionalScriptFailures});
+ assert(optionalScriptFailures.every(f=>f.stage!=='failed'),'Optional script failed the startup');
+ assert(frames.length>0,'Startup frame observation is required');
+ assert(!frames.some(f=>f.shell&&(!f.currentDesign||f.legacy)), 'Legacy UI was visible during startup');
+ assert(!frames.some(f=>f.sessionBootstrap&&f.publicPage), 'Authenticated reload exposed the public page');
+ assert(!frames.some(f=>f.startupTitle), 'Loading interstitial was painted');
+ assert(!frames.some(f=>f.stage==='loading'&&f.startupHint), 'Fast-load feedback flashed');
+ for(const f of frames.filter(f=>f.sessionBootstrap&&f.stage!=='ready'&&f.canvas)){assert.equal(f.canvas,f.theme==='dark'?'rgb(13, 20, 25)':'rgb(244, 247, 246)','Authenticated startup canvas must match the workspace');}
+}
+async function click(page,selector){const button=page.locator(selector);await expect(button).toBeVisible();await expect(button).toBeEnabled();actions.push({label:await button.innerText(),at:new Date().toISOString()});await button.click();}
+async function walletPage(name){const path=`${state}/web027-formal-${name}-wallet.json`;let wallet;try{wallet=JSON.parse(await readFile(path));}catch(e){if(e.code!=="ENOENT")throw e;wallet={privateKey:generatePrivateKey()};await writeFile(path,JSON.stringify(wallet),{mode:0o600});}
+ const account=privateKeyToAccount(wallet.privateKey),context=await browser.newContext({viewport:{width:1440,height:1000},reducedMotion:"reduce"});contexts.push(context);
+ if(optionalScriptProbe)await context.addInitScript(installOptionalScriptFailureProbe);
+ await context.addInitScript(()=>{
+  const frames=[];window.__web027StartupFrames=frames;let previous='';
+  const shown=selector=>{const node=document.querySelector(selector);return Boolean(node&&node.getClientRects().length&&getComputedStyle(node).visibility!=='hidden');};
+  const observe=()=>{
+   const body=document.body;
+   const state={startupTitle:shown('#appStartupTitle'),startupHint:shown('#appStartupStatus'),canvas:body?getComputedStyle(body).backgroundColor:null,theme:document.documentElement.dataset.ipoTheme,stage:document.documentElement.dataset.ipoStartup??'absent',shell:shown('.app-shell'),legacy:shown('#signedOutPrivacyShield'),publicPage:shown('#web009PublicReview'),currentDesign:Boolean(body?.classList.contains('product-experience')&&body.classList.contains('web012b-review-mode')),sessionBootstrap:Boolean(document.querySelector('meta[name="ipo-one-csrf-token"]')?.content)};
+   const key=JSON.stringify(state);if(key!==previous){frames.push({at:Math.round(performance.now()),...state});previous=key;}
+   requestAnimationFrame(observe);
+  };requestAnimationFrame(observe);
+ });
+ await context.exposeFunction("__web027mPreparationSign",raw=>account.signMessage({message:{raw}}));
+ await context.addInitScript(({address})=>{const provider={async request({method,params}){if(["eth_accounts","eth_requestAccounts"].includes(method))return[address];if(method==="eth_chainId")return"0x14a34";if(["wallet_switchEthereumChain","wallet_revokePermissions"].includes(method))return null;if(method==="personal_sign")return window.__web027mPreparationSign(params[0]);throw Error("Unsupported acceptance wallet action");},on(){},removeListener(){}};window.addEventListener("eip6963:requestProvider",()=>window.dispatchEvent(new CustomEvent("eip6963:announceProvider",{detail:{info:{uuid:"02702702-7000-4000-8000-000000000014",name:"WEB027 formal acceptance wallet",rdns:"acceptance.web027.formal",icon:"data:image/png;base64,iVBORw0KGgo="},provider}})));},{address:account.address});
+ return context.newPage();
+}
+
+
+const receipts=[];
+const footer=[];
+async function verifyFooter(page) {
+ const details=page.locator('#sidebarEnvironment'),summary=details.locator('summary');
+ await expect(page.locator('#accessButtonLabel')).toHaveText('Signed in');
+ await expect(page.locator('.sidebar-funds-note')).toHaveText('No real money is moved.');
+ await expect(page.locator('#sidebarApiStatus')).toBeHidden();
+ await summary.click();await expect(page.locator('#sidebarApiStatus')).toBeVisible();
+ await expect(page.locator('#sidebarApiStatus')).toHaveText('Authenticated');
+ await page.keyboard.press('Escape');await expect(summary).toBeFocused();
+ await expect(page.locator('.sidebar-environment-panel')).toBeHidden();
+ const more=page.getByRole('button',{name:'More tools',exact:true});
+ if(await more.getAttribute('aria-expanded')!=='true')await more.click();
+ const responsePending=page.context().waitForEvent('response',{predicate:r=>new URL(r.url()).pathname==='/openapi.json'&&r.request().isNavigationRequest()});
+ const popupPending=page.waitForEvent('popup');
+ const currentUrl=page.url();
+ await page.getByRole('link',{name:'API reference',exact:true}).click();
+ const [response,popup]=await Promise.all([responsePending,popupPending]);
+ assert.equal(response.status(),200);const spec=await response.json();assert.match(spec.openapi,/^3\./);assert(Object.keys(spec.paths).length>0);
+ await expect(page).toHaveURL(currentUrl);
+ await popup.close();await more.click();
+ footer.push({step:'visible API reference opens real specification',status:response.status(),openapi:spec.openapi,pathCount:Object.keys(spec.paths).length});
+ for(const width of [1440,390])for(const theme of ['light','dark']){
+  await page.setViewportSize({width,height:1000});
+  await page.getByRole('combobox',{name:'Appearance',exact:true}).selectOption(theme);
+  if(width<900)await page.getByRole('button',{name:'Open navigation',exact:true}).click();
+  await expect(page.locator('.sidebar-funds-note')).toBeInViewport();
+  await page.screenshot({path:out+`/footer-${width}-${theme}.png`});
+  await summary.click();await expect(page.locator('.sidebar-environment-panel')).toBeVisible();
+  await expect(page.locator('.sidebar-funds-note')).toBeInViewport();
+  const box=await page.locator('.sidebar-environment-panel').boundingBox();assert(box.x>=0&&box.x+box.width<=width);
+  await page.screenshot({path:out+`/footer-details-${width}-${theme}.png`});
+  await summary.click();
+  if(width<900){
+   await more.click();await page.getByRole('link',{name:'API reference',exact:true}).focus();
+   await page.keyboard.press('Tab');await expect(summary).toBeFocused();
+   await more.click();await page.getByRole('button',{name:'Close navigation',exact:true}).first().click();
+  }
+  footer.push({step:'environment details and compact footer',width,theme,visible:true,mobileKeyboardDetailsReachable:width<900?true:null});
+ }
+ await page.setViewportSize({width:1440,height:1000});
+}
+async function login(page){await page.goto("https://ipo.one/#request-credit");await page.getByRole("button",{name:/^(Log in|Sign in)$/,exact:true}).click();await captureStartup(page,'public entry');await page.getByRole("button",{name:/WEB027 formal acceptance wallet/}).click();await click(page,"#walletSignInBtn");await expect(page.locator("#sidebarApiStatus")).toHaveText("Authenticated",{timeout:45000});await expect(page.locator("#accessLayer")).toBeHidden();}
+try{
+ const page=await walletPage("human");page.setDefaultTimeout(30000);page.on("response",async r=>{if(r.url().endsWith("/tenant/v1/operations")){const b=await r.json();receipts.push({operationId:r.request().postDataJSON()?.operationId,status:r.status(),code:b.code,receipt:b.response});}});
+ await login(page);
+ await verifyFooter(page);
+ for(const phase of ["login","refresh","relogin"]){
+  if(phase==="refresh"){await page.reload();await expect(page.locator("#sidebarApiStatus")).toHaveText("Authenticated",{timeout:30000});}
+  if(phase==="relogin"){await page.getByRole("button",{name:"Sign out",exact:true}).click();await login(page);}
+  const nav=page.locator('.nav-item[data-view="request-credit"]');await expect(nav).toBeVisible();await nav.click();actions.push({label:await nav.innerText()});
+  await expect(page.locator("#humanObligationStatus")).toBeVisible({timeout:30000});await expect(page.locator("#humanObligationStatus")).toHaveText(/Fully repaid/i,{timeout:30000});await expect(page.locator("#humanObligationOutstanding")).toHaveText("$0.00");await expect(page.locator("#humanObligationRepaid")).toHaveText("$24.50");
+  await click(page,"#loadOwnedEvidenceBtn");await expect(page.locator("#ownedEvidencePanel")).toBeVisible();await expect(page.locator("#ownedEvidenceCount")).not.toHaveText("0");await page.locator("#humanObligationCard").scrollIntoViewIfNeeded();await captureStartup(page,phase);await page.screenshot({path:out+`/human-recovery-${phase}.png`});results.push({phase,visible:true,lifecycle:await page.locator("#humanObligationStatus").innerText(),repaid:await page.locator("#humanObligationRepaid").innerText(),evidence:await page.locator("#ownedEvidenceHelper").innerText()});
+ }
+}catch(e){results.push({error:e.message});const page=contexts.at(-1)?.pages()[0];if(page)await writeFile(out+"/human-recovery-failure.txt",await page.locator("body").innerText());process.exitCode=1;}
+finally{await writeFile(out+"/human-recovery.json",JSON.stringify({source,results,receipts,actions,startup,footer,optionalScriptProbe,apiMocks:false,assetMocks:false},null,2));await browser.close();console.log(JSON.stringify({source,results,footer}));}

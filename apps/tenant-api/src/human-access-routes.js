@@ -1,3 +1,4 @@
+import { allowedWalletRoles, ORDINARY_WALLET_ROLES } from "../../../modules/authentication/src/wallet-workspace-roles.js";
 import {
   SESSION_COOKIE_NAME,
   CSRF_BOOTSTRAP_COOKIE_NAME,
@@ -24,20 +25,19 @@ export const HUMAN_ACCESS_ROUTES = Object.freeze({
 
 const CONFIG_KEYS = new Set([
   "browserOrigin",
+  "passkeyOperation",
   "clock",
   "humanSessionBff",
   "oidcProviders",
   "postLoginPath",
   "profile",
-  "walletBff"
+  "walletBff",
+  "walletWorkspaceRoles"
 ]);
 const PROVIDER_CONFIG_KEYS = new Set(["bff", "redirectUri"]);
 const MAX_AUTH_BODY_BYTES = 8 * 1024;
 const SUPPORTED_CHAINS = Object.freeze(["eip155:84532", "eip155:1952"]);
-const WALLET_WORKSPACE_ROLES = Object.freeze([
-  "human_borrower",
-  "principal_controller"
-]);
+
 
 function assertPlainObject(name, value, allowedKeys) {
   if (
@@ -57,7 +57,7 @@ function assertPlainObject(name, value, allowedKeys) {
   }
 }
 
-function exactBrowserOrigin(value) {
+function exactBrowserOrigin(value, allowRiskLocalhost = false) {
   let parsed;
   try {
     parsed = new URL(value);
@@ -66,7 +66,7 @@ function exactBrowserOrigin(value) {
   }
   const loopbackDevelopment =
     parsed.protocol === "http:" &&
-    parsed.hostname === "127.0.0.1" &&
+    (parsed.hostname === "127.0.0.1" || (allowRiskLocalhost && parsed.hostname === "localhost" && ["8937", "8947", "8939", "8940", "8941", "8942"].includes(parsed.port))) &&
     parsed.port !== "";
   if (
     (parsed.protocol !== "https:" && !loopbackDevelopment) ||
@@ -187,7 +187,7 @@ function exactQuery(url, requiredKeys) {
   ]));
 }
 
-async function readStrictBody(request, requiredKeys) {
+async function readStrictBody(request, requiredKeys, passkey = false) {
   const contentType = oneHeader(request.headers, "content-type", { required: true, maximum: 256 });
   if (contentType.split(";", 1)[0].trim().toLowerCase() !== "application/json") {
     throw new ApiBoundaryError("unsupported_media_type", "application/json is required");
@@ -208,8 +208,8 @@ async function readStrictBody(request, requiredKeys) {
   try {
     value = parseStrictJson(Buffer.concat(chunks).toString("utf8"), {
       maximumBytes: MAX_AUTH_BODY_BYTES,
-      maximumDepth: 3,
-      maximumKeys: 8
+      maximumDepth: passkey ? 6 : 3,
+      maximumKeys: passkey ? 40 : 8
     });
   } catch {
     throw new ApiBoundaryError("invalid_json_body", "authentication request body is invalid");
@@ -338,11 +338,15 @@ export function createHumanAccessRouteHandler(input) {
     humanSessionBff,
     oidcProviders = {},
     walletBff,
+    walletWorkspaceRoles = ORDINARY_WALLET_ROLES,
     clock = () => new Date(),
     profile = "closed_non_funds_pilot",
     postLoginPath = "/#request-credit"
   } = input;
-  const browserOrigin = exactBrowserOrigin(input.browserOrigin);
+  const passkeyEnabled = typeof input.passkeyOperation === "function" && profile === "local_no_funds" &&
+    walletWorkspaceRoles.length === 1 && ({ "http://localhost:8937": "risk_operator", "http://localhost:8947": "risk_operator", "http://localhost:8939": "operations_operator", "http://localhost:8940": "auditor", "http://localhost:8941": "risk_operator", "http://localhost:8942": "operations_operator" })[input.browserOrigin] === walletWorkspaceRoles[0];
+  if (input.passkeyOperation !== undefined && !passkeyEnabled) throw new DomainError("invalid_human_access_config", "Passkeys require the invited local Risk composition");
+  const browserOrigin = exactBrowserOrigin(input.browserOrigin, passkeyEnabled);
   const providers = normalizeProviders(oidcProviders);
   if (
     !humanSessionBff?.authenticateSession ||
@@ -352,6 +356,11 @@ export function createHumanAccessRouteHandler(input) {
     typeof clock !== "function"
   ) {
     throw new DomainError("invalid_human_access_config", "Human access adapters are required");
+  }
+  const checkedWalletRoles = allowedWalletRoles(walletWorkspaceRoles);
+  if (checkedWalletRoles.some(role => !ORDINARY_WALLET_ROLES.includes(role)) &&
+      (profile !== "local_no_funds" || !(browserOrigin.startsWith("http://127.0.0.1:") || (passkeyEnabled && ["http://localhost:8937", "http://localhost:8947", "http://localhost:8939", "http://localhost:8940", "http://localhost:8941", "http://localhost:8942"].includes(browserOrigin))))) {
+    throw new DomainError("invalid_human_access_config", "invited wallet roles require an explicit loopback local profile");
   }
   const checkedProfile = assertSafeIdentifier("profile", profile);
   const successPath = exactPostLoginPath(postLoginPath);
@@ -378,7 +387,7 @@ export function createHumanAccessRouteHandler(input) {
       const roles = Array.isArray(authenticationContext?.roles)
         ? authenticationContext.roles
         : [];
-      const workspaceRole = roles.length === 1 && WALLET_WORKSPACE_ROLES.includes(roles[0])
+      const workspaceRole = roles.length === 1 && checkedWalletRoles.includes(roles[0])
         ? roles[0]
         : null;
       return Object.freeze({ active: true, authenticationMethod, workspaceRole });
@@ -390,6 +399,16 @@ export function createHumanAccessRouteHandler(input) {
   return async function serveHumanAccess({ request, response, url, requestId }) {
     if (!url.pathname.startsWith("/auth/v1/")) return false;
     const now = clock();
+    if (passkeyEnabled && url.pathname.startsWith("/auth/v1/passkey/")) {
+      const action = url.pathname.slice("/auth/v1/passkey/".length);
+      const routes = { status: ["GET", []], begin: ["POST", ["purpose"]], finish: ["POST", ["challengeId", "response"]], cancel: ["POST", ["challengeId"]], revoke: ["POST", ["passkeyId", "acknowledgement"]] };
+      if (!Object.hasOwn(routes, action) || request.method !== routes[action][0] || url.search) throw new ApiBoundaryError("authentication_input_rejected", "Passkey route is invalid");
+      if (request.method === "POST") requireOrigin(request, browserOrigin);
+      const body = request.method === "POST" ? await readStrictBody(request, routes[action][1], true) : undefined;
+      const result = await input.passkeyOperation({ request, operation: action === "cancel" ? "finish" : action, body, now });
+      sendJson(response, 200, result, requestId);
+      return true;
+    }
 
     if (url.pathname === HUMAN_ACCESS_ROUTES.options) {
       if (!new Set(["GET", "HEAD"]).has(request.method)) {
@@ -411,7 +430,8 @@ export function createHumanAccessRouteHandler(input) {
         sessionWorkspaceRole: activeSession.workspaceRole,
         oidcProviders: [...providers.keys()],
         walletAuthentication: walletBff !== undefined,
-        walletWorkspaceRoles: walletBff === undefined ? [] : WALLET_WORKSPACE_ROLES,
+        ...(passkeyEnabled ? { riskPasskey: true } : {}),
+        walletWorkspaceRoles: walletBff === undefined ? [] : checkedWalletRoles,
         supportedChains: SUPPORTED_CHAINS,
         boundary: "Authentication proves presence; internal policy and Mandates separately decide authority."
       }, requestId, {}, request.method === "HEAD");
@@ -460,6 +480,7 @@ export function createHumanAccessRouteHandler(input) {
       }
       requireOrigin(request, browserOrigin);
       const body = await readStrictBody(request, ["address", "chainId", "workspaceRole"]);
+      if (!checkedWalletRoles.includes(body.workspaceRole)) throw new ApiBoundaryError("authentication_role_rejected", "selected workspace is not available on this host");
       const challenge = await walletBff.beginLogin({
         address: body.address,
         chainId: body.chainId,

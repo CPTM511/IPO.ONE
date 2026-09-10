@@ -1,3 +1,4 @@
+import { INVITED_WALLET_ROLES, ORDINARY_WALLET_ROLES } from "../../../modules/authentication/src/wallet-workspace-roles.js";
 import {
   ActorType,
   CSRF_BOOTSTRAP_COOKIE_NAME,
@@ -35,6 +36,11 @@ const ROOT_KEYS = new Set([
   "encryptionKey",
   "encryptionKeyRef",
   "idleTimeoutMs",
+  "localInvitedWalletRole",
+  "localPasskeys",
+  "localPasskeyFactory",
+  "localSpecialRoles",
+  "localIndependentOperationsReviewer",
   "legacyReferenceHashKey",
   "legacyReferenceHashKeyRef",
   "maximumSessions",
@@ -104,7 +110,7 @@ function immutableSecretRef(name, value) {
   return value;
 }
 
-function exactBrowserOrigin(value, { allowLoopback = false } = {}) {
+function exactBrowserOrigin(value, { allowLoopback = false, allowRiskLocalhost = false } = {}) {
   let parsed;
   try {
     parsed = new URL(value);
@@ -114,7 +120,7 @@ function exactBrowserOrigin(value, { allowLoopback = false } = {}) {
   const approvedLoopback =
     allowLoopback &&
     parsed.protocol === "http:" &&
-    parsed.hostname === "127.0.0.1" &&
+    (parsed.hostname === "127.0.0.1" || (allowRiskLocalhost && parsed.hostname === "localhost" && ["8937", "8947", "8939", "8940", "8941", "8942"].includes(parsed.port))) &&
     parsed.port !== "";
   if (
     (parsed.protocol !== "https:" && !approvedLoopback) ||
@@ -273,7 +279,7 @@ export async function createPostgresHumanAccessComposition(input) {
     );
   }
   if (
-    (runtimeConfig.publicBetaSelfService === true) !==
+    ((runtimeConfig.publicBetaSelfService === true || runtimeConfig.localWalletSelfService === true)) !==
     (input.publicBetaWalletRoleProfiles !== undefined)
   ) {
     throw authenticationError(
@@ -285,7 +291,8 @@ export async function createPostgresHumanAccessComposition(input) {
   const systemActorId = assertSafeIdentifier("systemActorId", input.systemActorId);
   const policyVersion = assertSafeIdentifier("policyVersion", input.policyVersion);
   const browserOrigin = exactBrowserOrigin(input.browserOrigin, {
-    allowLoopback: localProfile
+    allowLoopback: localProfile,
+    allowRiskLocalhost: input.localPasskeys === true && (input.localInvitedWalletRole === "risk_operator" || input.localSpecialRoles === true)
   });
   const sessionOrigin = localProfile
     ? `https://${new URL(browserOrigin).host}`
@@ -351,6 +358,18 @@ export async function createPostgresHumanAccessComposition(input) {
         }
       : {})
   });
+  if (runtimeConfig.localWalletSelfService === true && (
+    !localProfile || referenceHashMode !== "overlap_v2_write_v1_lookup"
+  )) {
+    throw authenticationError("authentication_deployment_gate_closed", "local wallet enrollment requires the isolated local profile and compatible v2 reference protection");
+  }
+  if (input.localInvitedWalletRole !== undefined &&
+      (!localProfile || !INVITED_WALLET_ROLES.includes(input.localInvitedWalletRole))) {
+    throw authenticationError("authentication_deployment_gate_closed", "invited wallet role requires an explicit local host");
+  }
+  if (["operations_operator", "auditor"].includes(input.localInvitedWalletRole) && input.localSpecialRoles !== true) throw authenticationError("authentication_deployment_gate_closed", "Special roles require the exact local acceptance configuration");
+  const walletWorkspaceRoles = input.localInvitedWalletRole === undefined
+    ? ORDINARY_WALLET_ROLES : [input.localInvitedWalletRole];
   const providers = normalizeOidcProviders(input.oidcProviders);
   const wallet = input.wallet === undefined
     ? undefined
@@ -368,7 +387,34 @@ export async function createPostgresHumanAccessComposition(input) {
     );
   }
 
-  const roleBoundary = await assertPostgresAuthenticationRole(input.pool);
+  if (input.localSpecialRoles !== undefined && input.localSpecialRoles !== true) throw authenticationError("authentication_deployment_gate_closed", "Special role configuration is invalid");
+  const specialBindings = {
+    "http://localhost:8939": ["operations_operator", "client_web027m_actor_web027m_operations"],
+    "http://localhost:8940": ["auditor", "client_web027m_actor_web027m_auditor"],
+    "http://localhost:8941": ["risk_operator", "client_web027m_actor_web027m_risk_reviewer"],
+    "http://localhost:8942": ["operations_operator", "client_web027n_actor_web027n_operations_reviewer"]
+  };
+  if (input.localIndependentOperationsReviewer !== undefined &&
+      (input.localIndependentOperationsReviewer !== true || browserOrigin !== "http://localhost:8942" || input.localSpecialRoles !== true)) throw authenticationError("authentication_deployment_gate_closed", "Independent reviewer requires its exact local configuration");
+  if (browserOrigin === "http://localhost:8942" && input.localIndependentOperationsReviewer !== true) throw authenticationError("authentication_deployment_gate_closed", "Independent reviewer is not enabled");
+  if (specialBindings[browserOrigin] && input.localSpecialRoles !== true) throw authenticationError("authentication_deployment_gate_closed", "Special origin requires the exact local gate");
+  if (input.localSpecialRoles) {
+    const binding = specialBindings[browserOrigin];
+    const database = (await input.pool.query("SELECT current_database() AS name")).rows[0]?.name;
+    if (!localProfile || !input.localPasskeys || database !== "ipo_one_web027_candidate" || !binding ||
+        input.localInvitedWalletRole !== binding[0] || input.wallet?.clientId !== binding[1] || runtimeConfig.localWalletSelfService === true) {
+      throw authenticationError("authentication_deployment_gate_closed", "Special roles require the exact isolated identity, origin and database");
+    }
+  }
+  if (input.localPasskeys !== undefined && input.localPasskeys !== true) throw authenticationError("authentication_deployment_gate_closed", "Passkey configuration is invalid");
+  if (input.localPasskeyFactory !== undefined && (typeof input.localPasskeyFactory !== "function" || input.localPasskeys !== true)) {
+    throw authenticationError("authentication_deployment_gate_closed", "The local Passkey factory requires the reviewed local configuration");
+  }
+  if (input.localPasskeys) {
+    const database = (await input.pool.query("SELECT current_database() AS name")).rows[0]?.name;
+    if (!localProfile || !["ipo_one_web027_candidate", "ipo_one_web027_proof"].includes(database)) throw authenticationError("authentication_deployment_gate_closed", "Passkeys require the reviewed isolated database");
+  }
+  const roleBoundary = await assertPostgresAuthenticationRole(input.pool, { localPasskeys: input.localPasskeys === true });
   const tenantContext = createTenantSecurityContext({
     tenantId,
     actorId: systemActorId,
@@ -395,11 +441,18 @@ export async function createPostgresHumanAccessComposition(input) {
     tenantId,
     referenceHasher,
     systemActorId,
-    ...(runtimeConfig.publicBetaSelfService === true
+    ...((runtimeConfig.publicBetaSelfService === true || runtimeConfig.localWalletSelfService === true)
       ? { publicBetaWalletRoleProfiles: input.publicBetaWalletRoleProfiles }
       : {})
   });
+  const passkeysRequired = input.localPasskeys && (input.localInvitedWalletRole === "risk_operator" || input.localSpecialRoles);
+  if (passkeysRequired && typeof input.localPasskeyFactory !== "function") {
+    throw authenticationError("authentication_deployment_gate_closed", "The reviewed local Passkey verifier is unavailable");
+  }
+  const passkeys = passkeysRequired ? input.localPasskeyFactory({ origin: browserOrigin, role: input.localInvitedWalletRole,
+    specialRoles: input.localSpecialRoles === true, independentOperationsReviewer: input.localIndependentOperationsReviewer === true }) : undefined;
   const sessionStore = new PostgresHumanSessionStore({
+    ...(passkeys ? { resolveStepUp: (client, session, now) => passkeys.resolveStepUp(client, session, now) } : {}),
     eventRepository,
     tenantId,
     referenceHasher,
@@ -466,7 +519,8 @@ export async function createPostgresHumanAccessComposition(input) {
       referenceHasher,
       secretBox,
       domain: wallet.domain,
-      uri: wallet.uri
+      uri: wallet.uri,
+      workspaceRoles: walletWorkspaceRoles
     });
     walletBff = new HumanWalletBff({
       issuer: wallet.issuer,
@@ -481,10 +535,21 @@ export async function createPostgresHumanAccessComposition(input) {
   }
 
   const serveAuthentication = createHumanAccessRouteHandler({
+    ...(passkeys ? { passkeyOperation: async ({ request, operation, body, now }) => {
+      const value = await sessionStore.withAuthenticatedSession({
+        sessionHandle: readHumanAccessCookie(request.headers.cookie, SESSION_COOKIE_NAME),
+        requestMethod: request.method,
+        requestOrigin: request.headers.origin === browserOrigin ? sessionOrigin : request.headers.origin,
+        csrfToken: request.headers["x-csrf-token"], now
+      }, (client, session, at) => passkeys[operation](client, session, at, body));
+      if (value?.rejected) throw authenticationError("passkey_verification_rejected", "Passkey verification was not accepted. Start a new verification.");
+      return value;
+    } } : {}),
     browserOrigin,
     humanSessionBff,
     oidcProviders,
     walletBff,
+    walletWorkspaceRoles,
     ...(input.clock === undefined ? {} : { clock: input.clock }),
     ...(input.profile === undefined ? {} : { profile: input.profile }),
     ...(input.postLoginPath === undefined ? {} : { postLoginPath: input.postLoginPath })
@@ -527,7 +592,7 @@ export async function createPostgresHumanAccessComposition(input) {
       idpApprovalSha: localProfile ? undefined : runtimeConfig.approvalSha,
       referenceHashKeyRef,
       encryptionKeyRef,
-      credentialProvisioning: runtimeConfig.publicBetaSelfService === true
+      credentialProvisioning: (runtimeConfig.publicBetaSelfService === true || runtimeConfig.localWalletSelfService === true)
         ? "verified_wallet_self_service"
         : "pre_provisioned_only",
       authority: "authentication_only",
