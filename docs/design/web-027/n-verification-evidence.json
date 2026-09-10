@@ -664,10 +664,10 @@
     },
     {
       "path": "output/playwright/web-027/k2/runtime-check.json",
-      "sha256": "716b331578b4e08e30f12d41d45d73dfa5a3abb5e23593b85123d0b3683de439",
-      "previousArtifactSha256": "5b0d9cfbd7e86c59eb1c9947ad9ba1751421a530bddfec45c7d2c61825c77b28",
-      "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
-      "note": "Reverification of this subset on September 9 replaced the generated artifact at the same path; historical parent scope and other evidence retain their original source."
+      "sha256": "38a26d2ead0505e355c311300b5683298d5e92cc0c024167311fc600cf89dfcb",
+      "previousArtifactSha256": "716b331578b4e08e30f12d41d45d73dfa5a3abb5e23593b85123d0b3683de439",
+      "source": "5ede04b45877cdfe483940e18dfc9bcaf907e30b",
+      "note": "September 10 startup repair: 90 installed runtime files match this source and all eight role endpoints return 200. This does not re-date historical servicing or Agent execution."
     }
   ],
   "reverification": {
@@ -679,5 +679,15 @@
       "output/playwright/web-027/postgres.json",
       "output/playwright/web-027/k2/runtime-check.json"
     ]
+  },
+  "startupRepairReverification": {
+    "source": "5ede04b45877cdfe483940e18dfc9bcaf907e30b",
+    "at": "2026-09-10T08:19:34.766470+00:00",
+    "runtimeFiles": 90,
+    "healthyRoleEndpoints": 8,
+    "databaseMigrations": 84,
+    "compiledAssetHumanCapitalRecovery": "output/playwright/web-027/startup/compiled-local/recovery.json",
+    "noApiMocks": true,
+    "scope": "Current runtime installation and compiled frontend visible Human/Capital recovery only; historical results retain their sources."
   }
 }

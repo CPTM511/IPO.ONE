@@ -1,24 +1,29 @@
 {
   "schemaVersion": "web027_formal_release_evidence.v1",
-  "recordedAt": "2026-09-09T15:53:10.829Z",
+  "recordedAt": "2026-09-10T08:19:34.766470+00:00",
   "verdict": "BLOCKED — NOT COMPLETE",
   "release": {
-    "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
-    "deployment": "dpl_6C4nXHCG4P5QUhVdJ755xd88ZShK",
+    "source": "5ede04b45877cdfe483940e18dfc9bcaf907e30b",
+    "deployment": "dpl_ESCjVFTwCyBFJxWvZuwuB2F8Layn",
     "url": "https://ipo.one",
     "profile": "public_authenticated_no_funds_beta",
     "schemaMigrations": 76,
     "migrationProfile": "web027_wallet_expiry_recovery_v2",
-    "schemaMutation": true,
-    "appliedMigration": "0084_verified_ordinary_wallet_expiry_recovery",
+    "schemaMutation": false,
+    "appliedMigration": null,
     "manualAccountEdit": false,
     "sandboxEconomicWrites": false,
     "localCredentialsPublished": false,
-    "productionEnvironmentUnchanged": true
+    "productionEnvironmentUnchanged": true,
+    "browserEntry": {
+      "bundled": true,
+      "sourceModules": 37,
+      "bytes": 592130
+    }
   },
   "ci": [
-    "https://github.com/CPTM511/IPO.ONE/actions/runs/34370933134",
-    "https://github.com/CPTM511/IPO.ONE/actions/runs/34370928578"
+    "https://github.com/CPTM511/IPO.ONE/actions/runs/34453112244",
+    "https://github.com/CPTM511/IPO.ONE/actions/runs/34453108728"
   ],
   "verified": {
     "walletLogin": "Historical signed-but-locked Human fix is retained. Current repair permits a verified expired ordinary v2 wallet identity to recover under public-Beta policy, without replacing its Actor or reviving revoked authority.",
@@ -198,7 +203,7 @@
       "productionFundsMoved": false
     },
     "humanLifecycleSource": "7e83916eb9e18153f59b9aa86d8df4c6e74bdb5e",
-    "humanRecoverySource": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
+    "humanRecoverySource": "5ede04b45877cdfe483940e18dfc9bcaf907e30b",
     "canonicalObligationSource": "f4b883f2799fa8b22d708cc0dadaa24966c464fe",
     "walletExpiryRegression": {
       "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
@@ -212,17 +217,39 @@
       "independentRoleExpiryRetained": true,
       "oldSessionInvalidated": true,
       "rollbackTested": true
+    },
+    "originalWalletRecovery": {
+      "observedAt": "2026-09-10",
+      "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
+      "nativeBrowser": "Authenticated Principal workspace; login modal dismissed",
+      "canonicalAudit": "One verified-SIWE recovery event at 2026-09-10T07:32:38.269Z; same credential and Actor, credential/ordinary roles version 2, active with no invitation expiry.",
+      "ownedAgentClickAcceptance": false
+    },
+    "startup": {
+      "source": "5ede04b45877cdfe483940e18dfc9bcaf907e30b",
+      "legacyVisibleFrames": 0,
+      "publicPageDuringAuthenticatedRecoveryFrames": 0,
+      "phases": [
+        "public entry",
+        "login",
+        "refresh",
+        "public entry",
+        "relogin"
+      ],
+      "apiMocks": false,
+      "actualHostedCompiledAsset": true,
+      "tests": "205 web/static tests; six startup cases including held/failed modules, actual retry, timeout/late recovery, no JavaScript and authenticated reload; both required CI runs passed."
     }
   },
   "notVerified": [
-    "Original Principal/OKX visible login, modal dismissal and owned Agent recovery on the new formal SHA. Native Chrome control encountered concurrent user interaction before signing; the user was asked to leave the original wallet page available and unlock OKX if needed. No Founder signature, credential or ownership was substituted."
+    "Original Principal owned-Agent navigation and record recovery by visible clicks on the final hosted SHA remain unverified. Original OKX login was observed authenticated before this startup repair and its canonical identity recovery was confirmed read-only. Concurrent user browser interaction prevented further original-account clicks; no identity or wallet was substituted."
   ],
   "localEvidence": "docs/design/web-027/n-verification-evidence.json",
   "rollback": {
-    "deployment": "dpl_8a3mueaSiCnnxNThJnVuh1nGi3MZ",
-    "source": "f4b883f2799fa8b22d708cc0dadaa24966c464fe",
-    "databaseRollbackRequired": true,
-    "migrationDown": "0084_verified_ordinary_wallet_expiry_recovery",
+    "deployment": "dpl_6C4nXHCG4P5QUhVdJ755xd88ZShK",
+    "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
+    "databaseRollbackRequired": false,
+    "schemaMigrations": 76,
     "preserveRecoveredIdentitiesAndAuditHistory": true
   },
   "artifacts": [
@@ -232,9 +259,9 @@
     },
     {
       "path": "output/playwright/web-027/formal/human-recovery.json",
-      "sha256": "766d595fa935546c5cc6d65744bee670b564764f70837b43c93cb1cc7945606b",
-      "previousArtifactSha256": "a5afece40835869681681f8853abd219e648bc42aa4922e94759d39c6810cf79",
-      "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e"
+      "sha256": "bfb1ce84e1682badfb24e246149c06979825ea33da739a60cbb86c9fcd864fce",
+      "previousArtifactSha256": "766d595fa935546c5cc6d65744bee670b564764f70837b43c93cb1cc7945606b",
+      "source": "5ede04b45877cdfe483940e18dfc9bcaf907e30b"
     },
     {
       "path": "output/playwright/web-027/formal/human-recovery-before-wait-correction.json",
@@ -300,6 +327,41 @@
       "path": "output/playwright/web-027/formal/wallet-expiry-postgres-final.log",
       "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
       "sha256": "c3b5392afd91f5d9773b4cc92f58b65dea0fdd414931aed87e9175be652053b4"
+    },
+    {
+      "path": "output/playwright/web-027/formal/startup-formal-baseline.json",
+      "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
+      "sha256": "c860f1537000219eacf38b571b642264a9331e380a2b66ef475014806daa71d0"
+    },
+    {
+      "path": "output/playwright/web-027/formal/original-wallet-recovered.json",
+      "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
+      "sha256": "6535b6761c4a78c266233761e18b2de673017799b951f5bd285fea55adafc204"
+    },
+    {
+      "path": "output/playwright/web-027/formal/startup-health.json",
+      "source": "5ede04b45877cdfe483940e18dfc9bcaf907e30b",
+      "sha256": "d01c9d105ce25a68af76ce8fd1053f13c3a29bc7395b3449ddbe7a5e44fd26c0"
+    },
+    {
+      "path": "output/playwright/web-027/formal/startup-ci.json",
+      "source": "5ede04b45877cdfe483940e18dfc9bcaf907e30b",
+      "sha256": "92c7e354a0b32a33b6c3595c596ea5988d2d7a8daebcaf74a9bdde21e97c9eed"
+    },
+    {
+      "path": "output/playwright/web-027/startup/compiled-local/recovery.json",
+      "source": "5ede04b45877cdfe483940e18dfc9bcaf907e30b",
+      "sha256": "76a556c36f5c8ff65ddcee6dfdfc3dd0fc4c8a5b6915da72bb6c68bc08305222"
+    },
+    {
+      "path": "output/playwright/web-027/formal/startup-web-tests.log",
+      "source": "f4f0ee9ff9b0248135b0fc864583f04d9083588e",
+      "sha256": "b53b8b2a38f218c1df4cce66b31c9ca8e7b9ed9ffb211ecb9ae34b3cb8229d22"
+    },
+    {
+      "path": "output/playwright/web-027/formal/startup-noscript.log",
+      "source": "f4f0ee9ff9b0248135b0fc864583f04d9083588e",
+      "sha256": "2296a1552d997ad298b326ea77a41cbfd7f8491fedeb4ba824d14506ad4f866f"
     }
   ],
   "cleanup": {
@@ -318,7 +380,7 @@
     "localReviewRuntimesRetained": true
   },
   "verificationLimits": [
-    "Human original lifecycle was executed on 7e83916; current d2b6272 source was verified through visible login, refresh, logout/login, fully-repaid record and owner Evidence recovery.",
+    "Human original lifecycle was executed on 7e83916; current 5ede04b source was verified through visible login, refresh, logout/login, fully-repaid record and owner Evidence recovery. Startup observations sample each animation frame, not only final screenshots.",
     "Agent machine acceptance remains source-bound to f4b883f and its temporary existing-identity credential. The credential and private key were revoked/destroyed afterward. No permanent Agent runner was installed, and no full Agent lifecycle rerun is claimed for this wallet repair.",
     "Local privileged-role and servicing results remain local evidence, with the unchanged hosted configuration and capability scope evaluated separately."
   ],
@@ -354,5 +416,32 @@
       }
     ],
     "businessDatabaseAndRuntimesRetained": true
-  }
+  },
+  "previousWalletRepairRelease": {
+    "source": "d2b62728dc4238a004cac388e3efb0b2e877c37e",
+    "deployment": "dpl_6C4nXHCG4P5QUhVdJ755xd88ZShK",
+    "url": "https://ipo.one",
+    "profile": "public_authenticated_no_funds_beta",
+    "schemaMigrations": 76,
+    "migrationProfile": "web027_wallet_expiry_recovery_v2",
+    "schemaMutation": true,
+    "appliedMigration": "0084_verified_ordinary_wallet_expiry_recovery",
+    "manualAccountEdit": false,
+    "sandboxEconomicWrites": false,
+    "localCredentialsPublished": false,
+    "productionEnvironmentUnchanged": true,
+    "ci": [
+      "https://github.com/CPTM511/IPO.ONE/actions/runs/34370933134",
+      "https://github.com/CPTM511/IPO.ONE/actions/runs/34370928578"
+    ],
+    "rollback": {
+      "deployment": "dpl_8a3mueaSiCnnxNThJnVuh1nGi3MZ",
+      "source": "f4b883f2799fa8b22d708cc0dadaa24966c464fe",
+      "databaseRollbackRequired": true,
+      "migrationDown": "0084_verified_ordinary_wallet_expiry_recovery",
+      "preserveRecoveredIdentitiesAndAuditHistory": true
+    }
+  },
+  "repairVerdict": "PASS — DEPLOYED AND USER-VERIFIED",
+  "repairScope": "September 10 initial-entry and post-login legacy-UI flash; delegated visible browser acceptance on the actual deployed SHA."
 }

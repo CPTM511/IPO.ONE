@@ -1,6 +1,6 @@
 # WEB-027I — 满足条件后正式发布与复验
 
-Status: BLOCKED — NOT COMPLETE (original Principal visible browser acceptance remains)
+Status: startup-flash repair PASS — DEPLOYED AND USER-VERIFIED; whole-site delivery BLOCKED — NOT COMPLETE (original Principal owned-Agent visible acceptance remains).
 
 ## Context and scope
 
@@ -28,7 +28,7 @@ No credentials in output; no client-derived authority; role and tenant isolation
 
 ## Migration impact and rollback
 
-The hosted bundle retains the exact 75 approved migrations from formal baseline 7ce4b95 plus the narrowly guarded wallet recovery migration 0084. Local-only 0076–0083 remain excluded. Migration 0084 changes no account data or privileges. To roll back this repair, run its down migration and restore the compatible 75-migration deployment `dpl_8a3mueaSiCnnxNThJnVuh1nGi3MZ`; preserve recovered identities, business history and audit records.
+The hosted bundle retains the exact 75 approved migrations from formal baseline 7ce4b95 plus the narrowly guarded wallet recovery migration 0084. Local-only 0076–0083 remain excluded. Migration 0084 changes no account data or privileges. The September 10 startup repair adds no migration: restore the compatible 76-migration deployment `dpl_6C4nXHCG4P5QUhVdJ755xd88ZShK` without a database rollback. The older wallet-expiry repair has its separate dated migration rollback below. Preserve recovered identities, business history and audit records.
 
 ## Completion evidence
 
@@ -42,7 +42,15 @@ The small `app.js` growth is limited to its existing boot lifecycle's ready/fail
 
 Actual formal frame sampling on d2b6272 captured the legacy page at 7.4s and the current design at 22.7s. The release builder now bundles/minifies the browser entry from the exact tracked source using the existing locked esbuild dependency and rejects unresolved module imports. This removes the module-request waterfall without introducing cacheable private data, new dependencies or a separate app implementation. Final acceptance must execute that compiled entry against deployed services, not only the source-module test host.
 
-### Current repair — expired original Principal login (2026-09-09)
+The startup repair is deployed at https://ipo.one as `5ede04b45877cdfe483940e18dfc9bcaf907e30b`, deployment `dpl_ESCjVFTwCyBFJxWvZuwuB2F8Layn`. The hosted browser entry exactly matches the 592,130-byte compiled artifact (37 source modules, no unresolved imports); readiness returns that SHA and unauthenticated Cron is still rejected. Existing production environment, 76-migration profile, identity/authorization and business data remain unchanged.
+
+Validation: 205 web/static tests passed. The six new startup cases cover Light/Dark held-module first paint, authenticated recovery, failed module and visible retry, disabled JavaScript, and timeout followed by late recovery. The first combined run passed 19/20; the noscript check was corrected to inspect the actual visible element because Playwright's text engine excludes noscript. Its targeted rerun and both final-source complete CI gates passed (34453112244 / 34453108728). Compiled-asset acceptance uses actual local services and durable Human/Capital records, with no API mocks; the first attempt reported Locked; the diagnostic rerun after runtime health verification passed. Staged readiness passed through authenticated Vercel tooling; the preview-domain browser check encountered Deployment Protection and is not claimed as browser acceptance.
+
+After formal promotion, actual deployed browser clicks passed sign-in, modal dismissal, refresh and logout/login. Every observed animation frame kept the old UI hidden; authenticated recovery never exposed the public page. The existing fully-repaid $24.50 plan, $0 outstanding and ten owner Evidence events recovered in all three phases. The first public page changed from the startup surface directly to the current design. These are source-bound observations, not a guaranteed network latency claim. Local API/worker also run this source: 90 installed file hashes match, all eight role endpoints return 200, and original Founder runtimes remain available.
+
+The original OKX login is now confirmed separately: native Chrome showed the authenticated Principal workspace with the modal dismissed, and read-only canonical inspection found one verified-SIWE recovery event, unchanged Actor/credential identity and active version-2 ordinary roles without the obsolete invitation expiry. Further original owned-Agent clicks on the final SHA remain unverified because the user was actively browsing in Chrome. This narrow remaining parent acceptance is not a failure of the verified startup repair, and the earlier machine Agent lifecycle is not re-dated. PR #87 remains open; no whole-site 100% claim is made.
+
+### Previous repair — expired original Principal login (2026-09-09)
 
 The Founder reported a connected OKX wallet remaining at login with `credential is not active`. Read-only hosted inspection found the original Principal's active v2 SIWE credential and its two ordinary role enrollments still carried the obsolete 2026-09-04 pilot expiry; the Actor and Membership remain active. This is an authentication recovery defect, not missing browser access.
 
@@ -50,11 +58,11 @@ Under DEC-PUBLIC-NO-FUNDS-BETA-001, fresh valid SIWE for an ordinary workspace m
 
 Implementation includes the wallet BFF/registry, focused browser and durable authentication regression, and migration `0084_verified_ordinary_wallet_expiry_recovery`. The hosted profile becomes exactly the existing 75 migrations plus 0084; local 0076–0083 remain excluded. Migration changes the guarded renewal path only and performs no data update or new privilege grant. Verify invalid signatures and revoked/disabled identities cannot renew, successful renewal keeps original ownership, concurrent login does not duplicate rotation, old sessions fail, and both ordinary workspaces recover after visible sign-in/refresh. Build and CI precede hosted migration/promotion. Rollback restores the original guard and compatible 75-migration release after migration rollback, preserving all user and audit records.
 
-The repair source `d2b62728dc4238a004cac388e3efb0b2e877c37e` is running locally and on https://ipo.one through deployment `dpl_6C4nXHCG4P5QUhVdJ755xd88ZShK`. Both required CI runs passed (34370933134 / 34370928578), including the real browser gate. Focused authentication/profile checks passed 9/9 and the full isolated PostgreSQL suite passed 100/100. Initial migration-test failures were corrected by including 0084 in explicit migration lists and keeping their original rollback targets; behavioral assertions were retained. The two disposable test databases and runners were removed, and all local product runtimes remain available.
+At the September 9 checkpoint, repair source `d2b62728dc4238a004cac388e3efb0b2e877c37e` ran locally and on https://ipo.one through deployment `dpl_6C4nXHCG4P5QUhVdJ755xd88ZShK`. Both required CI runs passed (34370933134 / 34370928578), including the real browser gate. Focused authentication/profile checks passed 9/9 and the full isolated PostgreSQL suite passed 100/100. Initial migration-test failures were corrected by including 0084 in explicit migration lists and keeping their original rollback targets; behavioral assertions were retained. The two disposable test databases and runners were removed, and all local product runtimes remain available.
 
 Normal hosted migration applied only 0084 on 2026-09-09, bringing the exact selected profile from 75 to 76. Staged readiness passed before promotion; formal readiness identifies the exact repair SHA and unauthenticated Cron remains rejected. Production environment values, scheduler secret and workload trust remain unchanged. No manual account update, local enrollment configuration, Passkey dependency, real funds or chain transaction was published.
 
-On the actual new hosted SHA, visible Human login, modal dismissal, refresh, logout/login, the original fully-repaid $24.50 record and owner Evidence all passed without API mocks. Original Principal/OKX visible acceptance is still pending: native Chrome automation encountered concurrent user interaction before the signing step. The requested handoff is only to leave the original wallet page available and unlock OKX if prompted. Never substitute a QA identity or issue a test signature for the Founder. PR #87 remains open until the required original Principal browser evidence is available.
+On the actual new hosted SHA, visible Human login, modal dismissal, refresh, logout/login, the original fully-repaid $24.50 record and owner Evidence all passed without API mocks. At that checkpoint, original Principal/OKX visible acceptance was pending because native Chrome control encountered concurrent user interaction. The September 10 update above confirms original login recovery; final-source owned-Agent clicks remain the narrower open item. Never substitute a QA identity or issue a test signature for the Founder.
 
 Founder approval and delegated acceptance remain recorded in the parent directive and local review. The earlier Agent lifecycle and cleanup below are evidence from `f4b883f`, not a claim that a permanent Agent runner was installed or that its complete lifecycle was rerun on this authentication repair.
 
