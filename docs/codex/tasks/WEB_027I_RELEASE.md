@@ -40,6 +40,8 @@ Scope: present a theme-correct, accessible startup surface before application Ja
 
 The small `app.js` growth is limited to its existing boot lifecycle's ready/failure signals and parallel execution of two independent read-only probes; startup styling and failure/retry handling remain outside the monolith. The action-contract test now reads the existing parser-blocking script that owns the reload button, retaining the requirement that every button has an actual handler.
 
+Actual formal frame sampling on d2b6272 captured the legacy page at 7.4s and the current design at 22.7s. The release builder now bundles/minifies the browser entry from the exact tracked source using the existing locked esbuild dependency and rejects unresolved module imports. This removes the module-request waterfall without introducing cacheable private data, new dependencies or a separate app implementation. Final acceptance must execute that compiled entry against deployed services, not only the source-module test host.
+
 ### Current repair — expired original Principal login (2026-09-09)
 
 The Founder reported a connected OKX wallet remaining at login with `credential is not active`. Read-only hosted inspection found the original Principal's active v2 SIWE credential and its two ordinary role enrollments still carried the obsolete 2026-09-04 pilot expiry; the Actor and Membership remain active. This is an authentication recovery defect, not missing browser access.

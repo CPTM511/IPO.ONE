@@ -126,6 +126,19 @@ try {
     )
   ]);
 
+  // One browser entry avoids a cold, no-store request for every source module.
+  // Compile the exact tracked tree with the existing locked esbuild dependency.
+  const browserBuild = await build({
+    absWorkingDir: trackedSource,
+    entryPoints: ["apps/web/src/app.js"],
+    outfile: join(output, "apps/web/src/app.js"),
+    bundle: true, minify: true, platform: "browser", format: "esm",
+    target: "es2022", legalComments: "none", metafile: true
+  });
+  const browserOutput = Object.values(browserBuild.metafile.outputs)[0];
+  if (browserOutput.imports.length !== 0) {
+    throw new Error("Hosted browser entry must have no unresolved module requests");
+  }
   const artifactFiles = await files(output);
   const artifacts = [];
   for (const path of artifactFiles) {
@@ -141,6 +154,7 @@ try {
     nodeRuntime: "24.x",
     productProfile: "deployable_sandbox_vertical_slice",
     deploymentRole,
+    browserEntry: { bundled: true, sourceModules: Object.keys(browserBuild.metafile.inputs).length, bytes: browserOutput.bytes },
     migrationProfile: {
       ...VERCEL_MIGRATION_PROFILE,
       excludedLocalMigrations: allMigrations.filter(item => VERCEL_MIGRATION_PROFILE.localOnly.includes(item.name)).map(({ name, checksum }) => ({ name, checksum })),
