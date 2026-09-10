@@ -13,6 +13,9 @@ async function captureStartup(page,phase){
  assert(frames.length>0,'Startup frame observation is required');
  assert(!frames.some(f=>f.shell&&(!f.currentDesign||f.legacy)), 'Legacy UI was visible during startup');
  assert(!frames.some(f=>f.sessionBootstrap&&f.publicPage), 'Authenticated reload exposed the public page');
+ assert(!frames.some(f=>f.startupTitle), 'Loading interstitial was painted');
+ assert(!frames.some(f=>f.stage==='loading'&&f.startupHint), 'Fast-load feedback flashed');
+ for(const f of frames.filter(f=>f.sessionBootstrap&&f.stage!=='ready'&&f.canvas)){assert.equal(f.canvas,f.theme==='dark'?'rgb(13, 20, 25)':'rgb(244, 247, 246)','Authenticated startup canvas must match the workspace');}
 }
 async function click(page,selector){const button=page.locator(selector);await expect(button).toBeVisible();await expect(button).toBeEnabled();actions.push({label:await button.innerText(),at:new Date().toISOString()});await button.click();}
 async function walletPage(name){const path=`${state}/web027-formal-${name}-wallet.json`;let wallet;try{wallet=JSON.parse(await readFile(path));}catch(e){if(e.code!=="ENOENT")throw e;wallet={privateKey:generatePrivateKey()};await writeFile(path,JSON.stringify(wallet),{mode:0o600});}
@@ -22,7 +25,7 @@ async function walletPage(name){const path=`${state}/web027-formal-${name}-walle
   const shown=selector=>{const node=document.querySelector(selector);return Boolean(node&&node.getClientRects().length&&getComputedStyle(node).visibility!=='hidden');};
   const observe=()=>{
    const body=document.body;
-   const state={stage:document.documentElement.dataset.ipoStartup??'absent',shell:shown('.app-shell'),legacy:shown('#signedOutPrivacyShield'),publicPage:shown('#web009PublicReview'),currentDesign:Boolean(body?.classList.contains('product-experience')&&body.classList.contains('web012b-review-mode')),sessionBootstrap:Boolean(document.querySelector('meta[name="ipo-one-csrf-token"]')?.content)};
+   const state={startupTitle:shown('#appStartupTitle'),startupHint:shown('#appStartupStatus'),canvas:body?getComputedStyle(body).backgroundColor:null,theme:document.documentElement.dataset.ipoTheme,stage:document.documentElement.dataset.ipoStartup??'absent',shell:shown('.app-shell'),legacy:shown('#signedOutPrivacyShield'),publicPage:shown('#web009PublicReview'),currentDesign:Boolean(body?.classList.contains('product-experience')&&body.classList.contains('web012b-review-mode')),sessionBootstrap:Boolean(document.querySelector('meta[name="ipo-one-csrf-token"]')?.content)};
    const key=JSON.stringify(state);if(key!==previous){frames.push({at:Math.round(performance.now()),...state});previous=key;}
    requestAnimationFrame(observe);
   };requestAnimationFrame(observe);

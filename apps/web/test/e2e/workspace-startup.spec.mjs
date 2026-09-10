@@ -9,12 +9,18 @@ function holdRequest(page, pattern) {
 }
 
 for (const theme of ['light', 'dark']) {
-  test(`cold ${theme} entry never paints the legacy page while modules load`, async ({page}) => {
+  test(`fast ${theme} entry reveals the current page without a loading interstitial`, async ({page}) => {
+    await page.clock.install();
+    await page.clock.pauseAt(new Date());
     await page.addInitScript(value => localStorage.setItem('ipo-one-theme', value), theme);
     const release = await holdRequest(page, '**/workspace-experience.js');
     try {
       await page.goto('http://127.0.0.1:4178/', {waitUntil:'commit'});
       await expect(page.locator('#appStartup')).toBeVisible();
+      await page.clock.runFor(1000);
+      await expect(page.locator('#appStartupTitle')).toBeHidden();
+      await expect(page.locator('#appStartupStatus')).toBeHidden();
+      await expect(page.locator('#appStartupReload')).toBeHidden();
       await expect(page.locator('.app-shell')).toBeHidden();
       await expect(page.locator('#signedOutPrivacyShield')).toBeHidden();
       await expect(page.locator('html')).toHaveAttribute('data-ipo-theme', theme);
@@ -24,6 +30,8 @@ for (const theme of ['light', 'dark']) {
     await expect(page.locator('#web009HeroTitle')).toBeVisible();
     await expect(page.locator('#appStartup')).toBeHidden();
     await expect(page.locator('body')).toHaveClass(/web012b-review-mode/);
+    await page.clock.runFor(5000);
+    await expect(page.locator('html')).toHaveAttribute('data-ipo-startup', 'ready');
     await page.getByRole('button', {name:'Log in',exact:true}).click();
     await expect(page.locator('#accessLayer')).toBeVisible();
   });
@@ -46,6 +54,30 @@ test('authenticated reload waits for server recovery without showing the public 
   await page.getByRole('button',{name:'Agents',exact:true}).click();
   await expect(page.locator('#viewTitle')).toHaveText('Agent setup & authority');
 });
+
+for (const theme of ['light', 'dark']) {
+  test(`slow ${theme} authenticated recovery keeps the final canvas and uses a quiet delayed hint`, async ({page}) => {
+    await page.addInitScript(value => localStorage.setItem('ipo-one-theme', value), theme);
+    await page.goto('http://127.0.0.1:4179/#agent-console');
+    await expect(page.locator('#sidebarApiStatus')).toHaveText('Authenticated');
+    const finalCanvas = await page.locator('body').evaluate(node => getComputedStyle(node).backgroundColor);
+    const release = await holdRequest(page, '**/auth/v1/options');
+    try {
+      await page.reload({waitUntil:'domcontentloaded'});
+      await expect(page.locator('#appStartupTitle')).toBeHidden();
+      await expect(page.locator('body')).toHaveCSS('background-color', finalCanvas);
+      await expect(page.locator('html')).toHaveCSS('background-color', finalCanvas);
+      await expect(page.locator('#appStartupStatus')).toBeVisible();
+      await expect(page.locator('#appStartupStatus')).toHaveCSS('font-size','12px');
+      const box = await page.locator('#appStartupStatus').boundingBox();
+      expect(box.y).toBeGreaterThan(page.viewportSize().height - 100);
+      await expect(page.locator('.app-shell')).toBeHidden();
+    } finally { release(); }
+    await expect(page.locator('#viewTitle')).toHaveText('Agent tasks');
+    await expect(page.locator('body')).toHaveCSS('background-color', finalCanvas);
+    await expect(page.locator('#appStartup')).toBeHidden();
+  });
+}
 
 test('failed module loading exposes a working reload control and never reveals legacy UI', async ({page}) => {
   await page.route('**/workspace-experience.js', route => route.abort('failed'));

@@ -1,6 +1,6 @@
 # WEB-027I — 满足条件后正式发布与复验
 
-Status: sidebar presentation update PASS — DEPLOYED AND USER-VERIFIED; whole-site delivery BLOCKED — NOT COMPLETE (original Principal owned-Agent visible acceptance remains).
+Status: residual startup flash repair in verification; sidebar presentation update PASS — DEPLOYED AND USER-VERIFIED; whole-site delivery BLOCKED — NOT COMPLETE (original Principal owned-Agent visible acceptance remains).
 
 ## Context and scope
 
@@ -32,7 +32,15 @@ The hosted bundle retains the exact 75 approved migrations from formal baseline 
 
 ## Completion evidence
 
-### Current presentation update — sidebar status (2026-09-10)
+### Current repair — residual loading interstitial flash (2026-09-10)
+
+The Founder still observes a brief intermediate screen. Actual formal Chromium frame capture on `55c6019` reproduces the full-screen “Opening IPO.ONE / Preparing your workspace…” splash for 188–581 ms in the recorded samples, followed by the current UI. Earlier frame checks correctly excluded legacy layouts but did not reject this conspicuous interstitial. These timings describe the captures, not a latency guarantee.
+
+Remove the branded loading interstitial from the normal startup path. Keep the theme-correct canvas until the already-existing readiness gate releases; only after 1.2 seconds of visible loading show a small bottom status. Preserve visible failure/retry, the 20-second stalled-load recovery, disabled-JavaScript guidance and authenticated server-truth recovery. Match the pre-paint authenticated canvas to the final workspace theme using only the server CSRF-presence presentation hint. It never grants authority or supplies business state.
+
+Files: index.html, web-theme.js, workspace-experience.css and the existing startup/formal browser acceptance helpers. Acceptance: fast entry has no loading title/status, delayed feedback stays small and out of the main layout, Light/Dark recovery has no canvas-color jump, module failure/timeout remains recoverable, and actual formal cold entry/reload plus visible wallet login/reload/logout-login preserve the current interface and durable records. Run focused startup/footer browser regression, all web tests, bundle/lint checks and required CI before promotion. No schema, dependency, authentication rule, API or production environment changes. Rollback to `dpl_EZptaVTiDpNn1LN85sA4zKppEpiW` (`55c6019`), with the same 76 migrations and no database rollback. Evidence is pending until the exact updated deployment is checked.
+
+### Previous presentation update — sidebar status (2026-09-10)
 
 The Founder approved a compact Beta label with “No real money is moved.”, environment details on demand, account state in the existing top bar, and the existing OpenAPI link renamed “API reference” under More tools. Replace the diagnostic-style footer without changing funds mode, server authority, role permissions, session recovery or error/recovery controls. Keep the reference reachable for every role, including a role with no other advanced destinations. Use native keyboard-operable details with Escape/outside-click dismissal and readable Light/Dark mobile layouts.
 

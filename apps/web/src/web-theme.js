@@ -4,8 +4,30 @@
   const review = new URLSearchParams(location.search).get("founder_review");
   if (review === "web-012b" || (root.hasAttribute("data-ipo-startup") && (!review || review === "web-026"))) root.dataset.ipoReview = "web-012b";
   if (root.hasAttribute("data-ipo-startup")) {
+    // This server hint selects only the initial canvas; it grants no access.
+    if (document.querySelector('meta[name="ipo-one-csrf-token"]')?.content) root.dataset.ipoStartupSurface = "workspace";
+    let feedbackTimer;
+    let feedbackFrame;
+    const cancelFeedback = () => {
+      clearTimeout(feedbackTimer);
+      cancelAnimationFrame(feedbackFrame);
+    };
+    const waitForPaint = () => {
+      if (root.dataset.ipoStartup !== "loading") return;
+      if (!document.getElementById("appStartup")?.getClientRects().length) {
+        feedbackFrame = requestAnimationFrame(waitForPaint);
+        return;
+      }
+      // Fast loads reveal the page directly. Start the delay at the styled
+      // canvas, so a slow stylesheet cannot cause a one-frame loading flash.
+      feedbackTimer = setTimeout(() => {
+        if (root.dataset.ipoStartup === "loading") root.dataset.ipoStartup = "waiting";
+      }, 1200);
+    };
+    feedbackFrame = requestAnimationFrame(waitForPaint);
     const failed = (message) => {
       if (root.dataset.ipoStartup === "ready") return;
+      cancelFeedback();
       root.dataset.ipoStartup = "failed";
       const status = document.getElementById("appStartupStatus");
       if (status) status.textContent = message;
@@ -13,6 +35,7 @@
     const timer = setTimeout(() => failed("Loading is taking longer than expected. Check your connection and reload to try again."), 20000);
     document.addEventListener("ipo-workspace-ready", () => {
       clearTimeout(timer);
+      cancelFeedback();
       root.dataset.ipoStartup = "ready";
     }, { once: true });
     document.addEventListener("ipo-workspace-failed", () => {
