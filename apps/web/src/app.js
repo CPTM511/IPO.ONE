@@ -14486,8 +14486,10 @@ async function boot() {
   renderAuditorEvidence();
   renderCreditRegistryEvidence();
   renderRiskOperations();
-  await probeHostedChainCapability();
-  await probeAccessOptions();
+  // A public page needs no private data. A session-bearing reload stays behind
+  // the startup surface until its authorized destination and layout are ready.
+  if (!tenantCsrfToken()) document.dispatchEvent(new Event("ipo-workspace-ready"));
+  await Promise.all([probeHostedChainCapability(), probeAccessOptions()]);
   await probeTenantPilot();
   setConnection(tenantPilot.connected);
   const postLoginView = tenantPilot.connected && !hasWorkspaceSessionRoleMismatch()
@@ -14506,6 +14508,7 @@ async function boot() {
     await loadSecuredPoolWorkspace();
   }
   render();
+  document.dispatchEvent(new Event("ipo-workspace-ready"));
   announce(tenantPilot.connected
     ? "Authenticated public Beta workspace ready"
     : "Sign in to access the public Beta workspace");
@@ -14526,6 +14529,7 @@ localReviewWorkspace = createLocalReviewWorkspace({
 });
 
 boot().catch((error) => {
+  document.dispatchEvent(new Event("ipo-workspace-failed"));
   const requestSuffix = error?.requestId ? ` Request ID: ${error.requestId}` : "";
   el("connectionStatus").textContent = "Workspace startup blocked";
   el("sidebarApiStatus").textContent = "Startup blocked";

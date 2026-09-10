@@ -1,6 +1,34 @@
-/* Presentation preference only. This parser-blocking script runs before styles. */
+/* Pre-paint presentation only; no identity, authority or business state. */
 (() => {
-  if (new URLSearchParams(location.search).get("founder_review") === "web-012b") document.documentElement.dataset.ipoReview = "web-012b";
+  const root = document.documentElement;
+  const review = new URLSearchParams(location.search).get("founder_review");
+  if (review === "web-012b" || (root.hasAttribute("data-ipo-startup") && (!review || review === "web-026"))) root.dataset.ipoReview = "web-012b";
+  if (root.hasAttribute("data-ipo-startup")) {
+    const failed = (message) => {
+      if (root.dataset.ipoStartup === "ready") return;
+      root.dataset.ipoStartup = "failed";
+      const status = document.getElementById("appStartupStatus");
+      if (status) status.textContent = message;
+    };
+    const timer = setTimeout(() => failed("Loading is taking longer than expected. Check your connection and reload to try again."), 20000);
+    document.addEventListener("ipo-workspace-ready", () => {
+      clearTimeout(timer);
+      root.dataset.ipoStartup = "ready";
+    }, { once: true });
+    document.addEventListener("ipo-workspace-failed", () => {
+      clearTimeout(timer);
+      failed("IPO.ONE could not finish loading. Reload to try again.");
+    }, { once: true });
+    window.addEventListener("error", event => {
+      if (event.target instanceof HTMLScriptElement) {
+        clearTimeout(timer);
+        failed("IPO.ONE could not finish loading. Reload to try again.");
+      }
+    }, true);
+    document.addEventListener("click", event => {
+      if (event.target.closest?.("#appStartupReload")) location.reload();
+    });
+  }
   const key = "ipo-one-theme";
   const choices = ["system", "light", "dark"];
   const media = matchMedia("(prefers-color-scheme: dark)");

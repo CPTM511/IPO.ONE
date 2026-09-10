@@ -32,6 +32,14 @@ The hosted bundle retains the exact 75 approved migrations from formal baseline 
 
 ## Completion evidence
 
+### Current repair — legacy UI during startup (2026-09-10)
+
+The Founder can now enter the original Principal workspace and reports old UI appearing during initial entry and the post-login reload. The source HTML initially exposes the legacy signed-out surface; the new presentation classes and layout are only installed after the application module graph loads. Authenticated reloads also initially render the public page before server recovery completes. Static assets use `no-store`; this is a startup sequencing defect, not evidence that a previous deployment was served.
+
+Scope: present a theme-correct, accessible startup surface before application JavaScript; reveal the fully arranged public interface after synchronous initialization, or the authorized workspace after authenticated recovery and destination selection. Provide visible recovery on module failure/timeout and an explanation when JavaScript is disabled. Preserve all existing handlers, routes, server-truth recovery and financial controls. Tests cover held/failed module requests, light/dark first paint, authenticated reload, actual visible navigation and deployed wallet recovery. Reuse the current release issue; no new product, authority, dependency or database migration. Rollback restores the compatible 76-migration deployment `dpl_6C4nXHCG4P5QUhVdJ755xd88ZShK`. Completion requires the actual updated hosted SHA and browser evidence.
+
+The small `app.js` growth is limited to its existing boot lifecycle's ready/failure signals and parallel execution of two independent read-only probes; startup styling and failure/retry handling remain outside the monolith. The action-contract test now reads the existing parser-blocking script that owns the reload button, retaining the requirement that every button has an actual handler.
+
 ### Current repair — expired original Principal login (2026-09-09)
 
 The Founder reported a connected OKX wallet remaining at login with `credential is not active`. Read-only hosted inspection found the original Principal's active v2 SIWE credential and its two ordinary role enrollments still carried the obsolete 2026-09-04 pilot expiry; the Actor and Membership remain active. This is an authentication recovery defect, not missing browser access.
