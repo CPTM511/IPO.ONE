@@ -1,6 +1,6 @@
 # WEB-027I — 满足条件后正式发布与复验
 
-Status: residual startup flash repair PASS — DEPLOYED AND USER-VERIFIED; whole-site delivery BLOCKED — NOT COMPLETE (original Principal owned-Agent visible acceptance remains).
+Status: dark-mode readability repair in verification; previous startup repair PASS — DEPLOYED AND USER-VERIFIED; whole-site delivery BLOCKED — NOT COMPLETE (original Principal owned-Agent visible acceptance remains).
 
 ## Context and scope
 
@@ -32,7 +32,13 @@ The hosted bundle retains the exact 75 approved migrations from formal baseline 
 
 ## Completion evidence
 
-### Current repair — residual loading interstitial flash (2026-09-10)
+### Current repair — dark-mode text and surface contrast (2026-09-10)
+
+The Founder reports unreadable text in Dark mode, including borrowing shortcuts, product cards, workspace details and activity rows. Existing light-only component backgrounds and fixed text colors conflict with the active workspace palette. Scope: repair the affected shared component styles across Human, Principal/Agent, Capital and Risk role-allowed views, including secondary text, status surfaces, forms, expandable details and hover/focus states. Keep the approved Precision Terminal palette and meaningful status colors; no new design direction or functional changes.
+
+Files: workspace-experience.css, targeted browser contrast/support tests, formal browser acceptance helper and this existing issue/evidence. Verify rendered text contrast in both themes (4.5:1 normal, 3:1 large), visible navigation and disclosure, desktop/mobile fit, actual formal source/asset hashes and wallet recovery. Fixture checks are component evidence; final acceptance uses the actual deployed services. Run all web checks and required CI before promotion. No API, auth, schema, dependency, funds or production configuration changes. Rollback to `dpl_H6bnc1ddaBsNdNd9GCggV2UHS6xg` (`3246672`), preserving the compatible 76-migration profile and business history. Completion remains pending until formal browser acceptance.
+
+### Previous repair — residual loading interstitial flash (2026-09-10)
 
 The Founder still observes a brief intermediate screen. Actual formal Chromium frame capture on `55c6019` reproduces the full-screen “Opening IPO.ONE / Preparing your workspace…” splash for 188–581 ms in the recorded samples, followed by the current UI. Earlier frame checks correctly excluded legacy layouts but did not reject this conspicuous interstitial. These timings describe the captures, not a latency guarantee.
 

@@ -496,3 +496,34 @@ body.product-experience .risk-passkey-panel .risk-workspace-actions { display: f
 .local-approval-detail { border-top: 1px solid var(--b-line); margin-top: 20px; padding-top: 20px; line-height: 1.65; }
 .local-approval-detail pre { max-height: 360px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
 @media (max-width: 640px) { .local-servicing-form { grid-template-columns: minmax(0,1fr); } .local-review-panel { padding: 16px; } }
+
+/* Complete the theme mapping for the retained portfolio, servicing and operations components. */
+body.product-experience :is(.borrowing-entry-action,.product-entry-grid,.product-entry-card,.portfolio-details,.private-checkpoint,.agent-authority-access-gate,.owned-position-button,.owned-obligation-restore,.servicing-case-identity > div,.servicing-stage-card,.servicing-cure-card,.servicing-schedule-card,.servicing-queue-table,.provider-status-grid > div,.pilot-feedback-summary-metrics,.risk-authority-table,.risk-boundary-list > div,.request-credit-receipts-heading,.request-credit-receipts > ol > li,.owned-evidence-table) {
+  background: var(--b-surface); color: var(--b-ink); border-color: var(--b-line);
+}
+body.product-experience :is(.private-checkpoint.current,.servicing-case-metrics,.servicing-case-primary-metric,.servicing-cure-breakdown > div,.servicing-queue-head,.pilot-health-metrics,.pilot-health-proof-grid > div,.operations-assurance-grid > article,.operations-evidence-boundary,.obligation-detail-schedule-row > span) {
+  background: var(--b-elevated); border-color: var(--b-line);
+}
+body.product-experience :is(.borrowing-entry-action,.product-entry-card,.owned-position-button):hover:not(:disabled),
+body.product-experience .owned-position-button[aria-current="true"] { background: var(--b-elevated); border-color: var(--b-accent); }
+body.product-experience :is(.portfolio-mode,.portfolio-lifecycle > span,.private-product-heading > p:not(.eyebrow),.private-hero-metrics span,.borrowing-entry-copy > p:last-child,.borrowing-entry-action small,.product-section-heading > p,.product-entry-copy small,.portfolio-details > summary small,.private-checkpoint span,.v9-runtime-state small,.pilot-feedback-boundary,.request-credit-receipts span,.request-credit-receipts small,.owned-evidence-boundary,.offer-boundary) { color: var(--b-soft); }
+body.product-experience :is(label,summary) { color: var(--b-soft); }
+body.product-experience .panel a:not(.button) { color: var(--b-accent); }
+body.product-experience .owned-evidence-summary strong { color: var(--b-ink); }
+body.product-experience .obligation-card :is(.obligation-technical-references dt,label) { color: var(--b-soft); }
+body.product-experience .v9-runtime-state { background: var(--b-elevated); border-color: var(--b-line); color: var(--b-ink); }
+body.product-experience .v9-runtime-state.loading { color: var(--b-accent); }
+body.product-experience .v9-runtime-state.restart { color: var(--b-success); }
+body.product-experience :is(.v9-runtime-state.denied,.v9-runtime-state.unavailable) { color: var(--b-warning); }
+body.product-experience :is(.agent-console-tool-row,.agent-console-workflow-row,.agent-console-unavailable-row,.capability-list > div) > em { background: var(--b-elevated); color: var(--b-soft); }
+body.product-experience :is(.agent-console-tool-row.ready,.agent-console-workflow-row.ready) > em,
+body.product-experience .capability-list > div > em.ready { color: var(--b-success); }
+body.product-experience :is(.agent-console-tool-row.unavailable,.agent-console-workflow-row.locked,.agent-console-unavailable-row) > em,
+body.product-experience .capability-list > div > em.warning { color: var(--b-warning); }
+body.product-experience :is(.request-credit-receipts li > span,.agent-credit-next) { background: var(--b-elevated); border-color: var(--b-line); }
+body.product-experience :is(.request-credit-receipts strong,.obligation-reference-details dd) { color: var(--b-ink); }
+body.product-experience :is(.request-credit-receipts em,.auditor-evidence-footer :is(span,small),.obligation-reference-details dt,.servicing-stage-item strong,.servicing-stage-item div > span,.operations-assurance-grid small,.operations-evidence-boundary :is(p,span)) { color: var(--b-soft); }
+body.product-experience .risk-authority-row > span.eligible strong { color: var(--b-accent); }
+body.product-experience .owned-position-picker { background: var(--b-surface); border-color: var(--b-line); }
+body.product-experience .credit-passport-issue-card.unavailable :is(.credit-passport-source,.credit-passport-recipient,.credit-passport-claims) { opacity: 1; }
+body.product-experience :is(input,textarea)::placeholder { color: var(--b-soft); opacity: 1; }
