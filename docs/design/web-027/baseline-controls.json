@@ -1,0 +1,2646 @@
+{
+  "source": "c585b50",
+  "controls": [
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "#mainContent",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "sidebarCloseBtn",
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": "overview"
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": "request-credit"
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": "secured-pool"
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": "trading-capital"
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": "capital-partners"
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": "obligations"
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": "repay-settle"
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": "credit-passport"
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": "credit-track-record"
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": "agent-console"
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": "wallet-permissions"
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": "capital-network"
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": "architecture"
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": "activity-proofs"
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": "reports-exports"
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": "risk-operations"
+    },
+    {
+      "tag": "button",
+      "id": "sidebarMoreBtn",
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "/openapi.json",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "sidebarScrim",
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "mobileMenuBtn",
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "operatorModeBtn",
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "agentModeBtn",
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "accessBtn",
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "topbarSignOutBtn",
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "authenticatedRuntimeGateAction",
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "#web009Product",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "#web009Product",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "#web009AgentCredit",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "#web009Passport",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "/whitepaper",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "#web009Developers",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "#web009Trust",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "summary",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "#web009Product",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "#web009AgentCredit",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "#web009Passport",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "/whitepaper",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "#web009Developers",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "#web009Trust",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "#web009AgentCredit",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "select",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "select",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "/agent-openapi.json",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "#web009Product",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "#web009Product",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "#web009AgentCredit",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "#web009Passport",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "/whitepaper",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "#web009Developers",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "#web009Trust",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "/",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "/",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "/whitepaper",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "/agent-openapi.json",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "https://github.com/CPTM511/IPO.ONE/blob/main/SECURITY.md",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "signedOutPrivacyAction",
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "/whitepaper",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "/agent-openapi.json",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "/",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "/whitepaper",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "/agent-openapi.json",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "/openapi.json",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "https://github.com/CPTM511/IPO.ONE/blob/main/SECURITY.md",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": null,
+      "view": "global",
+      "href": "/.well-known/ipo-one.json",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "privatePortfolioPrimaryBtn",
+      "view": "overview",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "privatePortfolioSecondaryBtn",
+      "view": "overview",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "homeHumanBorrowBtn",
+      "view": "overview",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "homeAgentBorrowBtn",
+      "view": "overview",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "overview",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "overview",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "overview",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "overview",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "summary",
+      "id": null,
+      "view": "overview",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "overview",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "refreshSecuredPoolBtn",
+      "view": "secured-pool",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "summary",
+      "id": null,
+      "view": "secured-pool",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "select",
+      "id": "securedPoolActionType",
+      "view": "secured-pool",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "securedPoolAmount",
+      "view": "secured-pool",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "reviewSecuredPoolActionBtn",
+      "view": "secured-pool",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "humanHeroPrimaryBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "humanGuidePrimaryBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "humanGuideSecondaryBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "summary",
+      "id": null,
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "summary",
+      "id": null,
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "newHumanApplicationBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "createHumanSubjectBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "createHumanConsentBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "humanSubjectId",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "humanConsentId",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "humanCreditAmount",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "humanCreditTerm",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "humanInstallments",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "select",
+      "id": "humanCreditPurpose",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "select",
+      "id": "humanRepaymentFrequency",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "submitHumanCreditBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "summary",
+      "id": null,
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "summary",
+      "id": null,
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "copyDecisionPassportBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "copyHumanReceiptBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "humanOfferAcknowledge",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "acceptHumanOfferBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "summary",
+      "id": null,
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "executeHumanObligationBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "humanRepaymentAmount",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "select",
+      "id": "humanRepaymentSource",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "postHumanRepaymentBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "anchorPendingEvidenceBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": "humanObligationChainAnchorLink",
+      "view": "request-credit",
+      "href": "#",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "loadOwnedEvidenceBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "loadMoreOwnedEvidenceBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "summary",
+      "id": null,
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "select",
+      "id": "pilotFeedbackSurface",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "select",
+      "id": "pilotFeedbackStage",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "select",
+      "id": "pilotFeedbackSentiment",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "select",
+      "id": "pilotFeedbackOutcome",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "select",
+      "id": "pilotFeedbackBlocker",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "submitPilotFeedbackBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "select",
+      "id": "pilotCaseTarget",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "select",
+      "id": "pilotCaseReason",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "filePilotCaseBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "refreshPilotCasesBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "summary",
+      "id": null,
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": "openPrincipalWorkspaceLink",
+      "view": "request-credit",
+      "href": "#",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "switchPrincipalSessionBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "select",
+      "id": "agentWorkspaceChoice",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "openSelectedAgentWorkspaceBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "agentAuthorityDisplayName",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "agentAuthorityJurisdiction",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "createPrivateAgentSubjectBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "select",
+      "id": "agentAccountChain",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "agentAccountAddress",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "select",
+      "id": "agentAccountPurpose",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "createAccountChallengeBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "proveAccountOnlineBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "refreshAccountBindingBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "summary",
+      "id": null,
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "downloadAccountChallengeBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "copyAccountChallengeBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "agentMandatePerActionLimit",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "agentMandateAggregateLimit",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "agentMandateValidityDays",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "createDraftMandateBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "openAgentApplicationHandoffBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": "open-handoff",
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "principalMandateAcknowledge",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "activateMandateBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "continueAgentCreditBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": "open-agent-workspace",
+      "nav": null
+    },
+    {
+      "tag": "summary",
+      "id": null,
+      "view": "request-credit",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "agentRequestPrimaryBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": "principal-setup",
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "agentRequestSecondaryBtn",
+      "view": "request-credit",
+      "href": null,
+      "action": "view-protocol",
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "restoreCreditPassportBtn",
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "summary",
+      "id": null,
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "creditPassportSubjectId",
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "creditPassportIntentId",
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "creditPassportVerifierActorId",
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "select",
+      "id": "creditPassportLifetime",
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": null,
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": null,
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": null,
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": null,
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": null,
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": null,
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": null,
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": null,
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": null,
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "issueCreditPassportBtn",
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "summary",
+      "id": null,
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "creditPassportArtifactId",
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "readCreditPassportBtn",
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "summary",
+      "id": null,
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "select",
+      "id": "creditPassportRevocationReason",
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "revokeCreditPassportBtn",
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "summary",
+      "id": null,
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "creditPassportVerifyArtifactId",
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "creditPassportVerifyHash",
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "creditPassportVerifyVersion",
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "verifyCreditPassportBtn",
+      "view": "credit-passport",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "createAgentBtn",
+      "view": "agent-console",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "agentWorkspaceApiBtn",
+      "view": "agent-console",
+      "href": null,
+      "action": "open-agent-api",
+      "nav": null
+    },
+    {
+      "tag": "summary",
+      "id": null,
+      "view": "agent-console",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "agentConsoleCopyManifestBtn",
+      "view": "agent-console",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "agentConsoleDownloadHandoffBtn",
+      "view": "agent-console",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "agentOnlineRunBtn",
+      "view": "agent-console",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "agentOnlineExecuteBtn",
+      "view": "agent-console",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "agentOnlineRepayBtn",
+      "view": "agent-console",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "agentOnlineEvidenceBtn",
+      "view": "agent-console",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "agentOnlineReviewBtn",
+      "view": "agent-console",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "agent-console",
+      "href": null,
+      "action": "principal-setup",
+      "nav": null
+    },
+    {
+      "tag": "summary",
+      "id": null,
+      "view": "agent-console",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "agentConsoleCopySdkBtn",
+      "view": "agent-console",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "a",
+      "id": "agentConsoleOpenApiLink",
+      "view": "agent-console",
+      "href": "/openapi.json",
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "capitalPartnerRefreshWorkspaceBtn",
+      "view": "capital-partners",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "summary",
+      "id": null,
+      "view": "capital-partners",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "capitalPartnerFacilityLimit",
+      "view": "capital-partners",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "capitalPartnerPrincipal",
+      "view": "capital-partners",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "capitalPartnerPerDrawCap",
+      "view": "capital-partners",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "capitalPartnerAnnualRate",
+      "view": "capital-partners",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "capitalPartnerOriginationFee",
+      "view": "capital-partners",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "capitalPartnerInstallments",
+      "view": "capital-partners",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "capitalPartnerFirstPaymentAt",
+      "view": "capital-partners",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "capitalPartnerMaturityAt",
+      "view": "capital-partners",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "capitalPartnerValidUntil",
+      "view": "capital-partners",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "capitalPartnerAuthorOfferBtn",
+      "view": "capital-partners",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "summary",
+      "id": null,
+      "view": "capital-partners",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "capitalPartnerWithdrawOfferBtn",
+      "view": "capital-partners",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "capitalNetworkTransferIntentId",
+      "view": "capital-network",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "capitalNetworkLoadBtn",
+      "view": "capital-network",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "capitalNetworkAcknowledgeBtn",
+      "view": "capital-network",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "tradingCapitalFacilityId",
+      "view": "trading-capital",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "tradingCapitalLoadStateBtn",
+      "view": "trading-capital",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "tradingCapitalLoadEvidenceBtn",
+      "view": "trading-capital",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "tradingCapitalReadAuthorizationBtn",
+      "view": "trading-capital",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "tradingCapitalCreateAuthorizationBtn",
+      "view": "trading-capital",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "tradingCapitalRevokeAuthorizationBtn",
+      "view": "trading-capital",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "tradingCapitalTabOverview",
+      "view": "trading-capital",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "tradingCapitalTabProfile",
+      "view": "trading-capital",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "tradingCapitalTabMarketplace",
+      "view": "trading-capital",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "tradingCapitalTabSetup",
+      "view": "trading-capital",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "tradingCapitalTabLive",
+      "view": "trading-capital",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "tradingCapitalTabRisk",
+      "view": "trading-capital",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "tradingCapitalTabSettle",
+      "view": "trading-capital",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "tradingCapitalTabProof",
+      "view": "trading-capital",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "tradingCapitalTabAuthorization",
+      "view": "trading-capital",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "tradingCapitalRequestCloseBtn",
+      "view": "trading-capital",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "tradingCapitalIssueProofBtn",
+      "view": "trading-capital",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "walletPermissionsAccessBtn",
+      "view": "wallet-permissions",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "executionConnectBtn",
+      "view": "wallet-permissions",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "executionBindBtn",
+      "view": "wallet-permissions",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "executionRefreshBindingsBtn",
+      "view": "wallet-permissions",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "executionDisconnectBtn",
+      "view": "wallet-permissions",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "executionRevokeBindingBtn",
+      "view": "wallet-permissions",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "summary",
+      "id": null,
+      "view": "wallet-permissions",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "executionProviderId",
+      "view": "wallet-permissions",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "executionTransferIntentId",
+      "view": "wallet-permissions",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "executionDiscoverBtn",
+      "view": "wallet-permissions",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "executionPrepareGrantBtn",
+      "view": "wallet-permissions",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "executionActivateGrantBtn",
+      "view": "wallet-permissions",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "executionPrepareBtn",
+      "view": "wallet-permissions",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "executionReadBtn",
+      "view": "wallet-permissions",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "executionRevokeGrantBtn",
+      "view": "wallet-permissions",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "privateCreditPrimaryBtn",
+      "view": "obligations",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "obligationPortfolioRefreshBtn",
+      "view": "obligations",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "summary",
+      "id": null,
+      "view": "obligations",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "obligationDetailRefreshBtn",
+      "view": "obligations",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "obligationDetailEvidenceBtn",
+      "view": "obligations",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "obligationDetailRepayBtn",
+      "view": "obligations",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "privatePaymentsPrimaryBtn",
+      "view": "repay-settle",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "refreshOwnedPositionsBtn",
+      "view": "repay-settle",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "ownedObligationId",
+      "view": "repay-settle",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "loadOwnedObligationBtn",
+      "view": "repay-settle",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "servicingRepaymentAmount",
+      "view": "repay-settle",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "select",
+      "id": "servicingRepaymentSource",
+      "view": "repay-settle",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "postServicingRepaymentBtn",
+      "view": "repay-settle",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "servicingClosedNextBtn",
+      "view": "repay-settle",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "openServicingEvidenceBtn",
+      "view": "repay-settle",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "privateEvidencePrimaryBtn",
+      "view": "activity-proofs",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "creditRegistryAuthorizationHash",
+      "view": "activity-proofs",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "loadCreditRegistryEvidenceBtn",
+      "view": "activity-proofs",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "auditorEvidenceObligationId",
+      "view": "activity-proofs",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "select",
+      "id": "auditorEvidencePageSize",
+      "view": "activity-proofs",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "loadAuditorEvidenceBtn",
+      "view": "activity-proofs",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "loadMoreAuditorEvidenceBtn",
+      "view": "activity-proofs",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "loadCreditTrackRecordBtn",
+      "view": "credit-track-record",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "reports-exports",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "select",
+      "id": "officialReportFormat",
+      "view": "reports-exports",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "select",
+      "id": "officialReportLifetime",
+      "view": "reports-exports",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "createOfficialReportBtn",
+      "view": "reports-exports",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "officialReportId",
+      "view": "reports-exports",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "readOfficialReportBtn",
+      "view": "reports-exports",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "retrieveOfficialReportBtn",
+      "view": "reports-exports",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "revokeOfficialReportBtn",
+      "view": "reports-exports",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "refreshRiskSecuredPoolBtn",
+      "view": "risk-operations",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "refreshRiskWorkspaceBtn",
+      "view": "risk-operations",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "summary",
+      "id": null,
+      "view": "risk-operations",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "loadRiskInsightsBtn",
+      "view": "risk-operations",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "loadPilotCaseQueueBtn",
+      "view": "risk-operations",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "loadClosedPilotReadinessBtn",
+      "view": "risk-operations",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "select",
+      "id": "servicingQueueClassification",
+      "view": "risk-operations",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "applyServicingQueueFilterBtn",
+      "view": "risk-operations",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "loadMoreServicingQueueBtn",
+      "view": "risk-operations",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "riskFreezeSubjectId",
+      "view": "risk-operations",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "select",
+      "id": "riskFreezeReason",
+      "view": "risk-operations",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "input",
+      "id": "riskFreezeAcknowledge",
+      "view": "risk-operations",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "freezeRiskSubjectBtn",
+      "view": "risk-operations",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "agentRuntimePrimaryBtn",
+      "view": "architecture",
+      "href": null,
+      "action": "principal-setup",
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "agentRuntimeSecondaryBtn",
+      "view": "architecture",
+      "href": null,
+      "action": "view-protocol",
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "agentIntegrationPrimaryBtn",
+      "view": "architecture",
+      "href": null,
+      "action": "principal-setup",
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "agentIntegrationSecondaryBtn",
+      "view": "architecture",
+      "href": null,
+      "action": "view-protocol",
+      "nav": null
+    },
+    {
+      "tag": "summary",
+      "id": null,
+      "view": "architecture",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "summary",
+      "id": null,
+      "view": "architecture",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "downloadMcpHandoffBtn",
+      "view": "architecture",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "copyMcpHandoffBtn",
+      "view": "architecture",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "returnToAgentAuthorityBtn",
+      "view": "architecture",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "copySdkBtn",
+      "view": "architecture",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "accessScrim",
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "accessCloseBtn",
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "continueAuthenticatedSessionBtn",
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "signOutBtn",
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "borrowerWorkspaceRoleBtn",
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "principalWorkspaceRoleBtn",
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "walletSignInBtn",
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "retryAccessOptionsBtn",
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "rediscoverWalletsBtn",
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "retryWalletAuthorityBtn",
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "copyAccessDiagnosticBtn",
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": null,
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "economicActionScrim",
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "economicActionCloseBtn",
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "economicActionCancelBtn",
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    },
+    {
+      "tag": "button",
+      "id": "economicActionConfirmBtn",
+      "view": "global",
+      "href": null,
+      "action": null,
+      "nav": null
+    }
+  ],
+  "status": "inventory_only_not_click_verified"
+}
