@@ -2715,6 +2715,13 @@ export class PostgresCoreRepository {
     return this.#getOne("ledgerAccountId", ledgerAccountId, "SELECT * FROM ledger_accounts WHERE id = $1", mapLedgerAccount);
   }
 
+  async getLedgerAccountInTransaction(client, ledgerAccountId) {
+    assertQueryable(client);
+    assertString("ledgerAccountId", ledgerAccountId);
+    const result = await client.query("SELECT * FROM ledger_accounts WHERE id = $1", [ledgerAccountId]);
+    return mapLedgerAccount(result.rows[0]);
+  }
+
   async getLedgerTransaction(ledgerTransactionId) {
     assertString("ledgerTransactionId", ledgerTransactionId);
     const [transaction, entries] = await this.eventRepository.withTenantRead((client) => Promise.all([
@@ -3019,7 +3026,9 @@ export class PostgresCoreRepository {
       dpd_61_89: (value) => value >= 61 && value <= 89,
       dpd_31_60: (value) => value >= 31 && value <= 60,
       dpd_1_30: (value) => value >= 4 && value <= 30,
-      grace_period: (value) => value >= 1 && value <= 3
+      // The domain starts grace immediately after a missed due time; DPD is
+      // whole elapsed days and remains zero for the first 24 hours.
+      grace_period: (value) => value >= 0 && value <= 3
     };
     return result.rows.map((row) => {
       const daysPastDue = safeInteger(row.days_past_due, "Servicing queue DPD");

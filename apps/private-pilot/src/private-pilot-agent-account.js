@@ -6,7 +6,7 @@ import {
 } from "../../../modules/chain-adapter/src/index.js";
 import { DomainError } from "../../../packages/domain/src/index.js";
 
-const APPROVED_CHAINS = new Set(["eip155:84532", "eip155:1952"]);
+const APPROVED_CHAINS = new Set(["eip155:84532", "eip155:1952", "eip155:97", "eip155:56"]);
 const LEGACY_LOCAL_TENANT_ID = "tenant_ipo_one_local_pilot";
 const CHALLENGE_KEYS = Object.freeze([
   "accountHash",

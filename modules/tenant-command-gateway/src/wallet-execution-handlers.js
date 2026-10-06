@@ -48,7 +48,7 @@ function normalizePrepareGrant(payload) {
   id("providerId", value.providerId);
   id("accountBindingId", value.accountBindingId);
   if (
-    !new Set(["eip155:84532", "eip155:1952"]).has(value.chainId) ||
+    !new Set(["eip155:84532", "eip155:1952", "eip155:97", "eip155:56"]).has(value.chainId) ||
     !Number.isSafeInteger(value.sessionEpoch) || value.sessionEpoch < 0 ||
     !ID.test(value.nonce) || !Number.isFinite(new Date(value.requestedExpiresAt).getTime())
   ) fail("invalid_tenant_command_payload", "wallet grant preparation payload is invalid");
@@ -100,6 +100,7 @@ function query(operationId, application, method, normalize, resourceType) {
   return Object.freeze({
     operationId,
     kind: "query",
+    ...(operationId === "walletDiscoverCapabilities" ? { readCapabilityDescriptor: () => application.discoverCapabilities() } : {}),
     preflight: ({ payload, resource: inputResource }) => {
       resource(inputResource, resourceType);
       normalize(payload);

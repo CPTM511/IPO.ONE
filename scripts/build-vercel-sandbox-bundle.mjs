@@ -5,6 +5,9 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { build } from "esbuild";
 import { materializeTrackedGitSource } from "./tracked-git-source.mjs";
+import { readMigrationSet } from "./migrate.mjs";
+import { selectVercelMigrations, VERCEL_MIGRATION_PROFILE } from "./vercel-migration-profile.mjs";
+import { assertProductUiBaseline } from "../apps/tenant-api/src/product-ui-baseline.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -76,6 +79,7 @@ try {
     ["install", "--frozen-lockfile", "--ignore-scripts"],
     { cwd: trackedSource }
   );
+  const productUiBaseline = assertProductUiBaseline(join(trackedSource, "apps/web/src"));
   await mkdir(join(output, "api"), { recursive: true });
   const entryPoints = deploymentRole === "primary"
     ? {
@@ -104,9 +108,14 @@ try {
       "process.env.IPO_ONE_BUNDLED_RELEASE_ID": JSON.stringify(releaseId)
     }
   });
+  const allMigrations = await readMigrationSet(join(trackedSource, "db/migrations"));
+  const hostedMigrations = selectVercelMigrations(allMigrations);
+  await mkdir(join(output, "db/migrations"), { recursive: true });
+  await Promise.all(hostedMigrations.flatMap(({ name }) => ["up", "down"].map(direction =>
+    cp(join(trackedSource, "db/migrations", `${name}.${direction}.sql`), join(output, "db/migrations", `${name}.${direction}.sql`))
+  )));
   await Promise.all([
     cp(join(trackedSource, "apps/web/src"), join(output, "apps", "web", "src"), { recursive: true }),
-    cp(join(trackedSource, "db/migrations"), join(output, "db", "migrations"), { recursive: true }),
     cp(join(trackedSource, "deploy/vercel/package.m1-b-sandbox.json"), join(output, "package.json")),
     cp(
       join(
@@ -119,6 +128,19 @@ try {
     )
   ]);
 
+  // One browser entry avoids a cold, no-store request for every source module.
+  // Compile the exact tracked tree with the existing locked esbuild dependency.
+  const browserBuild = await build({
+    absWorkingDir: trackedSource,
+    entryPoints: ["apps/web/src/app.js"],
+    outfile: join(output, "apps/web/src/app.js"),
+    bundle: true, minify: true, platform: "browser", format: "esm",
+    target: "es2022", legalComments: "none", metafile: true
+  });
+  const browserOutput = Object.values(browserBuild.metafile.outputs)[0];
+  if (browserOutput.imports.length !== 0) {
+    throw new Error("Hosted browser entry must have no unresolved module requests");
+  }
   const artifactFiles = await files(output);
   const artifacts = [];
   for (const path of artifactFiles) {
@@ -128,16 +150,27 @@ try {
     schemaVersion: "ipo.one.vercel-deployment-artifact/v1",
     sourceCommit: releaseId,
     sourceTree,
+    productUiBaseline,
     sourceMaterialization: "tracked_git_archive",
     untrackedInputIncluded: false,
     dirtyCompatibilityBuild: allowDirtyTest,
     nodeRuntime: "24.x",
     productProfile: "deployable_sandbox_vertical_slice",
     deploymentRole,
+    browserEntry: { bundled: true, sourceModules: Object.keys(browserBuild.metafile.inputs).length, bytes: browserOutput.bytes },
+    migrationProfile: {
+      ...VERCEL_MIGRATION_PROFILE,
+      excludedLocalMigrations: allMigrations.filter(item => VERCEL_MIGRATION_PROFILE.localOnly.includes(item.name)).map(({ name, checksum }) => ({ name, checksum })),
+      runtimeMigrationCheck: "exact_set_and_checksums_unchanged",
+      productionDatabaseMutation: false
+    },
     releaseClaim: false,
     realFundsEnabled: false,
     artifacts
   }, null, 2)}\n`);
+  assertProductUiBaseline(join(output, "apps/web/src"), {
+    releaseId, artifactManifestPath: join(output, "deployment-artifact-manifest.json")
+  });
   process.stdout.write(`${JSON.stringify({
     status: "built",
     output,

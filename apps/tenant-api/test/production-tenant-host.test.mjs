@@ -71,7 +71,8 @@ async function fixture({
     writeKeyVersion: "v2",
     legacyLookupKeyVersion: "v1"
   },
-  deploymentRole = "primary"
+  deploymentRole = "primary",
+  walletConnectProjectId
 } = {}) {
   const port = await unusedPort();
   let ready = true;
@@ -84,6 +85,7 @@ async function fixture({
     createNetworkContext: async () => { throw new Error("not expected"); },
     csrfTokenProvider: async () => undefined,
     deploymentRole,
+    ...(walletConnectProjectId === undefined ? {} : { walletConnectProjectId }),
     readinessCheck: async () => ready,
     verifyEdgeRequest: async (request) => request.headers["x-ipo-edge"] === "approved",
     publicOrigin: "https://ipo.one",
@@ -550,4 +552,19 @@ test("production Host rejects an invalid injected workspace name", async (t) => 
   assert.equal(response.status, 400);
   assert.equal(JSON.parse(response.body).code, "invalid_tenant_workspace_bootstrap");
   assert.equal(response.body.includes("unexpected workspace"), false);
+});
+
+
+test("production Host serves mobile access and injects only a validated operator Project ID", async (t) => {
+  const f = await fixture({ walletConnectProjectId: "a".repeat(32) });
+  t.after(() => f.host.close());
+  const response = await get(f.port, "/", { "x-ipo-edge": "approved", host: "ipo.one", "x-forwarded-host": "ipo.one", "x-forwarded-proto": "https" });
+  assert.equal(response.status, 200);
+  assert.match(response.body, /<meta name="ipo-one-walletconnect-project-id" content="a{32}" \/>/);
+  const module = await get(f.port, "/mobile-wallet-access.js", { "x-ipo-edge": "approved", host: "ipo.one", "x-forwarded-host": "ipo.one", "x-forwarded-proto": "https" });
+  assert.equal(module.status, 200);
+  assert.match(module.body, /createMobileWalletAccess/);
+  for (const walletConnectProjectId of ["", "<script>", 1e31, "a".repeat(33)]) {
+    await assert.rejects(fixture({ walletConnectProjectId }), /Project ID/);
+  }
 });

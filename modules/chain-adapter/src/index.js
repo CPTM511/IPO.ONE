@@ -10,3 +10,4 @@ export * from "./sandbox-chain-adapter.js";
 export * from "./sandbox-chain-indexer.js";
 export * from "./secured-pool-v1-adapter.js";
 export * from "./secured-pool-v1-read-adapter.js";
+export * from "./account-proof-profiles.js";

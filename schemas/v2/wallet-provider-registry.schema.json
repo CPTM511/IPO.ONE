@@ -35,7 +35,7 @@
       "type": "string",
       "minLength": 17,
       "maxLength": 44,
-      "pattern": "^(?:eip6963:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|legacy:globalThis\\.ethereum|walletconnect:mobile-v2\\.23\\.10)$"
+      "pattern": "^(?:eip6963:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|legacy:globalThis\\.ethereum|injected:binancew3w\\.ethereum|walletconnect:mobile-v2\\.23\\.10)$"
     },
     "provider": {
       "type": "object",
@@ -44,7 +44,7 @@
       "properties": {
         "providerId": { "$ref": "#/$defs/providerId" },
         "source": {
-          "enum": ["eip6963", "legacy_eip1193", "mobile_walletconnect"]
+          "enum": ["eip6963", "legacy_eip1193", "binance_injected", "mobile_walletconnect"]
         },
         "uuid": {
           "type": "string",

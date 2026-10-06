@@ -272,6 +272,10 @@ export function acceptCreditOfferCommandHandler() {
       );
       const offer = offerState?.value;
       if (!offer || offer.creditOfferId !== authorizationDecision.resourceId) unavailable();
+      // A preceding serialized Offer mutation can advance its timestamp past
+      // this request's admission clock. Preserve causal order for acceptance
+      // and all of its expiry/authority checks; never move an Offer backwards.
+      now = new Date(Math.max(now.getTime(), Date.parse(offer.createdAt), Date.parse(offer.updatedAt)));
       if (offer.status !== CreditOfferStatus.OFFERED) {
         throw new DomainError("offer_not_available", "Offer is no longer available");
       }

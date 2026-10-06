@@ -1,84 +1,22 @@
 # IPO.ONE Project Guidance
 
-Before making product, architecture, or implementation decisions in this repo,
-read the project guidance source:
+For product, architecture, or implementation decisions, use this checkout's
+`docs/PRODUCT_CONSTITUTION.md` for authority, current phase, requirement status,
+and explicit supersession. Read its relevant sections and the accepted ADRs,
+security invariants, contracts, and acceptance criteria needed for the task.
+Do not import another checkout's phase or permissions.
 
-- Highest product-truth authority and requirement registry:
-  `docs/PRODUCT_CONSTITUTION.md`
-- Canonical Product Charter: `docs/guidance/IPO_ONE_PRODUCT_CHARTER_v1.1.md`
-- Founding Edition source archive:
-  `docs/guidance/IPO_ONE_Product_Charter_v1.1_Founding_Edition.docx`
-- `docs/guidance/IPO_one_Product_Description_and_PRD_v1.md`
-- Original source archive: `docs/guidance/IPO_one_Product_Description_and_PRD_v1.docx`
-- `docs/guidance/IPO_ONE_MVP_Build_PRD_Technical_Architecture_Codex_Task_Spec_v0.1_FINAL.md`
-- Original MVP build archive: `docs/guidance/IPO_ONE_MVP_Build_PRD_Technical_Architecture_Codex_Task_Spec_v0.1_FINAL.docx`
-- Architecture review proposal: `docs/guidance/IPO_ONE_ARCHITECTURE_REVIEW_v0.2_DRAFT.md`
-- Commercialization roadmap proposal: `docs/guidance/IPO_ONE_COMMERCIALIZATION_ROADMAP_v0.3_DRAFT.md`
-- Founder-approved product optimization measure:
-  `docs/guidance/IPO_ONE_PRODUCT_OPTIMIZATION_MEASURE_v1.0.md`
-- Founder-directed product engineering and experience standard:
-  `docs/guidance/IPO_ONE_PRODUCT_ENGINEERING_AND_EXPERIENCE_STANDARD_v1.0.md`
-- Local-to-closed-pilot delivery guidance:
-  `docs/guidance/IPO_ONE_LOCAL_TO_CLOSED_PILOT_DELIVERY_GUIDE_v0.1_DRAFT.md`
-- Public beta launch gate: `docs/guidance/IPO_ONE_PUBLIC_BETA_LAUNCH_READINESS_v0.3.md`
-- Public sandbox threat model: `docs/security/IPO_ONE_SANDBOX_THREAT_MODEL_v0.3.md`
-- CHAIN-001B live-testnet runbook:
-  `docs/security/IPO_ONE_CHAIN_001B_TESTNET_RUNBOOK_v0.1.md`
-- M2 secured-pool pre-development alignment:
-  `docs/guidance/IPO_ONE_M2_PRE_DEVELOPMENT_ALIGNMENT_v1.0.md`
-- M2 architecture decisions:
-  `docs/architecture/ADR-M2-001-SECURED_ONLY_M2.md` through
-  `docs/architecture/ADR-M2-005-ORACLE_RATE_LIQUIDATION.md`
-- M2 threat model:
-  `docs/security/IPO_ONE_M2_PUBLIC_SECURED_POOL_THREAT_MODEL_v0.1_DRAFT.md`
-- M2 requirement traceability:
-  `docs/traceability/IPO_ONE_M2_REQUIREMENT_TRACEABILITY_v0.1.md`
+For implementation and user-facing changes, also apply the relevant sections of
+`docs/guidance/IPO_ONE_PRODUCT_ENGINEERING_AND_EXPERIENCE_STANDARD_v1.0.md`.
+Use `docs/guidance/CODEX_GUIDANCE_INDEX.md` to locate additional sources by topic.
+Read original archives only for provenance or source-fidelity questions; draft
+reviews and roadmaps do not confer approval. Reuse already-read guidance until
+its relevant version or evidence changes.
 
-Treat the guidance as versioned project context. It may evolve, so prefer
-updating the guidance document rather than scattering product decisions across
-untracked notes.
-
-Guidance hierarchy:
-
-- Product Constitution v1.6 is the highest product-truth authority and conflict
-  resolver. It assigns stable requirement IDs, records approved/gated/rejected
-  capabilities, and resolves the current CreditLine, Agent Lockbox, Strategy
-  Vault, and dispute-workflow decisions. Approval in the Constitution is not
-  implementation, verification, hosting, real-value, or production evidence.
-- Product Charter v1.1 is the canonical long-term product and governance source.
-  It ratifies one shared obligation kernel with Human and Agent as parallel,
-  first-class entry modes. Product Description v1.0 remains a historical source
-  and is superseded where it conflicts with v1.1.
-- MVP Build Spec v0.1 governs first implementation work, repository scaffolding,
-  issue decomposition, architecture defaults, launch gates, and Codex operating
-  rules.
-- Architecture Review v0.2 is a non-canonical audit and target-model proposal.
-  Use it to identify known gaps and proposed ADRs, but do not treat protocol,
-  funds, permissions, or production-model changes as approved until human review.
-- Commercialization Roadmap v0.3 is a non-canonical requirement traceability
-  and pilot-readiness proposal. Use it to sequence issues and launch gates, but
-  keep product, pricing, legal, capital, provider, chain, and production
-  permission decisions behind named human approval.
-- Product Optimization Measure v1.0 is the Founder-approved near-term product
-  and development reference. It sets the three product families, four delivery
-  phases, bilateral Capital Partner workflow, Credit Passport direction, and
-  non-redundancy rules. It does not itself approve deployment, credentials,
-  contracts, signers, KYC vendors, production risk, or funds movement.
-- Product Engineering and Experience Standard v1.0 is the mandatory
-  implementation and acceptance standard for local synthetic/no-funds work.
-  It requires one primary next action, explicit mutation language, safe
-  defaults, server-derived workspace recovery, queryable automation,
-  issue-sized delivery, minimal architecture and real-browser verification.
-  It grants no permission, risk, deployment, signer, KYC or funds authority.
-- Local-to-Closed-Pilot Delivery Guide v0.1 is non-canonical delivery guidance.
-  Use it to separate repeatable local integration, invited durable no-funds
-  operation, live testnet execution, and controlled real value. It grants no
-  deployment, signer, remote-access, risk, contract, or funds authority.
-- M2 Pre-Development Alignment v1.0 and ADR-M2-001 through ADR-M2-005 govern the
-  Founder-approved secured-pool architecture and issue sequence. They grant no
-  runtime, dependency, contract, deployment, signer, oracle, risk-parameter,
-  testnet-run, real-value, or production authority. The canonical Constitution
-  and launch policy remain the conflict and activation gates.
+Keep project decisions in their versioned canonical documents. Specific product,
+identity, funds, privacy, release, and acceptance requirements below remain binding;
+general workflow efficiency does not waive them. An existing task or issue may
+supply the required issue contract without duplicating its contents elsewhere.
 
 ## Product usability and truthful completion gate
 
@@ -194,8 +132,25 @@ MVP build rules:
   likely files, acceptance criteria, test command, security checklist,
   permission boundary, migration impact, rollback plan, and completion
   Evidence.
-- Do not ask Codex to implement the whole MVP in one pass. Start with foundation
-  tasks such as monorepo scaffold, AGENTS.md / issue templates, shared enums and
-  validators, migration baseline, and local dev environment.
+- Continue from the current approved task and existing implementation. Use
+  foundation/scaffolding guidance only when those foundations are actually missing.
 - Contracts, funds movement, risk controls, permissions, privacy boundaries,
   production dependencies, and deployment changes require human review.
+
+## Product experience handoff
+
+For product iterations, provide a clickable experience URL. For local work, keep
+the loopback runtime available through the requested Founder review; use the
+applicable hosted URL after separately authorized deployment. A PR, screenshot,
+test log, or report does not substitute for the experience link. This requirement
+does not authorize deployment, public exposure, credentials, or funds movement.
+
+For IPO.ONE planning or implementation that needs phase/authority routing, use
+`.agents/skills/ipo-one-guidance-gate/SKILL.md`; detailed product truth remains in
+the canonical project documents above.
+
+For all user-facing feature development, follow
+`docs/guidance/IPO_ONE_CURRENT_UI_BASELINE.md` and run `pnpm check:ui-baseline`.
+Use the current WEB-027 Precision Terminal UI and subsequent approved fixes;
+never build a new feature on an old UI branch. Verify the actual served assets
+and affected screens, including login dialogs, themes and narrow viewports.

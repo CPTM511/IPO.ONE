@@ -39,13 +39,16 @@ async function post(path, body, { session = sessionA, extraHeaders = {} } = {}) 
   });
 }
 
-async function waitForServer(child, output) {
-  for (let attempt = 0; attempt < 80; attempt += 1) {
+async function waitForServer(child, output, healthUrl = `${baseUrl}/healthz`) {
+  // Cold module loading on the shared CI runner is not an HTTP response-time
+  // assertion. Keep startup bounded separately from the security probes below.
+  const deadline = Date.now() + 30_000;
+  while (Date.now() < deadline) {
     if (child.exitCode !== null) {
       throw new Error(`security test server exited early (${child.exitCode})\n${output()}`);
     }
     try {
-      const response = await fetch(`${baseUrl}/healthz`);
+      const response = await fetch(healthUrl, { signal: AbortSignal.timeout(1_000) });
       if (response.ok) return;
     } catch {
       // The child may still be binding its loopback socket.
@@ -339,18 +342,7 @@ test("production runtime enforces the approved public ingress contract", async (
     child.stderr.destroy();
   });
 
-  for (let attempt = 0; attempt < 80; attempt += 1) {
-    if (child.exitCode !== null) {
-      throw new Error(`production security server exited early (${child.exitCode})\n${output}`);
-    }
-    try {
-      const response = await fetch(`${productionBaseUrl}/livez`);
-      if (response.ok) break;
-    } catch {
-      // The child may still be binding its container-style socket.
-    }
-    await new Promise((resolve) => setTimeout(resolve, 50));
-  }
+  await waitForServer(child, () => output, `${productionBaseUrl}/livez`);
 
   const live = await fetch(`${productionBaseUrl}/livez`);
   assert.equal(live.status, 200);

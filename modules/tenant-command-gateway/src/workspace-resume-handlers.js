@@ -288,7 +288,7 @@ async function actionableHumanOfferReview({
   }
 }
 
-async function humanOfferReviewForWorkspace({
+async function humanOfferReviewsForWorkspace({
   client,
   coreRepository,
   directory,
@@ -298,7 +298,7 @@ async function humanOfferReviewForWorkspace({
   now
 }) {
   if (kind !== "human_borrower") return undefined;
-  if (!coreRepository || !directory) return null;
+  if (!coreRepository || !directory) return [];
   const intents = resources.filter(({ resourceType }) => resourceType === "credit_intent");
   const candidates = [];
   for (const intentResource of intents) {
@@ -311,9 +311,8 @@ async function humanOfferReviewForWorkspace({
       now
     });
     if (candidate) candidates.push(candidate);
-    if (candidates.length > 1) return null;
   }
-  return candidates.length === 1 ? candidates[0] : null;
+  return candidates;
 }
 
 export function readWorkspaceResumeQueryHandler() {
@@ -450,7 +449,7 @@ export function readWorkspaceResumeQueryHandler() {
         now
       });
       const resources = rows.slice(0, PAGE_SIZE);
-      const humanOfferReview = await humanOfferReviewForWorkspace({
+      const humanOfferReviews = await humanOfferReviewsForWorkspace({
         client,
         coreRepository,
         directory,
@@ -469,7 +468,10 @@ export function readWorkspaceResumeQueryHandler() {
               selectedAgentActorId: selectedAgentActorId ?? null
             }
           : {}),
-        ...(kind === "human_borrower" ? { humanOfferReview } : {}),
+        ...(kind === "human_borrower" ? {
+          humanOfferReview: humanOfferReviews.length === 1 ? humanOfferReviews[0] : null,
+          humanOfferReviews
+        } : {}),
         continuationReceipts: continuationReceipts.map((receipt) => ({
           continuationReceiptId: receipt.continuationReceiptId,
           receiptHash: receipt.receiptHash,

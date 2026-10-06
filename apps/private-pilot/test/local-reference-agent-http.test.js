@@ -3,7 +3,8 @@ import test from "node:test";
 import { RoleBundle } from "../../../modules/authorization/src/index.js";
 import {
   LOCAL_REFERENCE_AGENT_HTTP_ROUTES,
-  createLocalReferenceAgentHttpService
+  createLocalReferenceAgentHttpService,
+  resumeLocalAgentRuntimeWorkflow
 } from "../src/local-reference-agent-http.js";
 
 function service() {
@@ -129,7 +130,7 @@ test("reference Agent account proof returns only the verified binding", async ()
       assert.equal(input, challenge);
       return {
         subjectId: challenge.subjectId,
-        subjectStatus: "active",
+        status: "active",
         accountBinding: {
           chainId: "eip155:84532",
           accountHash: `0x${"1".repeat(64)}`,
@@ -156,7 +157,48 @@ test("reference Agent account proof returns only the verified binding", async ()
   });
   assert.equal(response.status, 200);
   assert.equal(response.body.status, "account_bound");
+  assert.equal(response.body.subjectStatus, "active");
+  assert.equal(response.body.subjectId, challenge.subjectId);
   assert.equal(response.body.challengeConsumed, true);
   assert.equal(response.body.credentialEnteredBrowser, false);
   assert.equal(response.body.signatureEnteredBrowser, false);
+});
+
+for (const [label, proof] of [
+  ["missing Subject status", { subjectId: "subject_reference_agent", subjectStatus: "active", accountBinding: {}, challengeConsumed: true }],
+  ["wrong Subject", { subjectId: "other_subject", status: "active", accountBinding: {}, challengeConsumed: true }],
+  ["unconsumed challenge", { subjectId: "subject_reference_agent", status: "active", accountBinding: {}, challengeConsumed: false }]
+]) test(`reference Agent rejects ${label} instead of reporting successful proof`, async () => {
+  const referenceAgent = createLocalReferenceAgentHttpService({
+    createAgentSession: async () => assert.fail("unexpected session"),
+    gateway: { execute: async () => assert.fail("unexpected Human Gateway") },
+    networkContext: { source: "local_test" },
+    proveAccount: async () => proof
+  });
+  await assert.rejects(referenceAgent.handle({
+    request: { method: "POST" },
+    url: new URL(`http://127.0.0.1${LOCAL_REFERENCE_AGENT_HTTP_ROUTES.accountProof}`),
+    authenticationContext: principal,
+    readJson: async () => ({ subjectId: "subject_reference_agent", challenge: { subjectId: "subject_reference_agent" } }),
+    sendJson: () => assert.fail("incomplete proof returned success")
+  }), { code: "local_agent_account_proof_incomplete" });
+});
+
+
+test("resuming an Agent goal cannot cross its exact obligation authority or real-funds boundary", async () => {
+  const input = {mandateId:"mandate_resume",obligationId:"obligation_resume"};
+  const manifest = {mandateId:input.mandateId,subjectId:"subject_resume"};
+  const base = {obligationId:input.obligationId,authorityType:"mandate",authorityId:input.mandateId,
+    subjectId:manifest.subjectId,sandboxOnly:true,productionFundsMoved:false,status:"active"};
+  for (const override of [{authorityId:"mandate_other"},{subjectId:"subject_other"},
+    {productionFundsMoved:true},{sandboxOnly:false},{status:"defaulted"}]) {
+    let read = false;
+    const session = {client:{getOwnObligation:async request=>{
+      assert.equal(request.obligationId,input.obligationId);read=true;
+      return {response:{obligation:{...base,...override}}};
+    },execute:async()=>assert.fail("mismatched resume attempted an Agent mutation")}};
+    await assert.rejects(()=>resumeLocalAgentRuntimeWorkflow({input,manifest,session}),
+      {code:"local_reference_agent_request_invalid"});
+    assert.equal(read,true);
+  }
 });

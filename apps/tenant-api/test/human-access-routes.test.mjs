@@ -46,7 +46,7 @@ function loginCookie(value = "login-transaction-handle-00000000000000000001") {
   });
 }
 
-function createAccessFixture() {
+function createAccessFixture(overrides = {}) {
   const calls = [];
   const sessions = new Set([
     "session-active-handle-00000000000000000000001",
@@ -163,7 +163,8 @@ function createAccessFixture() {
       google: { bff: oidcBff, redirectUri: GOOGLE_REDIRECT }
     },
     walletBff,
-    clock: () => NOW
+    clock: () => NOW,
+    ...overrides
   });
   return { calls, humanSessionBff, oidcBff, serveAuthentication, walletBff };
 }
@@ -199,8 +200,9 @@ test("Human access HTTP composes truthful discovery, OIDC, SIWE, and logout", as
       sessionWorkspaceRole: null,
       oidcProviders: ["google"],
       walletAuthentication: true,
+      riskPasskey: false,
       walletWorkspaceRoles: ["human_borrower", "principal_controller"],
-      supportedChains: ["eip155:84532", "eip155:1952"],
+      supportedChains: ["eip155:84532", "eip155:1952", "eip155:97", "eip155:56"],
       boundary: "Authentication proves presence; internal policy and Mandates separately decide authority."
     });
 
@@ -216,8 +218,9 @@ test("Human access HTTP composes truthful discovery, OIDC, SIWE, and logout", as
       sessionWorkspaceRole: "human_borrower",
       oidcProviders: ["google"],
       walletAuthentication: true,
+      riskPasskey: false,
       walletWorkspaceRoles: ["human_borrower", "principal_controller"],
-      supportedChains: ["eip155:84532", "eip155:1952"],
+      supportedChains: ["eip155:84532", "eip155:1952", "eip155:97", "eip155:56"],
       boundary: "Authentication proves presence; internal policy and Mandates separately decide authority."
     });
 
@@ -488,4 +491,36 @@ test("PostgreSQL Human access composition closes unversioned secrets and empty p
     }),
     (error) => error.code === "authentication_deployment_gate_closed"
   );
+});
+
+
+test("hosted options explicitly report unavailable Passkeys without granting management roles", async () => {
+  const fixture = createAccessFixture({ profile: "public_authenticated_no_funds_beta" });
+  const { listener, baseUrl } = await start(fixture);
+  try {
+    const options = await (await fetch(`${baseUrl}${HUMAN_ACCESS_ROUTES.options}`)).json();
+    assert.equal(options.riskPasskey, false);
+    assert.deepEqual(options.walletWorkspaceRoles, ["human_borrower", "principal_controller"]);
+    const unavailable = await fetch(`${baseUrl}/auth/v1/passkey/status`);
+    assert.equal(unavailable.status, 404);
+    const challenge = await fetch(`${baseUrl}${HUMAN_ACCESS_ROUTES.walletChallenge}`, {
+      method: "POST", headers: { "content-type": "application/json", origin: BROWSER_ORIGIN },
+      body: JSON.stringify({ address: "0x1111111111111111111111111111111111111111", chainId: "eip155:97", workspaceRole: "risk_operator" })
+    });
+    assert.ok(challenge.status >= 400);
+    assert.equal((await challenge.json()).code, "authentication_role_rejected");
+    assert.equal(fixture.calls.some(call => call.method === "beginWallet"), false);
+  } finally { await listener.close(); }
+  assert.throws(() => createAccessFixture({ profile: "public_authenticated_no_funds_beta", passkeyOperation: async () => ({}) }), /invited local Risk composition/);
+  assert.throws(() => createAccessFixture({ profile: "public_authenticated_no_funds_beta", walletWorkspaceRoles: ["risk_operator"] }), /explicit loopback local profile/);
+});
+
+test("reviewed local role composition still advertises its installed Passkey service", async () => {
+  const fixture = createAccessFixture({ profile: "local_no_funds", browserOrigin: "http://localhost:8957", walletWorkspaceRoles: ["risk_operator"], passkeyOperation: async () => ({ verified: false }) });
+  const { listener, baseUrl } = await start(fixture);
+  try {
+    const options = await (await fetch(`${baseUrl}${HUMAN_ACCESS_ROUTES.options}`)).json();
+    assert.equal(options.riskPasskey, true);
+    assert.deepEqual(options.walletWorkspaceRoles, ["risk_operator"]);
+  } finally { await listener.close(); }
 });

@@ -77,7 +77,8 @@ export class LocalDurableAgentAuthenticator {
     audience,
     credentialRegistry,
     replayCache,
-    referenceHasher
+    referenceHasher,
+    additionalClientIdVerifier
   }) {
     if (
       !credentialRegistry?.findBySubject ||
@@ -99,6 +100,8 @@ export class LocalDurableAgentAuthenticator {
     this.credentialRegistry = credentialRegistry;
     this.replayCache = replayCache;
     this.referenceHasher = referenceHasher;
+    if (additionalClientIdVerifier !== undefined && typeof additionalClientIdVerifier !== "function") throw authenticationError("invalid_authentication_configuration", "Additional local workloads require a registry verifier");
+    this.additionalClientIdVerifier = additionalClientIdVerifier;
   }
 
   async authenticate({ proof, now = new Date() }) {
@@ -184,7 +187,6 @@ export class LocalDurableAgentAuthenticator {
       claims.sub !== LOCAL_AGENT_EXTERNAL_SUBJECT ||
       claims.tenant_id !== this.tenantId ||
       claims.actor_type !== ActorType.AGENT ||
-      claims.client_id !== this.clientId ||
       claims.policy_version !== this.policyVersion
     ) {
       throw authenticationError(
@@ -192,11 +194,18 @@ export class LocalDurableAgentAuthenticator {
         "local Agent proof is not bound to the configured workload"
       );
     }
+    // Select only after cryptographic verification and tenant/audience checks.
+    // This lookup admits an explicitly provisioned local workload, never a
+    // claimed role or an arbitrary client supplied by the browser.
+    const clientId = assertSafeIdentifier("clientId", claims.client_id);
+    if (clientId !== this.clientId && await this.additionalClientIdVerifier?.(clientId) !== true) {
+      throw authenticationError("authentication_binding_rejected", "Local workload is not provisioned for this runtime");
+    }
     const credential = await this.credentialRegistry.findBySubject({
       issuer: LOCAL_AGENT_ISSUER,
       tenantId: this.tenantId,
       externalSubject: LOCAL_AGENT_EXTERNAL_SUBJECT,
-      clientId: this.clientId,
+      clientId,
       now
     });
     const expectedSender = this.referenceHasher.hash(
@@ -204,6 +213,7 @@ export class LocalDurableAgentAuthenticator {
       thumbprint
     );
     if (
+      credential.tenantId !== this.tenantId || credential.clientId !== clientId ||
       credential.actorType !== ActorType.AGENT ||
       credential.clientAuthenticationMethod !==
         ClientAuthenticationMethod.PRIVATE_KEY_JWT ||

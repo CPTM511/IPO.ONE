@@ -1,0 +1,2 @@
+FROM ipo-one-web026:9d2caac
+HEALTHCHECK --interval=5s --timeout=3s --start-period=15s --retries=6 CMD ["/nodejs/bin/node", "-e", "if(process.env.IPO_ONE_LOCAL_WORKER_ACK){if(Date.now()-require('node:fs').statSync('/tmp/ipo-one-local-worker-heartbeat.json').mtimeMs>30000)process.exit(1)}else{const b=Number(process.env.IPO_ONE_PILOT_PORT);Promise.all([0,1,2,3].map(i=>fetch('http://127.0.0.1:'+(b+i)+'/tenant/v1/healthz').then(r=>{if(!r.ok)throw Error()}))).catch(()=>process.exit(1))}"]

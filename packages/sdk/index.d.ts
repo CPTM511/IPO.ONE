@@ -440,7 +440,7 @@ export class WalletExecutionClient {
     subjectId: string;
     providerId: string;
     accountBindingId: string;
-    chainId: "eip155:84532" | "eip155:1952";
+    chainId: "eip155:84532" | "eip155:1952" | "eip155:97" | "eip155:56";
     requestedExpiresAt: string;
     sessionEpoch: number;
     nonce: string;

@@ -229,7 +229,7 @@
           "source": "eip6963",
           "name": "Fixture Wallet",
           "walletTransport": "eip1193",
-          "enabledChains": ["eip155:84532", "eip155:1952"],
+          "enabledChains": ["eip155:84532", "eip155:1952", "eip155:97", "eip155:56"],
           "explicitSelectionRequired": true,
           "capabilityNegotiated": true,
           "rawProviderExposed": false,

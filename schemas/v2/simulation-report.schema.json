@@ -23,7 +23,7 @@
     "simulatorVersion": { "$ref": "prepared-execution.schema.json#/$defs/id" },
     "simulatorMode": { "const": "local_deterministic" },
     "status": { "enum": ["succeeded", "reverted", "unavailable"] },
-    "chainId": { "enum": ["eip155:84532", "eip155:1952"] },
+    "chainId": { "enum": ["eip155:84532", "eip155:1952", "eip155:97", "eip155:56"] },
     "blockNumber": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,19})$" },
     "blockHash": { "$ref": "prepared-execution.schema.json#/$defs/hash" },
     "observedCodeHash": { "$ref": "prepared-execution.schema.json#/$defs/hash" },

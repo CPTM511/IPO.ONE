@@ -108,7 +108,14 @@ export function loadAuthenticationRuntimeConfig(environment = process.env) {
       "local test authentication cannot run in production"
     );
   }
+  const localWalletSelfService = environment.IPO_ONE_LOCAL_WALLET_SELF_SERVICE === "ordinary_verified_wallets";
+  if (environment.IPO_ONE_LOCAL_WALLET_SELF_SERVICE !== undefined && (
+    !localWalletSelfService || mode !== "local_test" || environment.NODE_ENV !== "development"
+  )) {
+    throw authenticationError("authentication_deployment_gate_closed", "ordinary local wallet enrollment requires the explicit development-only profile");
+  }
   return trustedConfig({
+    ...(localWalletSelfService ? { localWalletSelfService: true } : {}),
     enabled: mode !== "disabled",
     mode,
     deploymentGateSatisfied: deployedProtectedMode,

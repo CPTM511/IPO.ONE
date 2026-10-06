@@ -207,7 +207,9 @@ test("public Beta product includes authenticated Human and Agent workflows", asy
     "Recent credit activity",
     "Workspace details",
     "More tools",
-    "Public Beta · No Real Funds",
+    "No real money is moved.",
+    "Beta environment details",
+    "API reference",
     "Request Credit",
     "Repay &amp; Settle",
     "Credit Passport",
@@ -635,7 +637,7 @@ test("public Beta product includes authenticated Human and Agent workflows", asy
     "/auth/v1/wallet/invalidate",
     "/auth/v1/logout"
   ]) {
-    assert.ok(js.includes(value), `${value} access boundary missing`);
+    assert.ok((js + await readFile(new URL("../src/wallet-networks.js", import.meta.url), "utf8")).includes(value), `${value} access boundary missing`);
   }
   assert.ok(js.includes("Principal setup required"));
   assert.ok(js.includes("continueAuthenticatedSession"));
@@ -1498,8 +1500,8 @@ test("WEB-023 presents distinct Agent application and runtime handoff stages", a
     "post-activation navigation must open the browser-operable Agent workspace without a mutation"
   );
   assert.ok(html.includes("Run the Agent application"));
-  assert.ok(html.includes("Return after the Agent application produced its Offer workflow receipt."));
-  assert.ok(html.includes("activation unlocks runtime use of an existing Agent Offer"));
+  assert.ok(html.includes("Activation enables acceptance of this existing Offer. It cannot start a new application."));
+  assert.ok(html.includes("I authorize this exact sandbox Mandate for the existing Offer, within the limits shown."));
   assert.ok(js.includes("presentation?.identity?.applicationEligible === true"));
   assert.ok(js.includes("const runtimeReady = runtimeHandoff && economicOperationsAvailable"));
   assert.ok(js.includes('"Runtime ready · existing Offer required"'));
@@ -1947,7 +1949,9 @@ test("UX-004 keeps the user manual and primary browser actions in one operabilit
 
 test("every browser button has a discoverable action contract", async () => {
   const html = await readFile(new URL("../src/index.html", import.meta.url), "utf8");
-  const js = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const js = await readFile(new URL("../src/app.js", import.meta.url), "utf8") +
+    await readFile(new URL("../src/local-review-workspace.js", import.meta.url), "utf8") +
+    await readFile(new URL("../src/web-theme.js", import.meta.url), "utf8");
   const genericAction = /\bdata-(?:view|go-view|agent-guide-action|borrow-entry|human-guide-action|private-action|wallet-chain|wallet-workspace-role|auth-provider|trading-capital-view|scroll-target)=/;
   const buttons = [...html.matchAll(/<button\b[^>]*>/g)].map(
     (match) => match[0]
@@ -1955,6 +1959,8 @@ test("every browser button has a discoverable action contract", async () => {
   const missing = [];
   for (const button of buttons) {
     if (genericAction.test(button)) continue;
+    // Imported public presentation modules own these exact delegated controls.
+    if (/\bdata-web(?:009-(?:app-theme|theme|access|path|rail|code)|010-unpin)(?:[\s=>])/.test(button)) continue;
     const id = button.match(/\bid="([^"]+)"/)?.[1];
     if (
       !id ||
@@ -2088,4 +2094,32 @@ test("public beta launch configuration is bounded and supply-chain pinned", asyn
   assert.ok(workflow.includes("pnpm run smoke:api"));
   assert.ok(workflow.includes("github.event_name == 'workflow_dispatch'"));
   assert.ok(workflow.includes("pnpm audit --prod"));
+});
+
+
+test("local Agent recovery resumes the existing Obligation through one server goal", async () => {
+  const js = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.ok(js.includes('existing.authorityId === mandate.mandateId'));
+  assert.ok(js.includes('existing.subjectId === mandate.subjectId'));
+  assert.ok(js.includes('resumeExisting ? { obligationId: existing.obligationId }'));
+  assert.ok(js.includes('if (!resumeExisting && agentOnlinePilot.offerReceipt?.mandateId !== mandate.mandateId)'));
+});
+
+
+test("Human actionable identity never falls back to another wallet session's browser locators", async () => {
+  const js = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.equal(js.includes("const rememberedHumanSubjectId ="), false);
+  assert.equal(js.includes("const rememberedHumanConsentId ="), false);
+  const recovery = js.slice(js.indexOf('if (recovery.workspaceKind === "human_borrower")'), js.indexOf('if (recovery.workspaceKind === "principal_controller")'));
+  assert.ok(recovery.indexOf('el("humanSubjectId").value = ""') < recovery.indexOf("if (subject)"));
+  assert.ok(recovery.indexOf('el("humanConsentId").value = ""') < recovery.indexOf("if (consent)"));
+});
+
+
+test("protective Agent suspension retains owner Evidence without asking for new authority", async () => {
+  const js=await readFile(new URL("../src/app.js",import.meta.url),"utf8");
+  const verify=js.slice(js.indexOf("async function verifyOnlineAgentEvidence()"),js.indexOf("async function reviewOnlineAgentObligation()"));
+  assert.ok(verify.indexOf("await loadOwnedEvidence()") < verify.indexOf('mandate?.status !== "active"'));
+  assert.ok(verify.includes('existing.subjectId === agentAuthorityPilot.subject?.subjectId'));
+  assert.ok(js.includes('identity: subject.status === "suspended" ? "Agent suspended" : "Agent closed"'));
 });

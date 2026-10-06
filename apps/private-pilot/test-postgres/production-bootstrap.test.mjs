@@ -3,6 +3,8 @@ import { randomBytes } from "node:crypto";
 import test from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 import pg from "pg";
+import { PostgresCredentialRegistry, createReferenceHashKeyring } from "../../../modules/authentication/src/index.js";
+import { PostgresEventRepository, createTenantSecurityContext, setTenantTransactionContext } from "../../../modules/persistence/src/index.js";
 import { migrateDown, migrateUp } from "../../../scripts/migrate.mjs";
 import {
   assertProductionBootstrapConfig,
@@ -59,7 +61,7 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
     const applied = await migrateUp({ pool: target });
     assert.equal(
       applied.at(-1),
-      "0075_metered_usage_system_worker_capability"
+      "0087_hosted_bnb_no_funds_wallet_networks"
     );
     assert.ok(applied.includes("0008_durable_tenant_command_gateway"));
     const runtimePrivilegeRole = `ipo_privilege_${suffix}`;
@@ -73,9 +75,22 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
       await target.query(
         `GRANT INSERT ON obligations TO "${runtimePrivilegeRole}"`
       );
-      assert.deepEqual(await migrateDown({ pool: target, steps: 5 }), [
+      assert.deepEqual(await migrateDown({ pool: target, steps: 18 }), [
+        "0087_hosted_bnb_no_funds_wallet_networks",
+        "0086_local_bnb_risk_passkey_origin",
+        "0085_local_bnb_ordinary_wallet_access",
+        "0084_verified_ordinary_wallet_expiry_recovery",
+        "0083_local_operations_reviewer_origin",
+        "0082_local_special_role_enrollment",
+        "0081_local_passkey_bounds",
+        "0080_local_risk_passkeys",
+        "0079_local_human_sandbox_activation",
+        "0078_local_principal_agent_runtime",
+        "0077_local_ordinary_wallet_access",
+        "0076_invited_wallet_role_enrollment",
         "0075_metered_usage_system_worker_capability",
         "0074_metered_usage_runtime_privileges",
+        "0074_bnb_no_funds_wallet_networks",
         "0073_metered_usage_evidence",
         "0072_public_beta_self_service_identity",
         "0071_pilot_cases_runtime_privileges"
@@ -84,8 +99,21 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
         "0071_pilot_cases_runtime_privileges",
         "0072_public_beta_self_service_identity",
         "0073_metered_usage_evidence",
+        "0074_bnb_no_funds_wallet_networks",
         "0074_metered_usage_runtime_privileges",
-        "0075_metered_usage_system_worker_capability"
+        "0075_metered_usage_system_worker_capability",
+        "0076_invited_wallet_role_enrollment",
+        "0077_local_ordinary_wallet_access",
+        "0078_local_principal_agent_runtime",
+        "0079_local_human_sandbox_activation",
+        "0080_local_risk_passkeys",
+        "0081_local_passkey_bounds",
+        "0082_local_special_role_enrollment",
+        "0083_local_operations_reviewer_origin",
+        "0084_verified_ordinary_wallet_expiry_recovery",
+        "0085_local_bnb_ordinary_wallet_access",
+        "0086_local_bnb_risk_passkey_origin",
+        "0087_hosted_bnb_no_funds_wallet_networks"
       ]);
       const capabilityClient = await target.connect();
       let systemWorkerCapability;
@@ -311,7 +339,7 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
     upgradePool = new Pool({ connectionString: upgradeUrl.toString(), max: 1 });
     assert.equal(
       (await migrateUp({ pool: upgradePool })).at(-1),
-      "0075_metered_usage_system_worker_capability"
+      "0087_hosted_bnb_no_funds_wallet_networks"
     );
     const upgradeBootstrap = await bootstrapProductionDatabase({
       ...parameters,
@@ -323,9 +351,22 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       })
     });
     assert.equal(upgradeBootstrap.insertedCredentials, 4);
-    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 13 }), [
+    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 26 }), [
+      "0087_hosted_bnb_no_funds_wallet_networks",
+      "0086_local_bnb_risk_passkey_origin",
+        "0085_local_bnb_ordinary_wallet_access",
+        "0084_verified_ordinary_wallet_expiry_recovery",
+      "0083_local_operations_reviewer_origin",
+        "0082_local_special_role_enrollment",
+        "0081_local_passkey_bounds",
+        "0080_local_risk_passkeys",
+        "0079_local_human_sandbox_activation",
+      "0078_local_principal_agent_runtime",
+      "0077_local_ordinary_wallet_access",
+      "0076_invited_wallet_role_enrollment",
       "0075_metered_usage_system_worker_capability",
       "0074_metered_usage_runtime_privileges",
+        "0074_bnb_no_funds_wallet_networks",
       "0073_metered_usage_evidence",
       "0072_public_beta_self_service_identity",
       "0071_pilot_cases_runtime_privileges",
@@ -350,8 +391,21 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       "0071_pilot_cases_runtime_privileges",
       "0072_public_beta_self_service_identity",
       "0073_metered_usage_evidence",
+      "0074_bnb_no_funds_wallet_networks",
       "0074_metered_usage_runtime_privileges",
-      "0075_metered_usage_system_worker_capability"
+      "0075_metered_usage_system_worker_capability",
+      "0076_invited_wallet_role_enrollment",
+      "0077_local_ordinary_wallet_access",
+      "0078_local_principal_agent_runtime",
+        "0079_local_human_sandbox_activation",
+        "0080_local_risk_passkeys",
+        "0081_local_passkey_bounds",
+        "0082_local_special_role_enrollment",
+        "0083_local_operations_reviewer_origin",
+        "0084_verified_ordinary_wallet_expiry_recovery",
+      "0085_local_bnb_ordinary_wallet_access",
+      "0086_local_bnb_risk_passkey_origin",
+      "0087_hosted_bnb_no_funds_wallet_networks"
     ]);
     const backfilled = await upgradePool.query(
       `SELECT count(*)::int AS count
@@ -675,6 +729,91 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
   });
   assert.equal(revokedHostedAcceptanceAgent.status, "revoked");
   assert.equal(revokedHostedAcceptanceAgent.replayed, false);
+
+  // Public wallet identities retain their original Human membership and select
+  // Principal through a separate, revocable role enrollment.
+  const enrolledInput = {
+    ...goldenFlowInput,
+    controllerActorId: `actor_borrower_${suffix}`,
+    actorId: `actor_enrolled_agent_${suffix}`,
+    clientId: `client_enrolled_agent_${suffix}`,
+    externalSubject: `enrolled-agent-${suffix}`,
+    invitationId: `invite_enrolled_agent_${suffix}`,
+    senderThumbprint: "k".repeat(43)
+  };
+  const unavailableAuthority = error => error.code === "invalid_production_bootstrap" &&
+    error.message.includes("provisioning authority is unavailable");
+  await assert.rejects(() => provisionProductionGoldenFlowAgent(enrolledInput), unavailableAuthority);
+  const principalEnrollment = await enrollProductionHumanRole({
+    adminConnectionString: process.env.DATABASE_URL,
+    tenantId: input.tenant.tenantId,
+    actorId: enrolledInput.controllerActorId,
+    roleBundle: "principal_controller",
+    performedByActorId: input.systemActor.actorId
+  });
+  const enrolledAgent = await provisionProductionGoldenFlowAgent(enrolledInput);
+  assert.equal(enrolledAgent.replayed, false);
+  const enrolledHostedReplay = await provisionProductionGoldenFlowAgent({
+    ...enrolledInput, existingIdentityOnly: true,
+    adminConnectionString: authenticationUrl.toString()
+  });
+  assert.equal(enrolledHostedReplay.credentialId, enrolledAgent.credentialId);
+  assert.equal(enrolledHostedReplay.replayed, true);
+  await assert.rejects(() => provisionProductionGoldenFlowAgent({
+    ...enrolledInput,
+    now: new Date(Date.now() + 31 * 86_400_000),
+    expiresAt: new Date(Date.now() + 40 * 86_400_000).toISOString()
+  }), unavailableAuthority);
+  const enrollmentPool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
+  try {
+    const client = await enrollmentPool.connect();
+    try {
+      await client.query("BEGIN");
+      await setTenantTransactionContext(client, createTenantSecurityContext({
+        tenantId: input.tenant.tenantId, actorId: input.systemActor.actorId,
+        policyVersion: input.policyVersion, source: "system_worker"
+      }));
+      await client.query("UPDATE authentication_role_enrollments SET status='revoked', updated_at=now(), version=version+1 WHERE id=$1", [principalEnrollment.enrollmentId]);
+      await client.query("COMMIT");
+    } finally { client.release(); }
+    await assert.rejects(() => provisionProductionGoldenFlowAgent({
+      ...enrolledInput, existingIdentityOnly: true,
+      adminConnectionString: authenticationUrl.toString()
+    }), unavailableAuthority);
+    const identity = await enrollmentPool.query("SELECT role_bundle FROM memberships WHERE tenant_id=$1 AND actor_id=$2", [input.tenant.tenantId, enrolledInput.controllerActorId]);
+    assert.deepEqual(identity.rows, [{ role_bundle: "human_borrower" }]);
+  } finally { await enrollmentPool.end(); }
+
+  const publicPool = new Pool({ connectionString: authenticationUrl.toString(), max: 1 });
+  try {
+    const publicReferenceKey = randomBytes(32);
+    const registry = new PostgresCredentialRegistry({
+      eventRepository: new PostgresEventRepository({ pool: publicPool,
+        tenantContext: createTenantSecurityContext({ tenantId: input.tenant.tenantId,
+          actorId: input.systemActor.actorId, policyVersion: input.policyVersion, source: "system_worker" }) }),
+      tenantId: input.tenant.tenantId, systemActorId: input.systemActor.actorId,
+      referenceHasher: createReferenceHashKeyring({ mode: "single_v2",
+        primary: { keyVersion: "v2", secret: publicReferenceKey } }),
+      publicBetaWalletRoleProfiles: {
+        human_borrower: PRODUCTION_BOOTSTRAP_PROFILES.human_borrower.capabilities,
+        principal_controller: PRODUCTION_BOOTSTRAP_PROFILES.principal_controller.capabilities
+      }
+    });
+    const publicCredential = await registry.provisionVerifiedPublicBetaHumanSubject({
+      tenantId: input.tenant.tenantId, issuer: "https://ipo.one", clientId: "ipo_one_wallet",
+      externalSubject: "eip155:56:0x9999999999999999999999999999999999999999",
+      requestedRole: "principal_controller"
+    });
+    const publicAgentInput = { ...enrolledInput, controllerActorId: publicCredential.actorId,
+      actorId: `actor_public_agent_${suffix}`, clientId: `client_public_agent_${suffix}`,
+      externalSubject: `public-agent-${suffix}`, invitationId: `invite_public_agent_${suffix}`,
+      referenceHashKey: publicReferenceKey, referenceHashKeyVersion: "v2", senderThumbprint: "m".repeat(43) };
+    const publicAgent = await provisionProductionGoldenFlowAgent(publicAgentInput);
+    const publicReplay = await provisionProductionGoldenFlowAgent({ ...publicAgentInput,
+      existingIdentityOnly: true, adminConnectionString: authenticationUrl.toString() });
+    assert.equal(publicReplay.credentialId, publicAgent.credentialId);
+    assert.equal(publicReplay.replayed, true);
+  } finally { await publicPool.end(); }
 
   await assert.rejects(
     () => bootstrapProductionDatabase({

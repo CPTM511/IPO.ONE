@@ -58,7 +58,7 @@ if (!EVIDENCE_SCENARIOS.has(evidenceScenario)) {
   throw new Error("invalid_browser_qa_evidence_scenario");
 }
 const EVIDENCE_READ_DELAY_MS = 250;
-let browserSessionActive = true;
+let browserSessionActive = process.env.IPO_ONE_BROWSER_QA_START_SIGNED_OUT !== "1";
 let browserQaSiweReconnectScenario = false;
 const offerReceipt = JSON.parse(await readFile(
   new URL(

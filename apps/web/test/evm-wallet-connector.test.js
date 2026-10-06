@@ -278,7 +278,7 @@ test("unapproved chains and malformed provider results fail closed", async () =>
   );
   assert.deepEqual(connector.descriptor().enabledChains, [
     "eip155:84532",
-    "eip155:1952"
+    "eip155:1952", "eip155:97", "eip155:56"
   ]);
 });
 
@@ -291,4 +291,48 @@ test("boundary declaration grants no transaction, production, or funds authority
   assert.equal(boundary.externalCallsPerformedByBoundary, false);
   assert.equal(boundary.productionApproved, false);
   assert.equal(boundary.fundsAuthority, false);
+});
+
+for (const [chainId, hex] of [["eip155:56", "0x38"], ["eip155:97", "0x61"]]) {
+  test(`BNB no-funds connection and signing on ${chainId} never request a transaction`, async () => {
+    const provider = fakeProvider();
+    provider.setChain(hex);
+    const connector = createEvmWalletConnector({
+      provider, descriptor: { providerId: "injected:binancew3w.ethereum", source: "binance_injected", name: "Binance Wallet" }
+    });
+    const connection = await connector.connect({ chainId });
+    assert.equal(connection.accounts[0].accountId, `${chainId}:${ACCOUNT}`);
+    await connector.signMessage({ accountId: connection.accounts[0].accountId, message: "No-funds confirmation" });
+    assert.equal(provider.requests.some(({ method }) => method === "wallet_switchEthereumChain"), false);
+    assert.equal(validateDescriptor(connector.descriptor()), true, JSON.stringify(validateDescriptor.errors));
+    assert.equal(validateCapabilities(await connector.getCapabilities()), true, JSON.stringify(validateCapabilities.errors));
+    await assert.rejects(connector.submitPreparedExecution(), /separately reviewed/);
+    assert.equal(provider.requests.some(({ method }) => /sendTransaction|sendCalls|signTransaction/.test(method)), false);
+    connector.dispose();
+  });
+}
+
+for (const method of ["personal_sign", "eth_signTypedData_v4"]) test(`${method} rejects a BNB network change while wallet approval is pending`, async () => {
+  const provider = fakeProvider();
+  provider.setChain("0x38");
+  const originalRequest = provider.request.bind(provider);
+  provider.request = async (input) => {
+    const result = await originalRequest(input);
+    if (input.method === method) provider.setChain("0x61");
+    return result;
+  };
+  const connector = createEvmWalletConnector({
+    descriptor: { providerId: "injected:binancew3w.ethereum", source: "binance_injected", name: "Binance Wallet" },
+    provider
+  });
+  await assert.rejects(
+    () => method === "personal_sign"
+      ? connector.signMessage({ accountId: `eip155:56:${ACCOUNT}`, message: "Exact no-funds instruction" })
+      : connector.signTypedData({ accountId: `eip155:56:${ACCOUNT}`, typedData: {
+          domain: { name: "IPO.ONE", chainId: 56 },
+          types: { Proof: [{ name: "nonce", type: "uint256" }] },
+          primaryType: "Proof", message: { nonce: "1" }
+        } }),
+    (error) => error.code === "wallet_context_changed"
+  );
 });

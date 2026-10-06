@@ -695,10 +695,10 @@ async function postRepaymentWithBoundedClockRecovery({
   }
 }
 
-async function waitForDatabaseClockAfter(pool, timestampValue, label) {
+async function waitForDatabaseClockAfter(pool, timestampValue, label, { timeoutMs = 3_000 } = {}) {
   const target = new Date(timestampValue).getTime();
   const startedAt = process.hrtime.bigint();
-  while (Number(process.hrtime.bigint() - startedAt) / 1_000_000 <= 3_000) {
+  while (Number(process.hrtime.bigint() - startedAt) / 1_000_000 <= timeoutMs) {
     const clock = await pool.query("SELECT clock_timestamp() AS database_now");
     const databaseNow = new Date(clock.rows[0].database_now).getTime();
     if (databaseNow >= target) return;
@@ -5885,6 +5885,10 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         requestId: `request-repay-human-sandbox-credit-${RUN_ID}`,
         correlationId: `correlation-repay-human-sandbox-credit-${RUN_ID}`
       };
+      // Leave bounded headroom for the local VM's observed sub-second clock slew.
+      // The request still uses trusted database time and the production backwards-time guard.
+      const humanAccrualClock = await ownerPool.query("SELECT last_accrued_at FROM obligations WHERE id=$1", [humanRepaymentCommand.obligationId]);
+      await waitForDatabaseClockAfter(ownerPool, new Date(new Date(humanAccrualClock.rows[0].last_accrued_at).getTime() + 1_000), "Human repayment", { timeoutMs: 5_000 });
       const humanRepayments = await executeConcurrentDuplicate(
         () => tenantOneBorrower.postSandboxRepayment(humanRepaymentCommand)
       );
@@ -5895,6 +5899,10 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         requestId: `request-repay-agent-sandbox-credit-${RUN_ID}`,
         correlationId: `correlation-repay-agent-sandbox-credit-${RUN_ID}`
       };
+      // The VM PostgreSQL clock can slew behind a just-recorded accrual timestamp.
+      // Wait for that persisted time before racing the same repayment; keep production fail-closed checks.
+      const agentAccrualClock = await ownerPool.query("SELECT last_accrued_at FROM obligations WHERE id=$1", [agentRepaymentCommand.obligationId]);
+      await waitForDatabaseClockAfter(ownerPool, new Date(new Date(agentAccrualClock.rows[0].last_accrued_at).getTime() + 1_000), "Agent repayment", { timeoutMs: 5_000 });
       const agentRepayments = await executeConcurrentMcpDuplicate(
         creditAgentRuntimeMcpHost,
         {
@@ -6664,6 +6672,9 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           }
         }));
         const creditIntent = requested.response.creditIntent;
+        // The local VM clock can be briefly slewed backwards under load. Wait
+        // for database time instead of weakening monotonic projection guards.
+        await waitForDatabaseClockAfter(ownerPool, new Date(new Date(creditIntent.createdAt).getTime() + 5), "Phase 2 Decision");
         const evaluated = await client.evaluateCreditApplication({
           creditIntentId: creditIntent.creditIntentId,
           idempotencyKey: `phase2-evaluate-${label}-${RUN_ID}`,
@@ -7122,8 +7133,12 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       });
       await waitForDatabaseClockAfter(
         ownerPool,
-        new Date(new Date(expiredUnderwriting.validUntil).getTime() + 100),
-        "Phase 2 expired Offer"
+        // WEB-027M observed a >332 ms local VM clock slew between the
+        // prior clock sample and admission. Keep the expired-request assertion
+        // strict and wait for one second of expiry headroom in server time.
+        new Date(new Date(expiredUnderwriting.validUntil).getTime() + 1_000),
+        "Phase 2 expired Offer",
+        { timeoutMs: 5_000 }
       );
       await assert.rejects(
         () => tenantOnePhase2BorrowerB.acceptCreditOffer({
@@ -7505,6 +7520,9 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
             overrides: { requestedPrincipalMinor, requestedTermDays }
           })
         );
+        await waitForDatabaseClockAfter(ownerPool,
+          new Date(new Date(requested.response.creditIntent.createdAt).getTime() + 5),
+          "Terminal Mandate fixture Decision");
         const evaluated = await tenantOneRevocationAgent.evaluateCreditApplication({
           creditIntentId: requested.response.creditIntent.creditIntentId,
           idempotencyKey: `evaluate-${label}-credit-${RUN_ID}`,

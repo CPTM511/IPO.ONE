@@ -35,7 +35,7 @@ export const PendingExposureStatus = Object.freeze({
   QUARANTINED: "quarantined"
 });
 
-const SUPPORTED_CHAIN_IDS = new Set(["eip155:84532", "eip155:1952"]);
+const SUPPORTED_CHAIN_IDS = new Set(["eip155:84532", "eip155:1952", "eip155:97", "eip155:56"]);
 const CURRENT_OBLIGATION_STATUSES = new Set([
   ObligationStatus.ACTIVE,
   ObligationStatus.PARTIALLY_REPAID

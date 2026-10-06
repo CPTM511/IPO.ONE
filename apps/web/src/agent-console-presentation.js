@@ -135,7 +135,7 @@ function validBinding(binding) {
     ]) &&
     IDENTIFIER.test(binding.subjectId ?? "") &&
     binding.status === "active" &&
-    new Set(["eip155:84532", "eip155:1952"]).has(binding.chainId) &&
+    new Set(["eip155:84532", "eip155:1952", "eip155:97", "eip155:56"]).has(binding.chainId) &&
     IDENTIFIER.test(binding.purpose ?? "") &&
     HASH.test(binding.accountHash ?? "") &&
     HASH.test(binding.proofHash ?? "") &&

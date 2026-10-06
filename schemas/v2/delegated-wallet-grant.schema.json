@@ -37,7 +37,7 @@
     "authorizationHash": { "$ref": "#/$defs/bytes32" },
     "sessionSignerRefHash": { "$ref": "#/$defs/bytes32" },
     "providerId": { "$ref": "#/$defs/id" },
-    "chainIds": { "type": "array", "minItems": 1, "maxItems": 2, "uniqueItems": true, "items": { "enum": ["eip155:84532", "eip155:1952"] } },
+    "chainIds": { "type": "array", "minItems": 1, "maxItems": 4, "uniqueItems": true, "items": { "enum": ["eip155:84532", "eip155:1952", "eip155:97", "eip155:56"] } },
     "assetIds": { "type": "array", "minItems": 1, "maxItems": 16, "uniqueItems": true, "items": { "$ref": "#/$defs/id" } },
     "allowedTargetPolicyIds": { "type": "array", "minItems": 1, "maxItems": 16, "uniqueItems": true, "items": { "type": "string", "pattern": "^execution_target_policy_[0-9a-f]{64}$" } },
     "perTxLimitMinor": { "$ref": "#/$defs/positiveMinor" },

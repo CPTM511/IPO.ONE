@@ -442,3 +442,26 @@ test("dispose removes the announcement listener, cancels fallback, and clears re
   }, provider("late")));
   assert.deepEqual(fixture.registry.getSnapshot().providers, []);
 });
+
+test("Binance namespace is discovered alongside another wallet and requires explicit selection", async () => {
+  const binance = provider("binance");
+  const other = provider("other");
+  const target = new EventTarget();
+  const timer = timers();
+  const value = createWalletProviderRegistry({ eventTarget: target, binanceProvider: () => binance,
+    legacyProvider: other, setTimer: timer.setTimer, clearTimer: timer.clearTimer });
+  value.start();
+  target.dispatchEvent(new CustomEvent(EIP6963_ANNOUNCE_EVENT, { detail: {
+    info: { uuid: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", name: "OKX Wallet", rdns: "com.okx", icon: "data:image/png;base64,aGVsbG8=" }, provider: other
+  } }));
+  value.finishDiscovery();
+  assert.equal(value.getSnapshot().providers.length, 2);
+  assert.equal(value.getSelectedConnector(), null);
+  assert.equal(value.selectProvider("injected:binancew3w.ethereum"), true);
+  assert.equal(value.getSelectedConnector().descriptor().name, "Binance Wallet");
+  assert.equal(binance.requests.length, 0);
+  assert.equal(other.requests.length, 0);
+  value.rediscover(); value.finishDiscovery();
+  assert.equal(value.getSnapshot().providers.length, 2);
+  value.dispose();
+});

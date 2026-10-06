@@ -76,6 +76,7 @@ test("production environment supports reviewed wallet-only access without an OID
     IPO_ONE_AUTH_ENCRYPTION_KEY_FILE: encryptionKey,
     IPO_ONE_EDGE_ASSERTION_KEY_FILE: edgeKey,
     IPO_ONE_IDENTITY_CONFIG_FILE: identityConfig,
+    IPO_ONE_WALLETCONNECT_PROJECT_ID: "a".repeat(32),
     IPO_ONE_HOSTED_METERED_PROVIDER_KEY_FILE: meteredProviderKey
   };
   const configuration = await loadProductionClosedPilotEnvironment(environment);
@@ -83,6 +84,17 @@ test("production environment supports reviewed wallet-only access without an OID
     configuration.gatewayPool.end(),
     configuration.authenticationPool.end()
   ]));
+  assert.equal(configuration.walletConnectProjectId, "a".repeat(32));
+  assert.deepEqual(configuration.proofAdapters.map((adapter) => adapter.descriptor().chainId),
+    ["eip155:84532", "eip155:1952", "eip155:97", "eip155:56"]);
+  for (const adapter of configuration.proofAdapters) {
+    assert.equal(adapter.descriptor().contractWalletSupport, true,
+      "Every configured network must use the reviewed wallet signature verifier");
+  }
+  for (const adapter of configuration.proofAdapters.slice(2)) {
+    assert.equal(adapter.profile.transactionSubmissionAllowed, false);
+    assert.equal(adapter.profile.fundsMode, "synthetic_only");
+  }
   assert.equal(configuration.oidcProviders.length, 0);
   assert.equal(configuration.wallet.clientId, "ipo_one_wallet");
   assert.equal(configuration.browserOrigin, "https://ipo.one");

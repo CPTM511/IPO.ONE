@@ -130,6 +130,11 @@ export class HumanTenantCommandClient extends TenantProtocolClient {
     });
   }
 
+  async activateSandboxHumanSubject({ subjectId, payload, idempotencyKey, requestId, correlationId }) {
+    return this.execute({ operationId: "pilotActivateSandboxHumanSubject", payload,
+      resource: { resourceType: "subject", resourceId: subjectId }, idempotencyKey, requestId, correlationId });
+  }
+
   async getHumanSelf({ subjectId, requestId, correlationId }) {
     return this.execute({
       operationId: "pilotReadHumanSelf",

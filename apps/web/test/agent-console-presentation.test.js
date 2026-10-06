@@ -204,3 +204,17 @@ test("Agent Console fails closed on manifest, binding, Mandate or shape drift", 
   const openInput = { ...structuredClone(valid), tenantId: "tenant_forbidden" };
   assert.equal(createAgentConsolePresentation(openInput), null);
 });
+
+
+test("BNB account proofs keep the visible Agent application operable", () => {
+  for (const chainId of ["eip155:97", "eip155:56"]) {
+    const state = stateFor(manifests.application_ready);
+    state.accountBinding.chainId = chainId;
+    const presentation = createAgentConsolePresentation(state);
+    assert.equal(presentation.identity.applicationEligible, true);
+    assert.equal(presentation.mandate.status, "draft");
+  }
+  const unsupported = stateFor(manifests.application_ready);
+  unsupported.accountBinding.chainId = "eip155:1";
+  assert.equal(createAgentConsolePresentation(unsupported), null);
+});

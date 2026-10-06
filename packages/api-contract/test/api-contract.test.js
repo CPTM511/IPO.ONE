@@ -589,6 +589,29 @@ test("Risk workspace recovery contracts expose only server-derived narrow refere
   );
 });
 
+test("Agent account proof contracts accept both BNB networks and reject unapproved accounts", () => {
+  for (const chain of [97, 56]) {
+    const result = structuredClone(fixtures.validResults.find(r => r.operationId === "pilotCreateAgentAccountChallenge"));
+    result.response.chainId = `eip155:${chain}`;
+    result.response.typedData.domain.chainId = chain;
+    assertTenantProtocolResult(result);
+    result.response.typedData.domain.chainId = 1;
+    assert.throws(() => assertTenantProtocolResult(result));
+  }
+  for (const operationId of ["pilotCreateAgentAccountChallenge", "pilotSubmitAgentAccountProof"]) {
+    const request = structuredClone(fixtures.validRequests.find(r => r.operationId === operationId));
+    assert.ok(request, "canonical Agent account fixture must exist");
+    for (const chain of ["97", "56", "84532", "1952"]) {
+      request.payload.accountId = `eip155:${chain}:0x${"1".repeat(40)}`;
+      assertTenantProtocolRequest(request);
+    }
+    request.payload.accountId = `eip155:1:0x${"1".repeat(40)}`;
+    assert.throws(() => assertTenantProtocolRequest(request));
+    request.payload.accountId = `eip155:97:0x${"1".repeat(39)}`;
+    assert.throws(() => assertTenantProtocolRequest(request));
+  }
+});
+
 test("Tenant protocol validation is mutation-free and errors expose no validator internals", () => {
   const validRequest = structuredClone(fixtures.validRequests[0]);
   const requestBefore = structuredClone(validRequest);

@@ -11,3 +11,4 @@ export {
   createApprovedWalletConnectLoader,
   loadApprovedWalletConnectEthereumProvider
 } from "./walletconnect-ethereum-provider-loader.js";
+export { toString as createPairingQrSvg } from "qrcode";

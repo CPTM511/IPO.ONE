@@ -1,3 +1,4 @@
+import { WALLET_NETWORK_PROFILES } from "./wallet-networks.js";
 import { createEvmWalletConnector } from "./evm-wallet-connector.js";
 
 export const MOBILE_WALLET_CONNECTOR_SCHEMA_VERSION =
@@ -12,7 +13,7 @@ export const MOBILE_WALLET_PROVIDER_ID =
   "walletconnect:mobile-v2.23.10";
 
 const APPROVAL_EXPIRES_AT = "2026-09-22T23:59:59.999Z";
-const APPROVED_CHAINS = Object.freeze([84532, 1952]);
+const APPROVED_CHAINS = Object.freeze([84532, 1952, 97, 56]);
 const APPROVED_METHODS = Object.freeze([
   "eth_requestAccounts",
   "eth_accounts",
@@ -34,26 +35,18 @@ const APPROVED_INTERNAL_EVENTS = Object.freeze([
   "display_uri",
   "session_event"
 ]);
-const RPC_MAP = Object.freeze({
-  84532: "https://sepolia.base.org/",
-  1952: "https://testrpc.xlayer.tech/terigon"
-});
-const CHAIN_PARAMETERS = deepFreeze({
-  "0x14a34": {
-    chainId: "0x14a34",
-    chainName: "Base Sepolia",
-    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-    rpcUrls: ["https://sepolia.base.org/"],
-    blockExplorerUrls: ["https://sepolia-explorer.base.org"]
-  },
-  "0x7a0": {
-    chainId: "0x7a0",
-    chainName: "X Layer Testnet",
-    nativeCurrency: { name: "OKB", symbol: "OKB", decimals: 18 },
-    rpcUrls: ["https://testrpc.xlayer.tech/terigon"],
-    blockExplorerUrls: ["https://www.okx.com/web3/explorer/xlayer-test"]
-  }
-});
+const RPC_MAP = Object.freeze(Object.fromEntries(
+  Object.values(WALLET_NETWORK_PROFILES).map((profile) => [
+    Number(profile.chainId.split(":")[1]), profile.rpcUrls[0]
+  ])
+));
+const CHAIN_PARAMETERS = deepFreeze(Object.fromEntries(
+  Object.values(WALLET_NETWORK_PROFILES).map((profile) => [profile.chainIdHex, {
+    chainId: profile.chainIdHex, chainName: profile.name,
+    nativeCurrency: { ...profile.nativeCurrency },
+    rpcUrls: [...profile.rpcUrls], blockExplorerUrls: [...profile.blockExplorerUrls]
+  }])
+));
 const PROJECT_ID = /^[0-9a-fA-F]{32}$/;
 const DISPLAY_URI = /^wc:[A-Za-z0-9._~%:@/?&=+-]{1,2045}$/;
 const MAXIMUM_STORAGE_KEYS = 256;
@@ -320,6 +313,7 @@ export function createMobileWalletConnector({
   let cleanup = [];
   let status = "approved_not_initialized";
   let pendingInitialization;
+  let cancelConnection;
   let disposed = false;
 
   function snapshot() {
@@ -412,6 +406,10 @@ export function createMobileWalletConnector({
           "WalletConnect loader did not prove the approved package and memory-only storage"
         );
       }
+      if (disposed) {
+        void Promise.resolve().then(() => loaded.provider.disconnect()).catch(() => {});
+        throw new TypeError("Mobile wallet connector is disposed");
+      }
       provider = loaded.provider;
       bindProviderEvents();
       status = "ready";
@@ -420,7 +418,7 @@ export function createMobileWalletConnector({
     try {
       return await pendingInitialization;
     } catch (error) {
-      status = "unavailable";
+      if (!disposed) status = "unavailable";
       await storage.clear();
       throw error;
     } finally {
@@ -452,11 +450,27 @@ export function createMobileWalletConnector({
     }
   });
 
-  async function connect() {
-    await initialize();
-    const result = await provider.connect();
-    status = "connected";
-    return structuredClone(result);
+  async function connect({ chainId } = {}) {
+    const selected = chainId === undefined ? undefined : WALLET_NETWORK_PROFILES[chainId];
+    if (chainId !== undefined && !selected) {
+      throw new TypeError("Mobile wallet network is not approved");
+    }
+    if (cancelConnection) throw new TypeError("Mobile wallet connection is already pending");
+    const cancelled = new Promise((_, reject) => { cancelConnection = reject; });
+    try {
+      return await Promise.race([cancelled, (async () => {
+        await initialize();
+        if (disposed) throw new TypeError("Mobile wallet connector is disposed");
+        const numericChainId = selected && Number(selected.chainId.split(":")[1]);
+        const result = await provider.connect(numericChainId === undefined ? undefined : {
+          chains: [numericChainId],
+          optionalChains: APPROVED_CHAINS.filter((id) => id !== numericChainId)
+        });
+        if (disposed) throw new TypeError("Mobile wallet connector is disposed");
+        status = "connected";
+        return structuredClone(result);
+      })()]);
+    } finally { cancelConnection = undefined; }
   }
 
   async function disconnect() {
@@ -469,6 +483,10 @@ export function createMobileWalletConnector({
 
   async function dispose() {
     if (disposed) return snapshot();
+    disposed = true;
+    cancelConnection?.(Object.assign(new Error("Phone wallet connection cancelled"), { code: 4001 }));
+    const previousProvider = provider;
+    if (previousProvider) void Promise.resolve().then(() => previousProvider.disconnect()).catch(() => {});
     walletConnector.dispose();
     for (const remove of cleanup.splice(0)) remove();
     await storage.dispose();

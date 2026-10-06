@@ -198,6 +198,8 @@ const CLASSIFIED_OPERATIONS = Object.freeze({
     "pilotReadCapitalPartnerPassportInbox",
     "pilotReadTenantRiskPortfolioReference",
     "pilotReadServicingQueueReference",
+    "pilotReadApprovalInbox",
+    "pilotReadRiskAgentDirectory",
     "pilotReadConsent",
     "pilotReadIdentityReference",
     "pilotReadMandate",
@@ -238,6 +240,7 @@ const CLASSIFIED_OPERATIONS = Object.freeze({
   [QuotaClass.MUTATION]: [
     "pilotCreateAgentSubject",
     "pilotCreateHumanSubject",
+    "pilotActivateSandboxHumanSubject",
     "pilotCreateConsent",
     "pilotRevokeConsent",
     "pilotCreateDraftMandate",

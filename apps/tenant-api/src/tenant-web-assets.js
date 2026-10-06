@@ -1,9 +1,17 @@
+import { fileURLToPath } from "node:url";
+import { assertProductUiBaseline } from "./product-ui-baseline.js";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { SESSION_COOKIE_NAME } from "../../../modules/authentication/src/index.js";
 import { DomainError } from "../../../packages/domain/src/index.js";
 
-const WEB_ASSET_ROOT = join(process.cwd(), "apps", "web", "src");
+const BUNDLED_RELEASE_ID = process.env.IPO_ONE_BUNDLED_RELEASE_ID;
+const WEB_ASSET_ROOT = fileURLToPath(new URL(
+  BUNDLED_RELEASE_ID ? "../apps/web/src/" : "../../web/src/", import.meta.url
+));
+const ARTIFACT_MANIFEST_PATH = BUNDLED_RELEASE_ID
+  ? fileURLToPath(new URL("../deployment-artifact-manifest.json", import.meta.url))
+  : undefined;
 const WEB_ASSETS = Object.freeze({
   "/": Object.freeze({ file: "index.html", contentType: "text/html; charset=utf-8" }),
   "/index.html": Object.freeze({ file: "index.html", contentType: "text/html; charset=utf-8" }),
@@ -13,6 +21,7 @@ const WEB_ASSETS = Object.freeze({
   "/whitepaper.css": Object.freeze({ file: "whitepaper.css", contentType: "text/css; charset=utf-8" }),
   "/whitepaper.js": Object.freeze({ file: "whitepaper.js", contentType: "text/javascript; charset=utf-8" }),
   "/whitepaper/IPO_ONE_Whitepaper_Founding_Edition_III.pdf": Object.freeze({ file: "whitepaper/IPO_ONE_Whitepaper_Founding_Edition_III.pdf", contentType: "application/pdf" }),
+  "/local-review-workspace.js": Object.freeze({ file: "local-review-workspace.js", contentType: "text/javascript; charset=utf-8" }),
   "/app.js": Object.freeze({ file: "app.js", contentType: "text/javascript; charset=utf-8" }),
   "/agent-console-presentation.js": Object.freeze({ file: "agent-console-presentation.js", contentType: "text/javascript; charset=utf-8" }),
   "/agent-handoff-manifest.js": Object.freeze({ file: "agent-handoff-manifest.js", contentType: "text/javascript; charset=utf-8" }),
@@ -28,6 +37,7 @@ const WEB_ASSETS = Object.freeze({
   "/human-credit-offer-workflow-receipt.js": Object.freeze({ file: "human-credit-offer-workflow-receipt.js", contentType: "text/javascript; charset=utf-8" }),
   "/human-sandbox-obligation-workflow-receipt.js": Object.freeze({ file: "human-sandbox-obligation-workflow-receipt.js", contentType: "text/javascript; charset=utf-8" }),
   "/mobile-wallet-connector.js": Object.freeze({ file: "mobile-wallet-connector.js", contentType: "text/javascript; charset=utf-8" }),
+  "/wallet-networks.js": Object.freeze({ file: "wallet-networks.js", contentType: "text/javascript; charset=utf-8" }),
   "/evm-wallet-connector.js": Object.freeze({ file: "evm-wallet-connector.js", contentType: "text/javascript; charset=utf-8" }),
   "/obligation-portfolio-presentation.js": Object.freeze({ file: "obligation-portfolio-presentation.js", contentType: "text/javascript; charset=utf-8" }),
   "/official-report-download.js": Object.freeze({ file: "official-report-download.js", contentType: "text/javascript; charset=utf-8" }),
@@ -44,11 +54,18 @@ const WEB_ASSETS = Object.freeze({
   "/wallet-authority-lifecycle.js": Object.freeze({ file: "wallet-authority-lifecycle.js", contentType: "text/javascript; charset=utf-8" }),
   "/wallet-provider-registry.js": Object.freeze({ file: "wallet-provider-registry.js", contentType: "text/javascript; charset=utf-8" }),
   "/wallet-sign-out.js": Object.freeze({ file: "wallet-sign-out.js", contentType: "text/javascript; charset=utf-8" }),
+  "/mobile-wallet-access.js": Object.freeze({ file: "mobile-wallet-access.js", contentType: "text/javascript; charset=utf-8" }),
   "/workspace-navigation.js": Object.freeze({ file: "workspace-navigation.js", contentType: "text/javascript; charset=utf-8" }),
   "/workspace-surface-access.js": Object.freeze({ file: "workspace-surface-access.js", contentType: "text/javascript; charset=utf-8" }),
+  "/web-009-public-review.js": Object.freeze({ file: "web-009-public-review.js", contentType: "text/javascript; charset=utf-8" }),
   "/v9-trust-surfaces.js": Object.freeze({ file: "v9-trust-surfaces.js", contentType: "text/javascript; charset=utf-8" }),
   "/vendor/walletconnect-ethereum-provider-2.23.10.iife.js": Object.freeze({ file: "vendor/walletconnect-ethereum-provider-2.23.10.iife.js", contentType: "text/javascript; charset=utf-8" }),
   "/vendor/walletconnect-community-license.txt": Object.freeze({ file: "vendor/walletconnect-community-license.txt", contentType: "text/plain; charset=utf-8" }),
+  "/web-theme.js": Object.freeze({ file: "web-theme.js", contentType: "text/javascript; charset=utf-8" }),
+  "/web-012b-presentation.js": Object.freeze({ file: "web-012b-presentation.js", contentType: "text/javascript; charset=utf-8" }),
+  "/web-012b.css": Object.freeze({ file: "web-012b.css", contentType: "text/css; charset=utf-8" }),
+  "/workspace-experience.js": Object.freeze({ file: "workspace-experience.js", contentType: "text/javascript; charset=utf-8" }),
+  "/workspace-experience.css": Object.freeze({ file: "workspace-experience.css", contentType: "text/css; charset=utf-8" }),
   "/styles.css": Object.freeze({ file: "styles.css", contentType: "text/css; charset=utf-8" }),
   "/icons.svg": Object.freeze({ file: "icons.svg", contentType: "image/svg+xml" }),
   "/favicon.svg": Object.freeze({ file: "favicon.svg", contentType: "image/svg+xml" }),
@@ -69,7 +86,7 @@ const WORKSPACE_NAME_PATTERN = /^[a-z][A-Za-z0-9]{1,63}$/;
 
 const SECURITY_HEADERS = Object.freeze({
   "cache-control": "no-store",
-  "content-security-policy": "default-src 'self'; base-uri 'none'; connect-src 'self' wss://relay.walletconnect.org https://sepolia.base.org https://testrpc.xlayer.tech; font-src 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self' data:; object-src 'none'; script-src 'self'; style-src 'self'",
+  "content-security-policy": "default-src 'self'; base-uri 'none'; connect-src 'self' wss://relay.walletconnect.org https://sepolia.base.org https://testrpc.xlayer.tech https://bsc-testnet-dataseed.bnbchain.org https://bsc-dataseed.bnbchain.org; font-src 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self' data:; object-src 'none'; script-src 'self'; style-src 'self'",
   "cross-origin-opener-policy": "same-origin",
   "cross-origin-resource-policy": "same-origin",
   "permissions-policy": "camera=(), geolocation=(), microphone=(), payment=(), usb=()",
@@ -83,7 +100,8 @@ export function createTenantWebAssetHandler({
   csrfTokenProvider,
   sessionHandleProvider,
   localAgentAccountProvider,
-  workspaceNameProvider
+  workspaceNameProvider,
+  walletConnectProjectId
 } = {}) {
   if (
     (csrfTokenProvider !== undefined && typeof csrfTokenProvider !== "function") ||
@@ -93,6 +111,13 @@ export function createTenantWebAssetHandler({
   ) {
     throw new DomainError("invalid_tenant_web_config", "Tenant web bootstrap providers must be functions");
   }
+  if (walletConnectProjectId !== undefined && (typeof walletConnectProjectId !== "string" || !/^[0-9a-f]{32}$/i.test(walletConnectProjectId))) {
+    throw new DomainError("invalid_tenant_web_config", "Phone wallet Project ID must be one reviewed project identifier");
+  }
+  assertProductUiBaseline(WEB_ASSET_ROOT, {
+    releaseId: BUNDLED_RELEASE_ID,
+    artifactManifestPath: ARTIFACT_MANIFEST_PATH
+  });
   return async function serveTenantWebAsset({ request, response, pathname, requestId }) {
     if (!request || !response || typeof pathname !== "string" || typeof requestId !== "string") {
       throw new DomainError("invalid_tenant_web_request", "Tenant web asset request is invalid");
@@ -108,7 +133,7 @@ export function createTenantWebAssetHandler({
         csrfTokenProvider ||
         sessionHandleProvider ||
         localAgentAccountProvider ||
-        workspaceNameProvider
+        workspaceNameProvider || walletConnectProjectId !== undefined
       )
     ) {
       const [
@@ -145,6 +170,11 @@ export function createTenantWebAssetHandler({
       }
       sessionHandle = providedSessionHandle;
       let html = body.toString("utf8");
+      if (walletConnectProjectId !== undefined) {
+        const placeholder = '<meta name="ipo-one-walletconnect-project-id" content="" />';
+        if (html.split(placeholder).length !== 2) throw new DomainError("invalid_tenant_web_asset", "Phone wallet bootstrap placeholder is invalid");
+        html = html.replace(placeholder, `<meta name="ipo-one-walletconnect-project-id" content="${walletConnectProjectId}" />`);
+      }
       if (csrfToken !== undefined) {
         if (html.split(CSRF_META_PLACEHOLDER).length !== 2) {
           throw new DomainError("invalid_tenant_web_asset", "Tenant web shell CSRF placeholder is invalid");

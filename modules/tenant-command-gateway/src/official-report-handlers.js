@@ -233,7 +233,7 @@ export function createOfficialReportCommandHandler() {
           actorId,
           actorType,
           relationship,
-          ...(controllerActorId ? { controllerActorId } : {})
+          ...(relationship === "subject" && actorType === "agent" && controllerActorId ? { controllerActorId } : {})
         }));
       return {
         aggregateType: "official_report_artifact",

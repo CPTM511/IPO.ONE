@@ -13,9 +13,8 @@ import {
   hashId
 } from "../../../packages/domain/src/index.js";
 import {
-  BASE_SEPOLIA_PROFILE,
+  listAccountProofProfiles,
   EvmAccountProofAdapter,
-  X_LAYER_TESTNET_PROFILE,
   normalizeEvmCaip10
 } from "../../chain-adapter/src/index.js";
 import { ActorType } from "../../authentication/src/index.js";
@@ -78,19 +77,24 @@ function normalizeSubmitProofPayload(payload) {
 }
 
 function createDefaultAdapters() {
-  return [BASE_SEPOLIA_PROFILE, X_LAYER_TESTNET_PROFILE].map(
+  return listAccountProofProfiles().map(
     (profile) => new EvmAccountProofAdapter({ profile })
   );
 }
 
 function adapterMap(adapters) {
-  const list = adapters ?? createDefaultAdapters();
-  if (!Array.isArray(list) || list.length !== 2) {
-    throw new DomainError("invalid_account_proof_configuration", "exactly two approved test-chain proof adapters are required");
+  let list = adapters ?? createDefaultAdapters();
+  if (Array.isArray(list) && list.length === 2) {
+    list = [...list, ...listAccountProofProfiles().slice(2).map(
+      (profile) => new EvmAccountProofAdapter({ profile })
+    )];
+  }
+  if (!Array.isArray(list) || list.length !== 4) {
+    throw new DomainError("invalid_account_proof_configuration", "exactly four approved signature proof adapters are required");
   }
   const map = new Map(list.map((adapter) => [adapter.descriptor().chainId, adapter]));
-  if (!map.has("eip155:84532") || !map.has("eip155:1952") || map.size !== 2) {
-    throw new DomainError("invalid_account_proof_configuration", "approved Base Sepolia and X Layer proof adapters are required");
+  if (!map.has("eip155:84532") || !map.has("eip155:1952") || map.size !== 4 || !map.has("eip155:97") || !map.has("eip155:56")) {
+    throw new DomainError("invalid_account_proof_configuration", "approved wallet-network proof adapters are required");
   }
   return map;
 }

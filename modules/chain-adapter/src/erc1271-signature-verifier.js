@@ -32,6 +32,22 @@ const APPROVED_CHAINS = Object.freeze({
       primary: "https://testrpc.xlayer.tech/terigon",
       secondary: "https://xlayertestrpc.okx.com/terigon"
     })
+  }),
+  "eip155:97": Object.freeze({
+    numericChainId: 97, blockTag: "finalized", sourceFinality: "finalized",
+    authenticationEligible: true,
+    rpcSlots: Object.freeze({
+      primary: "https://bsc-testnet-dataseed.bnbchain.org/",
+      secondary: "https://bsc-testnet.bnbchain.org/"
+    })
+  }),
+  "eip155:56": Object.freeze({
+    numericChainId: 56, blockTag: "finalized", sourceFinality: "finalized",
+    authenticationEligible: true,
+    rpcSlots: Object.freeze({
+      primary: "https://bsc-dataseed.bnbchain.org/",
+      secondary: "https://bsc-dataseed-public.bnbchain.org/"
+    })
   })
 });
 const RPC_METHODS = new Set([
@@ -89,7 +105,7 @@ function approvedChain(chainId) {
   if (!profile) {
     fail(
       "erc1271_chain_not_approved",
-      "ERC-1271 verification is limited to the two approved Testnet profiles"
+      "Wallet signature verification requires an approved read-only network profile"
     );
   }
   return profile;

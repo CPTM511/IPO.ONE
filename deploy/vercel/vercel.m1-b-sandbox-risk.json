@@ -6,7 +6,7 @@
   "fluid": true,
   "functions": {
     "api/vercel-sandbox.mjs": {
-      "includeFiles": "{apps/web/src/**,db/migrations/**}",
+      "includeFiles": "{apps/web/src/**,db/migrations/**,deployment-artifact-manifest.json}",
       "maxDuration": 30
     }
   },

@@ -24,7 +24,10 @@ const EXECUTOR_ABI = Object.freeze([{
 const SELECTOR = toFunctionSelector("executeProviderSpend(bytes32,bytes32,uint256)");
 const TARGET_BY_CHAIN = Object.freeze({
   "eip155:84532": "0x0000000000000000000000000000000000008453",
-  "eip155:1952": "0x0000000000000000000000000000000000001952"
+  "eip155:1952": "0x0000000000000000000000000000000000001952",
+  // Synthetic local executor labels only. No contract or transaction exists.
+  "eip155:97": "0x0000000000000000000000000000000000000097",
+  "eip155:56": "0x0000000000000000000000000000000000000056"
 });
 
 function fail(code, message) {
