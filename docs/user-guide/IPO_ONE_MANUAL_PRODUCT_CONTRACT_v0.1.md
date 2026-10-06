@@ -67,7 +67,7 @@ stage's permanently disabled controls.
 | Agent Console | `Run local Agent application` | Local no-funds profile, verified Agent identity, and Draft Mandate | Registered server-held Agent creates and persists the deterministic Decision and Offer receipt; no credential enters the browser |
 | Agent Console | `Check for Agent Offer` | Verified Agent identity and Draft Mandate | Persisted Decision and Offer workflow receipt appear after the external Agent application |
 | Agent Console | `Review and activate this Mandate` | Offer ready | Principal review opens |
-| Credit / Principal | `Activate exact Sandbox Mandate` | Exact Mandate acknowledged | Mandate becomes active |
+| Credit / Principal | `Activate sandbox Mandate` | Exact Mandate acknowledged | Mandate becomes active |
 | Agent Console | `Complete sandbox Agent lifecycle` | Local no-funds profile, active matching Mandate, and exact persisted Offer | One registered Agent goal run creates the Obligation, executes allowlisted sandbox use, posts synthetic repayment, and reads current Evidence; no real funds move |
 | Agent Console | `Check for Agent Obligation` | Active matching Mandate and Offer | Shared Agent Obligation appears after the external Agent accepts the Offer |
 | Agent Console | `Check Agent progress` | Active Mandate with no currently recovered exact Offer or Obligation | Read-only server refresh returns the exact Offer, exact Mandate-bound Obligation, stable waiting/unknown state, or one retryable error; no authority or lifecycle mutation occurs |

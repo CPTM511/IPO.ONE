@@ -40,7 +40,8 @@ test("phone access fails closed without operator configuration, exact origin or 
   assert.equal(f.registered.length, 0);
 });
 
-test("failed optional script can retry, pairing renders QR and cancel prevents late QR or authority", async () => {
+test("failed optional script can retry, pairing renders QR and cancel prevents late QR or authority", async (t) => {
+  t.mock.timers.enable({ apis: ["Date"], now: Date.parse("2026-09-11T00:00:00Z") });
   const f = fixture();
   const first = f.access.prepare();
   f.scripts[0].onerror();
@@ -71,7 +72,8 @@ test("failed optional script can retry, pairing renders QR and cancel prevents l
   assert.equal(f.connections.length, 2);
 });
 
-test("registration and QR generation errors retain a usable retry or cancel path", async () => {
+test("registration and QR generation errors retain a usable retry or cancel path", async (t) => {
+  t.mock.timers.enable({ apis: ["Date"], now: Date.parse("2026-09-11T00:00:00Z") });
   const f = fixture(); f.window.IpoOneWalletConnectBundle = f.bundle;
   f.registry.registerConnector = () => false;
   await f.access.prepare();
