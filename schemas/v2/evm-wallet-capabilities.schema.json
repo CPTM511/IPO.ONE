@@ -26,7 +26,7 @@
   "properties": {
     "schemaVersion": { "const": "evm_wallet_capabilities.v1" },
     "providerId": { "type": "string", "minLength": 3, "maxLength": 128 },
-    "chainId": { "enum": ["eip155:84532", "eip155:1952"] },
+    "chainId": { "enum": ["eip155:84532", "eip155:1952", "eip155:97", "eip155:56"] },
     "contextEpoch": { "type": "integer", "minimum": 0 },
     "walletTransport": { "enum": ["eip1193", "walletconnect"] },
     "accountType": {

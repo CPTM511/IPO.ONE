@@ -12,9 +12,8 @@ import {
   revokeExecutionAccountBinding
 } from "../../../packages/domain/src/index.js";
 import {
-  BASE_SEPOLIA_PROFILE,
+  listAccountProofProfiles,
   EvmExecutionAccountProofAdapter,
-  X_LAYER_TESTNET_PROFILE,
   normalizeEvmCaip10
 } from "../../chain-adapter/src/index.js";
 import { CoreProjectionType } from "../../persistence/src/index.js";
@@ -76,15 +75,20 @@ function normalizeRevoke(payload) {
 }
 
 function adapterMap(adapters) {
-  const list = adapters ?? [BASE_SEPOLIA_PROFILE, X_LAYER_TESTNET_PROFILE].map(
+  let list = adapters ?? listAccountProofProfiles().map(
     (profile) => new EvmExecutionAccountProofAdapter({ profile })
   );
-  if (!Array.isArray(list) || list.length !== 2) {
-    fail("invalid_account_proof_configuration", "exactly two execution proof adapters are required");
+  if (Array.isArray(list) && list.length === 2) {
+    list = [...list, ...listAccountProofProfiles().slice(2).map(
+      (profile) => new EvmExecutionAccountProofAdapter({ profile })
+    )];
+  }
+  if (!Array.isArray(list) || list.length !== 4) {
+    fail("invalid_account_proof_configuration", "exactly four account binding proof adapters are required");
   }
   const map = new Map(list.map((adapter) => [adapter.descriptor().chainId, adapter]));
-  if (!map.has("eip155:84532") || !map.has("eip155:1952") || map.size !== 2) {
-    fail("invalid_account_proof_configuration", "approved test-chain execution proof adapters are required");
+  if (!map.has("eip155:84532") || !map.has("eip155:1952") || map.size !== 4 || !map.has("eip155:97") || !map.has("eip155:56")) {
+    fail("invalid_account_proof_configuration", "approved signature-only account proof adapters are required");
   }
   return map;
 }
@@ -424,6 +428,10 @@ export function revokeExecutionAccountBindingHandler() {
         bindingState.value.subjectId !== subject.subjectId ||
         bindingState.value.schemaVersion !== "account_binding.v3"
       ) fail("tenant_resource_unavailable", "The requested resource is not available.");
+      if (bindingState.rootAggregateType !== "execution_account_binding_challenge" ||
+          bindingState.rootAggregateId !== bindingState.value.executionChallengeId) {
+        fail("projection_integrity_mismatch", "Execution AccountBinding stream is unavailable");
+      }
       const binding = revokeExecutionAccountBinding(bindingState.value, { revokedAt: now });
       const event = createCreditEvent({
         eventType: CreditEventType.EXECUTION_ACCOUNT_BINDING_REVOKED,
@@ -441,11 +449,11 @@ export function revokeExecutionAccountBindingHandler() {
         now
       });
       return {
-        aggregateType: "account_binding",
-        aggregateId: binding.accountBindingId,
+        aggregateType: bindingState.rootAggregateType,
+        aggregateId: bindingState.rootAggregateId,
         events: [{
-          aggregateType: "account_binding",
-          aggregateId: binding.accountBindingId,
+          aggregateType: bindingState.rootAggregateType,
+          aggregateId: bindingState.rootAggregateId,
           expectedVersion: bindingState.aggregateVersion,
           event
         }],

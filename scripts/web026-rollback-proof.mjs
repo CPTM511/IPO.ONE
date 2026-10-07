@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {readFile,writeFile}from'node:fs/promises';import{spawnSync}from'node:child_process';
+const main='/Users/cptmao/Documents/IPO.ONE',state=main+'/.ipo-one/web026-runtime',out=main+'/output/playwright/web-026-runtime';
+function docker(args,input){const r=spawnSync('limactl',['shell','--workdir',main,'ipo-one-local','docker',...args],{input,encoding:'utf8',maxBuffer:20_000_000});assert.equal(r.status,0,'Rollback-proof Docker command failed');return r.stdout.trim();}
+const db='ipo_one_web026_rollback_test';
+docker(['exec','ipo-one-web026-test-postgres-v2','createdb','-U','ipo_one_owner',db]);
+docker(['exec','-i','ipo-one-web026-test-postgres-v2','pg_restore','-U','ipo_one_owner','-d',db,'--exit-on-error'],await readFile(state+'/cutover.dump'));
+const before=docker(['exec','ipo-one-web026-test-postgres-v2','psql','-U','ipo_one_owner','-d',db,'-At','-c','SELECT count(*) FROM schema_migrations']);assert.equal(before,'70');
+let env=await readFile(state+'/candidate.env','utf8');env=env.replace(/^DATABASE_URL=(.*)$/m,(_,v)=>{const u=new URL(v);u.port='55435';u.pathname='/'+db;return'DATABASE_URL='+u.href;}).replace(/^IPO_ONE_PILOT_PORT=.*$/m,'IPO_ONE_PILOT_PORT=8925').replace(/^IPO_ONE_M1_B_RELEASE_SHA=.*$/m,'IPO_ONE_M1_B_RELEASE_SHA=9636ec2d8edcf93dff8b5c73da83d5899b80b988');await writeFile(state+'/rollback-proof.env',env,{mode:0o600});
+const mounts=JSON.parse(await readFile(state+'/mounts.json'));const args=['create','--name','ipo-one-web026-rollback-proof','--network','host','--read-only','--tmpfs','/tmp:rw,noexec,nosuid,nodev,size=64m','--cap-drop','ALL','--security-opt','no-new-privileges:true','--env-file',state+'/rollback-proof.env'];for(const m of mounts)args.push('--mount',`type=bind,source=${m.source},target=${m.target},readonly`);args.push('ipo-one-web026:rollback-9636ec2','apps/private-pilot/src/start.js');docker(args);docker(['start','ipo-one-web026-rollback-proof']);
+for(let i=0;i<25;i++){try{if((await fetch('http://127.0.0.1:8925/tenant/v1/healthz')).ok)break;}catch{}await new Promise(r=>setTimeout(r,500));}
+const roles=[];for(const port of [8925,8926,8927,8928]){const r=await fetch(`http://127.0.0.1:${port}/auth/v1/options`);assert.equal(r.status,200);roles.push(port);}
+const after=docker(['exec','ipo-one-web026-test-postgres-v2','psql','-U','ipo_one_owner','-d',db,'-At','-c','SELECT count(*) FROM schema_migrations']);assert.equal(after,'73');
+docker(['stop','ipo-one-web026-rollback-proof']);const result={passed:true,exactFallbackSource:'9636ec2d8edcf93dff8b5c73da83d5899b80b988',cutoverBackupRestored:true,restoredMigrations:70,compatibleForwardMigrations:73,localEndpointsChecked:roles,oldMutableProcessReconstructionClaimed:false};console.log(JSON.stringify(result));await writeFile(out+'/rollback-proof.json',JSON.stringify(result,null,2)+'\n');

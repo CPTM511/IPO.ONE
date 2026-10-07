@@ -4,6 +4,7 @@ export const WALLET_PROVIDER_REGISTRY_SCHEMA_VERSION = "wallet_provider_registry
 export const EIP6963_REQUEST_EVENT = "eip6963:requestProvider";
 export const EIP6963_ANNOUNCE_EVENT = "eip6963:announceProvider";
 export const LEGACY_WALLET_PROVIDER_ID = "legacy:globalThis.ethereum";
+export const BINANCE_WALLET_PROVIDER_ID = "injected:binancew3w.ethereum";
 export const MOBILE_WALLET_PROVIDER_ID = "walletconnect:mobile-v2.23.10";
 
 const EIP6963_UUID =
@@ -183,6 +184,7 @@ function compareProviderRecords(left, right) {
 export function createWalletProviderRegistry({
   eventTarget,
   legacyProvider,
+  binanceProvider,
   onChange = () => {},
   setTimer = globalThis.setTimeout?.bind(globalThis),
   clearTimer = globalThis.clearTimeout?.bind(globalThis),
@@ -270,6 +272,21 @@ export function createWalletProviderRegistry({
       clearTimer(fallbackTimer);
       fallbackTimer = undefined;
     }
+    // Discover the official namespace even when another extension announces.
+    // The object reference deduplicates a Binance EIP-6963 announcement.
+    let injectedBinance;
+    try {
+      injectedBinance = typeof binanceProvider === "function"
+        ? binanceProvider() : binanceProvider;
+    } catch { injectedBinance = undefined; }
+    if (isProvider(injectedBinance)) addRecord({
+      provider: injectedBinance,
+      descriptor: {
+        providerId: BINANCE_WALLET_PROVIDER_ID,
+        source: "binance_injected",
+        name: "Binance Wallet"
+      }
+    }, { emit: false });
     if (recordsById.size === 0) addRecord(legacyRecord(legacyProvider), { emit: false });
     status = "ready";
     notify();

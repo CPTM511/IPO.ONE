@@ -8,10 +8,9 @@ import {
   loadAuthenticationRuntimeConfig
 } from "../../../modules/authentication/src/index.js";
 import {
-  BASE_SEPOLIA_PROFILE,
   EvmAccountProofAdapter,
   EvmWalletSignatureVerifier,
-  X_LAYER_TESTNET_PROFILE
+  listAccountProofProfiles
 } from "../../../modules/chain-adapter/src/index.js";
 import { parseStrictJson } from "../../../modules/authentication/src/strict-json.js";
 import {
@@ -592,10 +591,7 @@ export async function loadProductionClosedPilotEnvironment(environment = process
       });
   const identity = await loadProviderConfig(environment, browserOrigin, { vercelSandbox });
   const meteredUsageProvider = await hostedMeteredProvider(environment, { vercelSandbox });
-  const proofAdapters = Object.freeze([
-    BASE_SEPOLIA_PROFILE,
-    X_LAYER_TESTNET_PROFILE
-  ].map((profile) => new EvmAccountProofAdapter({
+  const proofAdapters = Object.freeze(listAccountProofProfiles().map((profile) => new EvmAccountProofAdapter({
     profile,
     signatureVerifier: identity.walletSignatureVerifier
   })));
@@ -639,6 +635,9 @@ export async function loadProductionClosedPilotEnvironment(environment = process
     authenticationPool,
     ...(agentAccountAddress === undefined ? {} : { agentAccountAddress }),
     browserOrigin: browserOrigin.origin,
+    ...(environment.IPO_ONE_WALLETCONNECT_PROJECT_ID === undefined ? {} : {
+      walletConnectProjectId: required(environment, "IPO_ONE_WALLETCONNECT_PROJECT_ID", /^[0-9a-f]{32}$/iu, 32)
+    }),
     tenantId: required(environment, "IPO_ONE_TENANT_ID", /^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$/u, 128),
     systemActorId: required(environment, "IPO_ONE_SYSTEM_ACTOR_ID", /^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$/u, 128),
     ...(meteredUsageProvider === undefined ? {} : { meteredUsageProvider }),

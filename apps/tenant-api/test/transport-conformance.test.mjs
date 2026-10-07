@@ -437,6 +437,8 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
       "/evidence-receipt-presentation.js",
       "/human-credit-offer-workflow-receipt.js",
       "/human-sandbox-obligation-workflow-receipt.js",
+      "/local-review-workspace.js",
+      "/mobile-wallet-access.js",
       "/obligation-portfolio-presentation.js",
       "/official-report-download.js",
       "/owned-evidence-presentation.js",
@@ -451,15 +453,23 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
       "/trading-capital-product-presentation.js",
       "/v9-trust-surfaces.js",
       "/wallet-authority-lifecycle.js",
+      "/wallet-networks.js",
       "/wallet-provider-registry.js",
       "/wallet-sign-out.js",
+      "/workspace-experience.js",
       "/workspace-navigation.js",
       "/workspace-surface-access.js"
     ]);
-    for (const modulePath of relativeModules) {
+    for (const modulePath of [...relativeModules, "/web-theme.js", "/web-009-public-review.js", "/web-012b-presentation.js"]) {
       const moduleResponse = await fetch(`${baseUrl}${modulePath}`);
       assert.equal(moduleResponse.status, 200, `${modulePath} is missing from the fixed asset allowlist`);
       assert.match(moduleResponse.headers.get("content-type"), /^text\/javascript/);
+    }
+    for (const stylesheet of ["/web-012b.css", "/workspace-experience.css"]) {
+      const response = await fetch(`${baseUrl}${stylesheet}`);
+      assert.equal(response.status, 200);
+      assert.match(response.headers.get("content-type"), /^text\/css/);
+      assert.equal(response.headers.get("cache-control"), "no-store");
     }
 
     const handoffResponse = await fetch(`${baseUrl}/agent-handoff-manifest.js`);
@@ -821,4 +831,44 @@ test("transport authentication resolver rejects ambiguous or mismatched authenti
     }),
     (error) => error.code === "authentication_required"
   );
+});
+
+test("local metered endpoint authenticates before invoking the shared synthetic service", async () => {
+  const context = agentContext();
+  const calls = [];
+  const listener = createTenantHttpServer({
+    gateway: { execute() { throw new Error("unexpected direct command"); } },
+    resolveAuthenticationContext: async ({ request }) => {
+      assert.equal(request.headers.authorization, "Bearer local-test-agent");
+      return context;
+    },
+    createNetworkContext: async () => ({ source: "local_test" }),
+    deploymentCapabilityProvider: () => ({ deployment: { hostingStatus: "LOCAL_REVIEW" } }),
+    syntheticMeteredResourceService: {
+      profile: { syntheticOnly: true },
+      async consume(input) {
+        calls.push(input);
+        return { syntheticOnly: true, productionFundsMoved: false };
+      }
+    }
+  });
+  const address = await listener.listen();
+  const baseUrl = `http://${address.host}:${address.port}`;
+  try {
+    assert.equal((await (await fetch(`${baseUrl}/.well-known/ipo-one.json`)).json()).deployment.hostingStatus, "LOCAL_REVIEW");
+    const unauthenticated = await fetch(`${baseUrl}/tenant/v1/synthetic-metered-resource`, {
+      method: "POST", body: "{}", headers: { "content-type": "application/json" }
+    });
+    assert.notEqual(unauthenticated.status, 200);
+    assert.equal(calls.length, 0);
+    const response = await fetch(`${baseUrl}/tenant/v1/synthetic-metered-resource`, {
+      method: "POST", body: JSON.stringify({ quantity: "100" }),
+      headers: { "content-type": "application/json", authorization: "Bearer local-test-agent" }
+    });
+    assert.equal(response.status, 200);
+    assert.equal(calls[0].authenticationContext, context);
+    assert.deepEqual(calls[0].networkContext, { source: "local_test" });
+    assert.deepEqual(calls[0].body, { quantity: "100" });
+    assert.equal((await response.json()).productionFundsMoved, false);
+  } finally { await listener.close(); }
 });

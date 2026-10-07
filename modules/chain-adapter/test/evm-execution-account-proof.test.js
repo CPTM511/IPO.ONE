@@ -4,6 +4,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { hashId } from "../../../packages/domain/src/index.js";
 import {
   BASE_SEPOLIA_PROFILE,
+  listAccountProofProfiles,
   EvmExecutionAccountProofAdapter,
   X_LAYER_TESTNET_PROFILE,
   normalizeEvmCaip10
@@ -30,7 +31,7 @@ function challenge(adapter, accountId) {
   return { ...value, typedDataHash: adapter.createTypedData(value).typedDataHash };
 }
 
-for (const profile of [BASE_SEPOLIA_PROFILE, X_LAYER_TESTNET_PROFILE]) {
+for (const profile of listAccountProofProfiles()) {
   test(`${profile.chainId} proves execution account control without creating login or authority`, async () => {
     const adapter = new EvmExecutionAccountProofAdapter({ profile });
     const accountId = `${profile.chainId}:${ACCOUNT.address}`;

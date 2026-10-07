@@ -18,6 +18,7 @@ const WORKSPACE_RESUME_OPTIONAL_KEYS = Object.freeze([
   "controlledAgentActorIds",
   "controlledAgentOptions",
   "humanOfferReview",
+  "humanOfferReviews",
   "selectedAgentActorId"
 ]);
 
@@ -78,7 +79,7 @@ function normalizeWorkspace(workspace) {
     !closedRecord(
       workspace,
       ["workspaceKind", "resources", "hasMore", "serverTruth", "schemaVersion"],
-      ["continuationReceipts", "controlledAgentActorIds", "humanOfferReview"]
+      ["continuationReceipts", "controlledAgentActorIds", "humanOfferReview", "humanOfferReviews"]
     ) ||
     !WORKSPACE_KINDS.has(workspace.workspaceKind) ||
     workspace.serverTruth !== true ||

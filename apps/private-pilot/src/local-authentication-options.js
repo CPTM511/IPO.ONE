@@ -7,7 +7,7 @@ import {
   readHumanAccessCookie
 } from "../../tenant-api/src/index.js";
 
-const SUPPORTED_CHAINS = Object.freeze(["eip155:84532", "eip155:1952"]);
+const SUPPORTED_CHAINS = Object.freeze(["eip155:84532", "eip155:1952", "eip155:97", "eip155:56"]);
 const SESSION_HANDLE_PATTERN = /^[A-Za-z0-9_-]{32,128}$/;
 
 export function sameLocalSecret(actual, expected) {

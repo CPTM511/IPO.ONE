@@ -1,4 +1,5 @@
-import { DomainError } from "../../../packages/domain/src/index.js";
+import { CoreProjectionType } from "../../persistence/src/index.js";
+import { DomainError, hashId } from "../../../packages/domain/src/index.js";
 
 const CURSOR_PATTERN = /^[A-Za-z0-9_-]{1,768}$/;
 const IDENTIFIER_PATTERN = /^[A-Za-z0-9][A-Za-z0-9:._/%-]{0,255}$/;
@@ -148,7 +149,7 @@ export function readServicingQueueQueryHandler() {
   return Object.freeze({
     operationId: "pilotReadServicingQueue",
     kind: "query",
-    async execute({ client, coreRepository, authorizationDecision, payload, now }) {
+    async execute({ client, coreRepository, authorizationDecision, payload, now, approvalRuntime }) {
       const page = parsePayload(payload);
       if (
         authorizationDecision?.resourceType !== "servicing_queue" ||
@@ -172,6 +173,11 @@ export function readServicingQueueQueryHandler() {
       const hasMore = rows.length > page.limit;
       const visibleRows = rows.slice(0, page.limit);
       const cases = visibleRows.map(summarizeCase);
+      if (approvalRuntime) for (const item of cases) {
+        const obligation = await coreRepository.getProjectionInTransaction(client,CoreProjectionType.OBLIGATION,item.obligationId);
+        if (!obligation || obligation.sandboxOnly !== true || obligation.productionFundsMoved !== false) unavailable();
+        item.servicingStateHash = hashId("sandbox_servicing_state",obligation);
+      }
       return {
         queueId: authorizationDecision.resourceId,
         asOf: now.toISOString(),

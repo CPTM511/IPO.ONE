@@ -29,7 +29,7 @@
       "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$"
     },
     "source": {
-      "enum": ["eip6963", "legacy_eip1193", "mobile_walletconnect"]
+      "enum": ["eip6963", "legacy_eip1193", "binance_injected", "mobile_walletconnect"]
     },
     "name": { "type": "string", "minLength": 1, "maxLength": 80 },
     "walletTransport": { "enum": ["eip1193", "walletconnect"] },
@@ -37,11 +37,13 @@
       "type": "array",
       "prefixItems": [
         { "const": "eip155:84532" },
-        { "const": "eip155:1952" }
+        { "const": "eip155:1952" },
+        { "const": "eip155:97" },
+        { "const": "eip155:56" }
       ],
       "items": false,
-      "minItems": 2,
-      "maxItems": 2
+      "minItems": 4,
+      "maxItems": 4
     },
     "explicitSelectionRequired": { "const": true },
     "capabilityNegotiated": { "const": true },

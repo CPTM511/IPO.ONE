@@ -52,9 +52,12 @@ test("private pilot bootstrap closes membership versioning to exact authority dr
     /memberships\.([a-z_]+) IS DISTINCT FROM EXCLUDED\.\1/g
   )].map((match) => match[1]);
   assert.deepEqual(actualFields, expectedFields);
+  assert.match(predicate, /memberships\.status = 'active'/);
+  assert.match(predicate, /memberships\.valid_from <= EXCLUDED\.updated_at/);
+  assert.match(predicate, /memberships\.expires_at > EXCLUDED\.updated_at/);
   assert.doesNotMatch(
     predicate,
-    /memberships\.(?:id|membership_hash|role_bundle|valid_from|expires_at|created_at|updated_at|schema_version)/
+    /memberships\.(?:id|membership_hash|role_bundle|valid_from|expires_at|created_at|updated_at|schema_version) IS DISTINCT FROM/
   );
   assert.equal(
     (membershipUpsert.match(/version = memberships\.version \+ 1/g) ?? []).length,
@@ -304,7 +307,7 @@ test("private pilot exposes authenticated local options without enabling a crede
     sessionAuthenticationMethod: "oidc_pkce_bff",
     oidcProviders: [],
     walletAuthentication: false,
-    supportedChains: ["eip155:84532", "eip155:1952"],
+    supportedChains: ["eip155:84532", "eip155:1952", "eip155:97", "eip155:56"],
     boundary:
       "Local synthetic authentication proves presence; policy and Mandates separately decide authority."
   });

@@ -1,6 +1,6 @@
 import { hashTypedData, verifyTypedData } from "viem";
 import { DomainError, hashId } from "../../../packages/domain/src/index.js";
-import { createChainProfile } from "./chain-profiles.js";
+import { normalizeAccountProofProfile } from "./account-proof-profiles.js";
 import { normalizeEvmCaip10 } from "./evm-account-proof-adapter.js";
 
 const SIGNATURE = /^0x[0-9a-fA-F]{130}$/;
@@ -120,14 +120,7 @@ export function createExecutionAccountBindingTypedData({
 
 export class EvmExecutionAccountProofAdapter {
   constructor({ profile, signatureVerifier } = {}) {
-    const { profileHash, schemaVersion, ...profileInput } = profile ?? {};
-    this.profile = createChainProfile(profileInput);
-    if (profileHash !== undefined && profileHash !== this.profile.profileHash) {
-      fail("chain_profile_hash_mismatch", "execution proof profile hash does not match its contents");
-    }
-    if (schemaVersion !== undefined && schemaVersion !== this.profile.schemaVersion) {
-      fail("invalid_chain_profile", "execution proof profile schema version is unsupported");
-    }
+    this.profile = normalizeAccountProofProfile(profile);
     if (signatureVerifier !== undefined && typeof signatureVerifier?.verifyTypedData !== "function") {
       fail("invalid_account_proof_configuration", "contract-wallet signature verifier is invalid");
     }

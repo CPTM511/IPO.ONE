@@ -274,7 +274,10 @@ export function admitMeteredUsageCommandHandler({
       const ledger = {
         ...ledgerDraft,
         accounts: await Promise.all(ledgerDraft.accounts.map(async (account) => (
-          await context.coreRepository.getLedgerAccount(account.ledgerAccountId) ?? account
+          await context.coreRepository.getLedgerAccountInTransaction(
+            context.client,
+            account.ledgerAccountId
+          ) ?? account
         )))
       };
       const chargeDelta = BigInt(admission.chargeDeltaMinor);

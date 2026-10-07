@@ -1,3 +1,4 @@
+import { isolateLocalReviewCookies } from "./local-review-cookies.js";
 import { createServer } from "node:http";
 import {
   ApiBoundaryError,
@@ -77,9 +78,9 @@ function json(response, status, value, requestId) {
   response.end(body);
 }
 
-function requestUrl(request, port) {
+function requestUrl(request, port, localRiskHostname) {
   const host = request.headers.host;
-  const expected = `${TENANT_HTTP_HOST}:${port}`;
+  const expected = localRiskHostname && host === `localhost:${port}` ? `localhost:${port}` : `${TENANT_HTTP_HOST}:${port}`;
   if (host !== expected || typeof request.url !== "string" || !request.url.startsWith("/")) {
     throw new ApiBoundaryError("misdirected_request", "Tenant request target is not the loopback listener");
   }
@@ -90,6 +91,7 @@ export function createTenantHttpServer({
   gateway,
   resolveAuthenticationContext,
   createNetworkContext,
+  localRiskHostname = false,
   host = TENANT_HTTP_HOST,
   port = 0,
   trustProxy = false,
@@ -100,10 +102,13 @@ export function createTenantHttpServer({
   serveAuthentication,
   serveEvidenceAnchors,
   serveReferenceAgent,
+  syntheticMeteredResourceService,
+  deploymentCapabilityProvider,
   securedPoolMarketProvider,
   serveWebAsset
 }) {
   assertConfig({ host, trustProxy, environment, credentialSource });
+  if (localRiskHostname && (![8937, 8947, 8957, 8939, 8940, 8941, 8942].includes(port) || environment !== "development" || credentialSource !== "local_test")) throw new DomainError("invalid_tenant_transport_config", "Risk hostname is restricted to the reviewed local listener");
   if (
     !gateway?.execute ||
     typeof resolveAuthenticationContext !== "function" ||
@@ -130,6 +135,10 @@ export function createTenantHttpServer({
         typeof serveReferenceAgent.routes !== "object"
       )
     ) ||
+    (syntheticMeteredResourceService !== undefined &&
+      (typeof syntheticMeteredResourceService.consume !== "function" ||
+       typeof syntheticMeteredResourceService.profile !== "object")) ||
+    (deploymentCapabilityProvider !== undefined && typeof deploymentCapabilityProvider !== "function") ||
     (securedPoolMarketProvider !== undefined &&
       typeof securedPoolMarketProvider !== "function") ||
     (serveWebAsset !== undefined && typeof serveWebAsset !== "function")
@@ -147,7 +156,13 @@ export function createTenantHttpServer({
     active += 1;
     response.setTimeout(requestTimeoutMs, () => response.destroy());
     try {
-      const url = new URL(requestUrl(request, listeningPort));
+      const url = new URL(requestUrl(request, listeningPort, localRiskHostname));
+      if (localRiskHostname) isolateLocalReviewCookies(request,response,listeningPort);
+      if (localRiskHostname && url.hostname === "127.0.0.1" && url.pathname === "/" && ["GET", "HEAD"].includes(request.method)) {
+        response.writeHead(302, { location: `http://localhost:${listeningPort}/#risk-operations`, "cache-control": "no-store" });
+        response.end();
+        return;
+      }
       if (request.method === "GET" && url.pathname === TENANT_HTTP_ROUTES.health) {
         return json(response, 200, {
           status: "ready",
@@ -155,6 +170,22 @@ export function createTenantHttpServer({
           public: false,
           schemaVersion: "tenant_transport_health.v1"
         }, requestId);
+      }
+      if (request.method === "GET" && url.search === "" &&
+          url.pathname === "/.well-known/ipo-one.json" && deploymentCapabilityProvider) {
+        return json(response, 200, deploymentCapabilityProvider(), requestId);
+      }
+      if (request.method === "POST" && url.search === "" &&
+          url.pathname === "/tenant/v1/synthetic-metered-resource" && syntheticMeteredResourceService) {
+        const body = await readBody(request);
+        const [authenticationContext, networkContext] = await Promise.all([
+          resolveAuthenticationContext({ request, requestUrl: url.toString() }),
+          createNetworkContext({ request })
+        ]);
+        const result = await syntheticMeteredResourceService.consume({
+          body, authenticationContext, networkContext, requestId
+        });
+        return json(response, 200, result, requestId);
       }
       if (request.method === "GET" && url.pathname === TENANT_HTTP_ROUTES.openapi) {
         return json(
@@ -270,6 +301,10 @@ export function createTenantHttpServer({
       return json(response, 200, result, requestId);
     } catch (error) {
       const problem = createProblemDetails(error, { requestId });
+      if (problem.status === 500 && environment === "development" && credentialSource === "local_test") {
+        console.error(JSON.stringify({event:"local_tenant_unexpected_error",requestId,errorType:error?.name,
+          frames:String(error?.stack ?? "").split("\n").filter(line=>/^\s+at /.test(line)).slice(0,8)}));
+      }
       return json(response, problem.status, problem, requestId);
     } finally {
       active -= 1;

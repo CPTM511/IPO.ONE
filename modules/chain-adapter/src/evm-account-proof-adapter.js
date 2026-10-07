@@ -4,7 +4,7 @@ import {
   assertCAIP10,
   hashId
 } from "../../../packages/domain/src/index.js";
-import { createChainProfile } from "./chain-profiles.js";
+import { normalizeAccountProofProfile } from "./account-proof-profiles.js";
 
 const EVM_ACCOUNT_PATTERN = /^0x[0-9a-fA-F]{40}$/;
 const EVM_SIGNATURE_PATTERN = /^0x[0-9a-fA-F]{130}$/;
@@ -144,14 +144,7 @@ export function createAgentAccountBindingTypedData({
 
 export class EvmAccountProofAdapter {
   constructor({ profile, signatureVerifier } = {}) {
-    const { profileHash, schemaVersion, ...profileInput } = profile ?? {};
-    this.profile = createChainProfile(profileInput);
-    if (profileHash !== undefined && profileHash !== this.profile.profileHash) {
-      throw new DomainError("chain_profile_hash_mismatch", "account proof profile hash does not match its contents");
-    }
-    if (schemaVersion !== undefined && schemaVersion !== this.profile.schemaVersion) {
-      throw new DomainError("invalid_chain_profile", "account proof profile schema version is not supported");
-    }
+    this.profile = normalizeAccountProofProfile(profile);
     if (
       signatureVerifier !== undefined &&
       typeof signatureVerifier?.verifyTypedData !== "function"

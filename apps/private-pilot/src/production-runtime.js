@@ -73,7 +73,8 @@ const CONFIG_KEYS = new Set([
   "systemActorId",
   "tenantId",
   "verifyEdgeRequest",
-  "wallet"
+  "wallet",
+  "walletConnectProjectId"
 ]);
 const EVM_ACCOUNT = /^0x[a-fA-F0-9]{40}$/;
 const DEPLOYMENT_ROLES = new Set(["container", "primary", "risk"]);
@@ -233,15 +234,14 @@ async function composeProductionClosedPilotRuntime(input) {
     policyVersion: input.policyVersion,
     createNetworkContext: input.createNetworkContext
   });
-  const meteredUsageEnabled = launchPolicy.profiles
-    .public_authenticated_no_funds_beta.capabilities
-    .syntheticMeteredResourceEnabled === true;
   const meteredUsageDeployment =
     input.deploymentRole === "primary" || input.deploymentRole === "container";
-  if (
-    meteredUsageEnabled !== (meteredUsageDeployment &&
-      input.meteredUsageProvider !== undefined)
-  ) throw invalidConfig("Synthetic Metered Resource configuration does not match the launch policy and deployment role");
+  const meteredUsageEnabled = meteredUsageDeployment && launchPolicy.profiles
+    .public_authenticated_no_funds_beta.capabilities
+    .syntheticMeteredResourceEnabled === true;
+  if (meteredUsageEnabled !== (input.meteredUsageProvider !== undefined)) {
+    throw invalidConfig("Synthetic Metered Resource configuration does not match the launch policy and deployment role");
+  }
   const meteredSystemBoundary = meteredUsageEnabled
     ? createHostedMeteredSystemBoundary({
         credentialRegistry: humanAccess.credentialRegistry,
@@ -307,6 +307,7 @@ async function composeProductionClosedPilotRuntime(input) {
     );
   };
   const host = createProductionTenantHost({
+    walletConnectProjectId: input.walletConnectProjectId,
     authenticationReferenceHash: {
       mode: referenceHasher.mode,
       writeKeyVersion: referenceHasher.keyVersion,

@@ -497,3 +497,23 @@ test("authentication database role rejects a privilege vector with the right boo
     (error) => error.code === "unsafe_postgres_authentication_role"
   );
 });
+
+
+test("ordinary local wallet enrollment is explicit, local-only and never a deployment approval", () => {
+  const enabled = loadAuthenticationRuntimeConfig({
+    NODE_ENV: "development", IPO_ONE_AUTHENTICATION_MODE: "local_test",
+    IPO_ONE_LOCAL_WALLET_SELF_SERVICE: "ordinary_verified_wallets"
+  });
+  assert.equal(enabled.localWalletSelfService, true);
+  assert.equal(enabled.publicBetaSelfService, false);
+  assert.equal(enabled.deploymentGateSatisfied, false);
+  for (const environment of [
+    { NODE_ENV: "production", IPO_ONE_AUTHENTICATION_MODE: "local_test" },
+    { NODE_ENV: "development", IPO_ONE_AUTHENTICATION_MODE: "disabled" },
+    { NODE_ENV: "development", IPO_ONE_AUTHENTICATION_MODE: "local_test", IPO_ONE_LOCAL_WALLET_SELF_SERVICE: "all_roles" }
+  ]) {
+    assert.throws(() => loadAuthenticationRuntimeConfig({
+      IPO_ONE_LOCAL_WALLET_SELF_SERVICE: "ordinary_verified_wallets", ...environment
+    }), error => error.code === "authentication_deployment_gate_closed");
+  }
+});

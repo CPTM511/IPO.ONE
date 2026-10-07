@@ -50,6 +50,7 @@ function reportInternalRequestFailure(error, requestId) {
   console.error(JSON.stringify(value));
 }
 const CONFIG_KEYS = new Set([
+  "walletConnectProjectId",
   "authenticationReferenceHash",
   "admitAuthenticationRequest",
   "clock",
@@ -470,6 +471,7 @@ export function createProductionTenantRequestHandler(input) {
     clock: input.clock
   });
   const serveWebAsset = createTenantWebAssetHandler({
+    walletConnectProjectId: input.walletConnectProjectId,
     csrfTokenProvider: input.csrfTokenProvider,
     sessionHandleProvider: input.sessionHandleProvider,
     localAgentAccountProvider: input.localAgentAccountProvider,

@@ -18,6 +18,35 @@ const CLIENT_ID = "client_local_agent_test";
 const POLICY_VERSION = "security_001.v1";
 const AUDIENCE = "urn:ipo.one:local:test";
 
+test("fresh local Agent HTTP credentials require registered client, exact key and tenant", async () => {
+  const material = await createLocalAuthenticationMaterial({invitedWalletAddress:"0x1111111111111111111111111111111111111111"});
+  const referenceHasher = createReferenceHasher(Buffer.from(material.server.referenceHashKey,"base64url"));
+  const registeredClient = "client_principal_dedicated_agent";
+  let active = true, lookups = 0;
+  const authenticator = new LocalDurableAgentAuthenticator({
+    tenantId:TENANT_ID,clientId:CLIENT_ID,policyVersion:POLICY_VERSION,audience:AUDIENCE,referenceHasher,
+    replayCache:new InMemoryReplayCache({referenceHasher}),
+    additionalClientIdVerifier:async id => {lookups++;return active && id === registeredClient;},
+    credentialRegistry:{async findBySubject({clientId}) {return {
+      credentialId:"credential_22222222-2222-4222-8222-222222222222",tenantId:TENANT_ID,actorId:ACTOR_ID,actorType:"agent",clientId,
+      clientAuthenticationMethod:"private_key_jwt",senderConstraint:{method:"dpop",thumbprint:referenceHasher.hash("sender.constraint",material.agent.agentThumbprint),referenceProtected:true},
+      roles:["agent_runtime"],allowedCapabilities:["credit.request"],policyVersion:POLICY_VERSION,status:"active",version:1
+    };}}
+  });
+  const proof = overrides => createLocalAgentProof({keyMaterial:material.agent,tenantId:TENANT_ID,clientId:registeredClient,policyVersion:POLICY_VERSION,audience:AUDIENCE,...overrides});
+  const oneUse=await proof({});
+  assert.equal((await authenticator.authenticate({proof:oneUse})).clientId,registeredClient);
+  await assert.rejects(()=>authenticator.authenticate({proof:oneUse}),e=>e.code==="authentication_replay_rejected");
+  await assert.rejects(async()=>authenticator.authenticate({proof:await proof({clientId:"client_unknown"})}),e=>e.code==="authentication_binding_rejected");
+  const before=lookups;
+  await assert.rejects(async()=>authenticator.authenticate({proof:await proof({tenantId:"tenant_foreign"})}),e=>e.code==="authentication_binding_rejected");
+  assert.equal(lookups,before,"foreign tenants must not reach local client discovery");
+  const foreign=await createLocalAuthenticationMaterial({invitedWalletAddress:"0x2222222222222222222222222222222222222222"});
+  await assert.rejects(async()=>authenticator.authenticate({proof:await proof({keyMaterial:foreign.agent})}),e=>e.code==="authentication_binding_rejected");
+  active=false;
+  await assert.rejects(async()=>authenticator.authenticate({proof:await proof({})}),e=>e.code==="authentication_binding_rejected");
+});
+
 test("local authentication material separates the invited wallet and Agent private key", async () => {
   const material = await createLocalAuthenticationMaterial({
     invitedWalletAddress:

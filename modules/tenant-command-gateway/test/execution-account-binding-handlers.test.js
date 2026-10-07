@@ -11,6 +11,7 @@ import { CoreProjectionType } from "../../persistence/src/index.js";
 import {
   prepareExecutionAccountBindingHandler,
   readExecutionAccountBindingsHandler,
+  revokeExecutionAccountBindingHandler,
   submitExecutionAccountBindingHandler
 } from "../src/index.js";
 
@@ -93,6 +94,19 @@ test("Human execution AccountBinding is one atomic proof plan and never mutates 
   assert.equal(proofPlan.writes.some(({ type }) => type === CoreProjectionType.SUBJECT), false);
   assert.equal(JSON.stringify(proofPlan).includes(signature), false);
   assert.equal(JSON.stringify(proofPlan.response).includes(account.address.toLowerCase()), false);
+  const binding = proofPlan.writes.find(write => write.type === CoreProjectionType.ACCOUNT_BINDING).value;
+  const bindingState = { value: binding, aggregateVersion: 2,
+    rootAggregateType: proofPlan.aggregateType, rootAggregateId: proofPlan.aggregateId };
+  const revokeContext = context({getProjectionStateInTransaction: async (_client, type) =>
+    type === CoreProjectionType.SUBJECT ? {value: SUBJECT, aggregateVersion: 4} : bindingState
+  }, {accountBindingId: binding.accountBindingId}, new Date(NOW.getTime() + 60_000));
+  const revoked = await revokeExecutionAccountBindingHandler().plan(revokeContext);
+  assert.equal(revoked.response.accountBinding.status, "revoked");
+  assert.equal(revoked.aggregateType, proofPlan.aggregateType);
+  assert.equal(revoked.aggregateId, proofPlan.aggregateId);
+  assert.equal(revoked.events[0].expectedVersion, 2);
+  bindingState.rootAggregateId = "another_challenge";
+  await assert.rejects(() => revokeExecutionAccountBindingHandler().plan(revokeContext), {code:"projection_integrity_mismatch"});
 });
 
 test("execution AccountBinding read is Subject-bound, hash-only and non-authorizing", async () => {

@@ -291,7 +291,7 @@ function normalizeConfig(value) {
       throw fail("Human wallet credential contains Agent-only fields");
     }
     const externalSubject = text("externalSubject", entry.externalSubject);
-    if (entry.kind === "human_wallet" && !/^eip155:(?:84532|1952):0x[0-9a-f]{40}$/.test(externalSubject)) {
+    if (entry.kind === "human_wallet" && !/^eip155:(?:84532|1952|97|56):0x[0-9a-f]{40}$/.test(externalSubject)) {
       throw fail("Human wallet externalSubject must be a canonical approved-chain CAIP-10 account");
     }
     return Object.freeze({
@@ -590,6 +590,79 @@ function goldenFlowAgentBootstrapResult({
   });
 }
 
+// Shared by reviewed owner-side identity preparation and credential provisioning.
+// The caller must establish the tenant transaction context first.
+export async function assertProductionGoldenFlowAgentAuthority({
+  client, tenantId, controllerActorId, performedByActorId, policyVersion, now, lock = false
+}) {
+  const authority = await client.query(
+    `SELECT t.status AS tenant_status,
+            controller.actor_type AS controller_actor_type,
+            controller.status AS controller_status,
+            controller_membership.status AS controller_membership_status,
+            controller_membership.policy_version,
+            performer.actor_type AS performer_actor_type,
+            performer.status AS performer_status,
+            performer_membership.role_bundle AS performer_role,
+            performer_membership.status AS performer_membership_status
+       FROM tenants t
+       JOIN actors controller ON controller.id = $2
+       JOIN memberships controller_membership
+         ON controller_membership.tenant_id = t.id
+        AND controller_membership.actor_id = controller.id
+       JOIN actors performer ON performer.id = $3
+       JOIN memberships performer_membership
+         ON performer_membership.tenant_id = t.id
+        AND performer_membership.actor_id = performer.id
+      WHERE t.id = $1
+        AND performer_membership.role_bundle = 'system_worker'
+        AND controller_membership.valid_from <= $4
+        AND (controller_membership.expires_at IS NULL OR controller_membership.expires_at > $4)
+        AND (
+          controller_membership.role_bundle = 'principal_controller'
+          OR EXISTS (
+            SELECT 1 FROM authentication_role_enrollments enrollment
+            JOIN authentication_credentials credential
+              ON credential.tenant_id = enrollment.tenant_id
+             AND credential.id = enrollment.credential_id
+             AND credential.actor_id = enrollment.actor_id
+            WHERE enrollment.tenant_id = t.id
+              AND enrollment.actor_id = controller.id
+              AND enrollment.role_bundle = 'principal_controller'
+              AND enrollment.status = 'active'
+              AND enrollment.policy_version = controller_membership.policy_version
+              AND enrollment.valid_from <= $4
+              AND (enrollment.expires_at IS NULL OR enrollment.expires_at > $4)
+              AND credential.status = 'active'
+              AND credential.actor_type = 'human'
+              AND credential.policy_version = enrollment.policy_version
+                  AND (credential.expires_at IS NULL OR credential.expires_at > $4)
+              AND enrollment.client_ids ? credential.client_id
+              AND controller_membership.client_ids ? credential.client_id
+          )
+        )
+      ${!lock
+        ? ""
+        : "FOR SHARE OF t, controller, controller_membership, performer, performer_membership"}`,
+    [tenantId, controllerActorId, performedByActorId, now]
+  );
+  const bound = authority.rows[0];
+  if (
+    authority.rowCount !== 1 ||
+    bound.tenant_status !== "active" ||
+    bound.controller_actor_type !== ActorType.HUMAN ||
+    bound.controller_status !== "active" ||
+    bound.controller_membership_status !== "active" ||
+    bound.policy_version !== policyVersion ||
+    bound.performer_actor_type !== ActorType.SYSTEM_WORKER ||
+    bound.performer_status !== "active" ||
+    bound.performer_role !== RoleBundle.SYSTEM_WORKER ||
+    bound.performer_membership_status !== "active"
+  ) {
+    throw fail("Golden Flow Agent provisioning authority is unavailable");
+  }
+}
+
 export async function provisionProductionGoldenFlowAgent({
   adminConnectionString,
   referenceHashKey,
@@ -670,48 +743,11 @@ export async function provisionProductionGoldenFlowAgent({
         policyVersion: checkedPolicyVersion,
         source: "system_worker"
       }));
-      const authority = await client.query(
-        `SELECT t.status AS tenant_status,
-                controller.actor_type AS controller_actor_type,
-                controller.status AS controller_status,
-                controller_membership.status AS controller_membership_status,
-                controller_membership.policy_version,
-                performer.actor_type AS performer_actor_type,
-                performer.status AS performer_status,
-                performer_membership.role_bundle AS performer_role,
-                performer_membership.status AS performer_membership_status
-           FROM tenants t
-           JOIN actors controller ON controller.id = $2
-           JOIN memberships controller_membership
-             ON controller_membership.tenant_id = t.id
-            AND controller_membership.actor_id = controller.id
-           JOIN actors performer ON performer.id = $3
-           JOIN memberships performer_membership
-             ON performer_membership.tenant_id = t.id
-            AND performer_membership.actor_id = performer.id
-          WHERE t.id = $1
-            AND controller_membership.role_bundle = 'principal_controller'
-            AND performer_membership.role_bundle = 'system_worker'
-          ${existingIdentityOnly
-            ? ""
-            : "FOR SHARE OF t, controller, controller_membership, performer, performer_membership"}`,
-        [checkedTenantId, checkedControllerId, checkedPerformer]
-      );
-      const bound = authority.rows[0];
-      if (
-        authority.rowCount !== 1 ||
-        bound.tenant_status !== "active" ||
-        bound.controller_actor_type !== ActorType.HUMAN ||
-        bound.controller_status !== "active" ||
-        bound.controller_membership_status !== "active" ||
-        bound.policy_version !== checkedPolicyVersion ||
-        bound.performer_actor_type !== ActorType.SYSTEM_WORKER ||
-        bound.performer_status !== "active" ||
-        bound.performer_role !== RoleBundle.SYSTEM_WORKER ||
-        bound.performer_membership_status !== "active"
-      ) {
-        throw fail("Golden Flow Agent provisioning authority is unavailable");
-      }
+      await assertProductionGoldenFlowAgentAuthority({
+        client, tenantId: checkedTenantId, controllerActorId: checkedControllerId,
+        performedByActorId: checkedPerformer, policyVersion: checkedPolicyVersion,
+        now, lock: !existingIdentityOnly
+      });
       if (!existingIdentityOnly) {
         await client.query(
           `INSERT INTO actors(

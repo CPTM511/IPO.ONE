@@ -11,6 +11,41 @@ const WALLET_AUTHORITY_STATES = new Set([
 ]);
 const PROVIDER_ID = /^[A-Za-z0-9][A-Za-z0-9._:@/-]{1,255}$/;
 
+export function createManagementAccessPresentation({ optionsState, authenticationProfile, riskPasskey } = {}) {
+  const ready = optionsState === "ready";
+  // This describes installed authentication, never grants a role or approval.
+  const passkeyAvailable = ready && authenticationProfile === "local_no_funds" && riskPasskey === true;
+  return {
+    publicScopeVisible: ready && authenticationProfile === "public_authenticated_no_funds_beta",
+    publicScopeDetail: "Public access supports Human and Principal/Agent no-funds workflows. Capital Partner, Risk, Operations and Auditor workspaces remain private. Public management access requires a separately reviewed release, named role bindings and strong authentication; wallet sign-in does not grant these permissions.",
+    passkeyAvailable,
+    passkeyLabel: ready ? "Passkey unavailable" : "Verification unavailable",
+    passkeyDetail: ready
+      ? "Passkey verification is not enabled in this workspace. MFA-protected servicing remains unavailable here. Recovery requires a reviewed strong-authentication service and named role bindings. Independent approvals are still required; wallet sign-in cannot replace them."
+      : "Strong-authentication availability could not be verified. Retry the sign-in check. MFA-protected operations remain locked; wallet sign-in cannot replace verification or independent approvals."
+  };
+}
+
+export function createSandboxProfileActivationPresentation({
+  authenticationProfile, catalogAvailable = false, profileStatus, canAct = false
+} = {}) {
+  const available = authenticationProfile === "local_no_funds" && catalogAvailable === true;
+  if (profileStatus === "active") return {
+    available, disabled: true, label: "Sandbox profile active",
+    detail: available
+      ? "Sandbox profile active. You can verify an execution account in Settings. No credit or funds authority was granted."
+      : "Sandbox profile active. No credit or funds authority was granted."
+  };
+  if (!available) return {
+    available: false, disabled: true, label: "Profile activation unavailable",
+    detail: "Profile activation is not enabled in this workspace. You can still request and repay synthetic credit with scoped Consent. Account verification becomes available when profile activation is enabled here."
+  };
+  return {
+    available: true, disabled: !canAct || profileStatus !== "pending", label: "Activate sandbox profile",
+    detail: "Activation requires your current scoped Consent and a local synthetic identity reference. Review and confirm before the profile changes."
+  };
+}
+
 function safeProviderIds(value) {
   if (!Array.isArray(value)) return [];
   return [...new Set(value)]

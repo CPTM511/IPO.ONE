@@ -1,3 +1,5 @@
+import { WALLET_NETWORK_PROFILES as CHAIN_PROFILES } from "./wallet-networks.js";
+
 export const EVM_WALLET_CONNECTOR_DESCRIPTOR_SCHEMA_VERSION =
   "evm_wallet_connector_descriptor.v1";
 export const EVM_WALLET_CAPABILITIES_SCHEMA_VERSION =
@@ -14,6 +16,7 @@ const CAPABILITY_STATUS = Object.freeze({
 const SOURCES = new Set([
   "eip6963",
   "legacy_eip1193",
+  "binance_injected",
   "mobile_walletconnect"
 ]);
 const CONTEXT_REASONS = new Set([
@@ -23,30 +26,6 @@ const CONTEXT_REASONS = new Set([
   "wallet_provider_connected",
   "wallet_provider_disconnected"
 ]);
-const CHAIN_PROFILES = Object.freeze({
-  "eip155:84532": Object.freeze({
-    chainId: "eip155:84532",
-    chainIdHex: "0x14a34",
-    name: "Base Sepolia",
-    nativeCurrency: Object.freeze({ name: "Ether", symbol: "ETH", decimals: 18 }),
-    rpcUrls: Object.freeze(["https://sepolia.base.org/"]),
-    blockExplorerUrls: Object.freeze(["https://sepolia-explorer.base.org"]),
-    executionEnabled: false,
-    sandboxOnly: true,
-    productionApproved: false
-  }),
-  "eip155:1952": Object.freeze({
-    chainId: "eip155:1952",
-    chainIdHex: "0x7a0",
-    name: "X Layer Testnet",
-    nativeCurrency: Object.freeze({ name: "OKB", symbol: "OKB", decimals: 18 }),
-    rpcUrls: Object.freeze(["https://testrpc.xlayer.tech/terigon"]),
-    blockExplorerUrls: Object.freeze(["https://www.okx.com/web3/explorer/xlayer-test"]),
-    executionEnabled: false,
-    sandboxOnly: true,
-    productionApproved: false
-  })
-});
 const CHAIN_BY_HEX = new Map(
   Object.values(CHAIN_PROFILES).map((profile) => [profile.chainIdHex, profile])
 );
@@ -436,12 +415,16 @@ export function createEvmWalletConnector({
   async function connect({ chainId } = {}) {
     assertAvailable();
     const profile = checkedChainId(chainId);
-    if (connectProvider) await connectProvider();
+    if (connectProvider) await connectProvider({ chainId });
     const addresses = await rawAccounts({ requestAccess: true });
     if (addresses.length === 0) {
       fail("wallet_account_unavailable", "Wallet returned no account");
     }
-    await switchChain(profile.chainId);
+    const currentChain = await provider.request({ method: "eth_chainId" });
+    if (typeof currentChain !== "string" ||
+        currentChain.toLowerCase() !== profile.chainIdHex) {
+      await switchChain(profile.chainId);
+    }
     const accounts = await getAccounts();
     invalidateContext("wallet_provider_connected");
     return deepFreeze({
@@ -487,19 +470,27 @@ export function createEvmWalletConnector({
   }
 
   async function signMessage({ accountId, message } = {}) {
-    const { address } = await assertCurrentAccount(accountId);
-    return checkedSignature(await provider.request({
+    const { accounts, address } = await assertCurrentAccount(accountId);
+    const signature = checkedSignature(await provider.request({
       method: "personal_sign",
       params: [encodedPersonalSignMessage(message), address]
     }));
+    assertContextEpoch(accounts.contextEpoch);
+    await assertCurrentAccount(accountId);
+    assertContextEpoch(accounts.contextEpoch);
+    return signature;
   }
 
   async function signTypedData({ accountId, typedData } = {}) {
-    const { address } = await assertCurrentAccount(accountId);
-    return checkedSignature(await provider.request({
+    const { accounts, address } = await assertCurrentAccount(accountId);
+    const signature = checkedSignature(await provider.request({
       method: "eth_signTypedData_v4",
       params: [address, checkedTypedData(typedData)]
     }));
+    assertContextEpoch(accounts.contextEpoch);
+    await assertCurrentAccount(accountId);
+    assertContextEpoch(accounts.contextEpoch);
+    return signature;
   }
 
   async function submitPreparedExecution() {

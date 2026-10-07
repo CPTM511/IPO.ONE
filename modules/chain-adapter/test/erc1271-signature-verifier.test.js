@@ -145,9 +145,9 @@ function assertValid(result) {
   );
 }
 
-test("approved boundary is read-only, Testnet-only, bounded, and non-authorizing", () => {
+test("approved boundary is read-only, signature-only, bounded, and non-authorizing", () => {
   const boundary = describeErc1271VerificationBoundary();
-  assert.deepEqual(boundary.chains, ["eip155:84532", "eip155:1952"]);
+  assert.deepEqual(boundary.chains, ["eip155:84532", "eip155:1952", "eip155:97", "eip155:56"]);
   assert.deepEqual(boundary.rpcMethods, [
     "eth_call",
     "eth_chainId",
@@ -510,3 +510,20 @@ test("X Layer result is inclusion-only and cannot authorize live authentication"
   assert.equal(result.authenticationEligible, false);
   assert.equal(conformanceFixture.requests[1].params[0], "latest");
 });
+
+for (const chainId of [56, 97]) {
+  test(`BNB ${chainId} login verifies a real EOA signature at finalized state, without writes`, async () => {
+    const fixture = rpcFixture({ chainId });
+    const account = privateKeyToAccount(PRIVATE_KEY);
+    const message = `IPO.ONE no-funds login on ${chainId}`;
+    const signature = await account.signMessage({ message });
+    const verifier = new EvmWalletSignatureVerifier({ fetchImpl: fixture.fetchImpl, clock: () => NOW });
+    const result = await verifier.verifyMessage({ address: account.address, chainId, message, signature });
+    assert.equal(result.chainId, `eip155:${chainId}`);
+    assert.equal(result.authenticationEligible, true);
+    assert.equal(result.sourceFinality, "finalized");
+    assert.equal(result.productionFundsMoved, false);
+    assert.equal(validateVerification(result), true, JSON.stringify(validateVerification.errors));
+    await assert.rejects(verifier.verifyMessage({ address: account.address, chainId, message: message + "tampered", signature }));
+  });
+}

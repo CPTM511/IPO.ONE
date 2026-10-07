@@ -1,8 +1,9 @@
-import { randomBytes } from "node:crypto";
+import { generateKeyPairSync, randomBytes } from "node:crypto";
 import { mkdir, chmod, readFile, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
+import { hashId } from "../packages/domain/src/index.js";
 
 const { Pool } = pg;
 const DIRECTORY_PREFIX = "ipo-one-production-container-smoke-";
@@ -156,6 +157,42 @@ async function dropFixtureDatabaseAndRoles(manifest) {
   }
 }
 
+// CI-only synthetic configuration inputs exercise the production loader.
+// They do not grant an IdP or release approval for any deployed environment.
+export function productionContainerSmokeRuntimeEnvironment({
+  release, tenantId, systemActorId, policyVersion,
+  immutableSecretRoot, gatewayUrl, authenticationUrl
+}) {
+  return Object.freeze({
+    NODE_ENV: "production",
+    HOST: "0.0.0.0",
+    PORT: "8080",
+    IPO_ONE_ALLOWED_HOSTS: "ipo.one,www.ipo.one",
+    IPO_ONE_TRUST_PROXY: "true",
+    IPO_ONE_DEPLOYMENT_MODE: "closed_pilot",
+    IPO_ONE_PUBLIC_ORIGIN: "https://ipo.one",
+    IPO_ONE_RELEASE_ID: release,
+    IPO_ONE_TENANT_ID: tenantId,
+    IPO_ONE_SYSTEM_ACTOR_ID: systemActorId,
+    IPO_ONE_POLICY_VERSION: policyVersion,
+    IPO_ONE_AUTHENTICATION_MODE: "public_beta",
+    IPO_ONE_AUTH_REFERENCE_HASH_MODE: "single_v2",
+    IPO_ONE_IDP_DEPLOYMENT_APPROVAL: "APPROVED",
+    IPO_ONE_IDP_VENDOR_ID: "wallet_only",
+    IPO_ONE_IDP_DEPLOYMENT_APPROVAL_SHA: release,
+    IPO_ONE_IDP_CONFIGURATION_REF: `${immutableSecretRoot}/identity-config/versions/1`,
+    IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_REF: `${immutableSecretRoot}/auth-next-reference-key/versions/1`,
+    IPO_ONE_AUTH_ENCRYPTION_KEY_REF: `${immutableSecretRoot}/auth-encryption-key/versions/1`,
+    IPO_ONE_GATEWAY_DATABASE_URL: gatewayUrl,
+    IPO_ONE_AUTH_DATABASE_URL: authenticationUrl,
+    IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_FILE: `${SECRET_MOUNT}/next-reference-key`,
+    IPO_ONE_AUTH_ENCRYPTION_KEY_FILE: `${SECRET_MOUNT}/encryption-key`,
+    IPO_ONE_IDENTITY_CONFIG_FILE: `${SECRET_MOUNT}/identity-config.json`,
+    IPO_ONE_EDGE_ASSERTION_KEY_FILE: `${SECRET_MOUNT}/edge-assertion-key`,
+    IPO_ONE_HOSTED_METERED_PROVIDER_KEY_FILE: `${SECRET_MOUNT}/metered-provider-key.json`
+  });
+}
+
 export async function prepareProductionContainerSmoke({ directory: value, release: releaseValue }) {
   const directory = checkedDirectory(value);
   const release = checkedRelease(releaseValue);
@@ -194,8 +231,20 @@ export async function prepareProductionContainerSmoke({ directory: value, releas
     const gatewayPassword = CI_ONLY_NON_SECRET_GATEWAY_PASSWORD;
     const authenticationPassword = CI_ONLY_NON_SECRET_AUTHENTICATION_PASSWORD;
     const referenceKey = randomBytes(32).toString("base64url");
+    const nextReferenceKey = randomBytes(32).toString("base64url");
     const encryptionKey = randomBytes(32).toString("base64url");
     const edgeAssertionKey = randomBytes(32).toString("base64url");
+    const meteredPair = generateKeyPairSync("ed25519");
+    const meteredPublicKey = meteredPair.publicKey.export({ format: "der", type: "spki" })
+      .toString("base64url");
+    const meteredPrivateKey = meteredPair.privateKey.export({ format: "der", type: "pkcs8" })
+      .toString("base64url");
+    const meteredKeyMaterial = {
+      schemaVersion: "ipo_one_hosted_synthetic_metered_provider_key.v1",
+      providerKeyId: `hosted_metered_${hashId("hosted_metered_provider_key", meteredPublicKey).slice(2, 34)}`,
+      publicKeyDer: meteredPublicKey,
+      privateKeyDer: meteredPrivateKey
+    };
     const gatewayUrl = databaseUrl(sourceUrl.toString(), {
       hostname: "host.docker.internal",
       username: gatewayRole,
@@ -260,8 +309,10 @@ export async function prepareProductionContainerSmoke({ directory: value, releas
       writePrivate(join(secretDirectory, "gateway-password"), `${gatewayPassword}\n`),
       writePrivate(join(secretDirectory, "authentication-password"), `${authenticationPassword}\n`),
       writePrivate(join(secretDirectory, "reference-key"), `${referenceKey}\n`),
+      writePrivate(join(secretDirectory, "next-reference-key"), `${nextReferenceKey}\n`),
       writePrivate(join(secretDirectory, "encryption-key"), `${encryptionKey}\n`),
-      writePrivate(join(secretDirectory, "edge-assertion-key"), `${edgeAssertionKey}\n`)
+      writePrivate(join(secretDirectory, "edge-assertion-key"), `${edgeAssertionKey}\n`),
+      writePrivate(join(secretDirectory, "metered-provider-key.json"), `${JSON.stringify(meteredKeyMaterial)}\n`)
     ]);
     await Promise.all([
       writePrivate(join(directory, "bootstrap.env"), environmentFile({
@@ -272,32 +323,13 @@ export async function prepareProductionContainerSmoke({ directory: value, releas
         IPO_ONE_AUTH_DATABASE_PASSWORD_FILE: `${SECRET_MOUNT}/authentication-password`,
         IPO_ONE_AUTH_REFERENCE_HASH_KEY_FILE: `${SECRET_MOUNT}/reference-key`
       })),
-      writePrivate(join(directory, "runtime.env"), environmentFile({
-        NODE_ENV: "production",
-        HOST: "0.0.0.0",
-        PORT: "8080",
-        IPO_ONE_ALLOWED_HOSTS: "ipo.one,www.ipo.one",
-        IPO_ONE_TRUST_PROXY: "true",
-        IPO_ONE_DEPLOYMENT_MODE: "closed_pilot",
-        IPO_ONE_PUBLIC_ORIGIN: "https://ipo.one",
-        IPO_ONE_RELEASE_ID: release,
-        IPO_ONE_TENANT_ID: bootstrapConfig.tenant.tenantId,
-        IPO_ONE_SYSTEM_ACTOR_ID: bootstrapConfig.systemActor.actorId,
-        IPO_ONE_POLICY_VERSION: bootstrapConfig.policyVersion,
-        IPO_ONE_AUTHENTICATION_MODE: "closed_pilot",
-        IPO_ONE_IDP_DEPLOYMENT_APPROVAL: "APPROVED",
-        IPO_ONE_IDP_VENDOR_ID: "wallet_only",
-        IPO_ONE_IDP_DEPLOYMENT_APPROVAL_SHA: release,
-        IPO_ONE_IDP_CONFIGURATION_REF: `${immutableSecretRoot}/identity-config/versions/1`,
-        IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF: `${immutableSecretRoot}/auth-reference-key/versions/1`,
-        IPO_ONE_AUTH_ENCRYPTION_KEY_REF: `${immutableSecretRoot}/auth-encryption-key/versions/1`,
-        IPO_ONE_GATEWAY_DATABASE_URL: gatewayUrl,
-        IPO_ONE_AUTH_DATABASE_URL: authenticationUrl,
-        IPO_ONE_AUTH_REFERENCE_HASH_KEY_FILE: `${SECRET_MOUNT}/reference-key`,
-        IPO_ONE_AUTH_ENCRYPTION_KEY_FILE: `${SECRET_MOUNT}/encryption-key`,
-        IPO_ONE_IDENTITY_CONFIG_FILE: `${SECRET_MOUNT}/identity-config.json`,
-        IPO_ONE_EDGE_ASSERTION_KEY_FILE: `${SECRET_MOUNT}/edge-assertion-key`
-      })),
+      writePrivate(join(directory, "runtime.env"), environmentFile(productionContainerSmokeRuntimeEnvironment({
+        release,
+        tenantId: bootstrapConfig.tenant.tenantId,
+        systemActorId: bootstrapConfig.systemActor.actorId,
+        policyVersion: bootstrapConfig.policyVersion,
+        immutableSecretRoot, gatewayUrl, authenticationUrl
+      }))),
       writePrivate(join(directory, "request.curl"), [
         "fail",
         "silent",
@@ -314,6 +346,8 @@ export async function prepareProductionContainerSmoke({ directory: value, releas
         gatewayPassword,
         authenticationPassword,
         referenceKey,
+        nextReferenceKey,
+        meteredPrivateKey,
         encryptionKey,
         edgeAssertionKey,
         gatewayUrl,

@@ -194,6 +194,11 @@ assert.deepEqual(vercel.crons[0], {
   schedule: "*/15 * * * *"
 });
 assert.equal(vercel.functions["api/vercel-sandbox.mjs"].maxDuration, 30);
+for (const configuration of [vercel, riskVercel]) {
+  assert.equal(configuration.functions["api/vercel-sandbox.mjs"].includeFiles,
+    "{apps/web/src/**,db/migrations/**,deployment-artifact-manifest.json}",
+    "Compiled UI must ship its exact asset manifest in each deployment role");
+}
 assert.equal(vercel.functions["api/vercel-sandbox-cron.mjs"].maxDuration, 30);
 assert.deepEqual(vercel.redirects, [{
   source: "/(.*)",

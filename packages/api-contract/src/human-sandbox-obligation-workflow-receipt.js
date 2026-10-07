@@ -1,3 +1,5 @@
+import approvalProposalSchema from "../../../schemas/v2/approval-proposal.schema.json" with { type: "json" };
+import approvalDecisionSchema from "../../../schemas/v2/approval-decision.schema.json" with { type: "json" };
 import Ajv2020 from "ajv/dist/2020.js";
 import { DomainError } from "../../domain/src/index.js";
 import receiptSchema from "../../../schemas/v2/human-sandbox-obligation-workflow-receipt.schema.json" with { type: "json" };
@@ -73,6 +75,8 @@ ajv.addSchema(agentSecuredFacilityAuthorizationSchema);
 ajv.addSchema(meteredUsageEvidenceSchema);
 ajv.addSchema(meteredUsageAdmissionSchema);
 ajv.addSchema(tenantMeteredUsageAdmittedSchema);
+ajv.addSchema(approvalProposalSchema);
+ajv.addSchema(approvalDecisionSchema);
 ajv.addSchema(tenantProtocolResultSchema);
 const validateReceipt = ajv.compile(receiptSchema);
 

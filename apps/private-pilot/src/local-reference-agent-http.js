@@ -24,6 +24,9 @@ import {
 } from "./agent-reference-workflows.js";
 
 export const LOCAL_REFERENCE_AGENT_HTTP_ROUTES = Object.freeze({
+  enrollmentStatus: "/local/v1/reference-agent/enrollment/status",
+  enrollmentCreate: "/local/v1/reference-agent/enrollment/create",
+  enrollmentRevoke: "/local/v1/reference-agent/enrollment/revoke",
   accountProof: "/local/v1/reference-agent/account-proof",
   application: "/local/v1/reference-agent/application",
   continuation: "/local/v1/reference-agent/continuation",
@@ -165,6 +168,12 @@ function assertBody(value, route) {
   }
   if (route === LOCAL_REFERENCE_AGENT_HTTP_ROUTES.runtimeStep) {
     return assertRuntimeStepBody(value);
+  }
+  if (route === LOCAL_REFERENCE_AGENT_HTTP_ROUTES.runtime && Object.hasOwn(value, "obligationId")) {
+    if (!exactKeys(value, ["mandateId", "obligationId"]) || !IDENTIFIER.test(value.obligationId ?? "")) {
+      invalid("The exact existing Agent Obligation is required");
+    }
+    return value;
   }
   const required = route === LOCAL_REFERENCE_AGENT_HTTP_ROUTES.runtime
     ? ["mandateId", "offerReceipt"]
@@ -404,11 +413,48 @@ async function runLocalAgentRuntimeStep({
   });
 }
 
+export async function resumeLocalAgentRuntimeWorkflow({ input, manifest, session }) {
+  const owned = await session.client.getOwnObligation({
+    obligationId: input.obligationId,
+    requestId: identifier("request-reference-agent-resume"),
+    correlationId: identifier("correlation-reference-agent-resume")
+  });
+  let obligation = owned.response?.obligation;
+  if (obligation?.obligationId !== input.obligationId || obligation.authorityId !== manifest.mandateId ||
+      obligation.subjectId !== manifest.subjectId || obligation.authorityType !== "mandate" ||
+      obligation.sandboxOnly !== true || obligation.productionFundsMoved !== false ||
+      !["active", "fully_repaid"].includes(obligation.status)) {
+    invalid("The existing Obligation does not match this active Agent Mandate");
+  }
+  let execution;
+  let repayment;
+  if (obligation.executionStatus === "pending") {
+    execution = await runLocalAgentRuntimeStep({ input: {...input, action:"execute_allowed_use"}, manifest, session });
+    obligation = execution.obligation;
+  }
+  if (obligation.status !== "fully_repaid") {
+    const amountMinor = (BigInt(obligation.outstandingPrincipalMinor) +
+      BigInt(obligation.outstandingInterestMinor) + BigInt(obligation.outstandingFeesMinor)).toString();
+    repayment = await runLocalAgentRuntimeStep({ input: {...input, action:"post_repayment", amountMinor,
+      sourceCode:"synthetic_revenue"}, manifest, session });
+    obligation = repayment.obligation;
+  }
+  const evidence = await runLocalAgentRuntimeStep({ input: {...input, action:"read_evidence"}, manifest, session });
+  return {
+    schemaVersion:"local_agent_reference_workflow_result.v1", status:"evidence_read",
+    sandboxOnly:true, productionFundsMoved:false,
+    workflowReceipt:{ obligation, ...(execution ? {executionReceipt:execution.executionReceipt}:{}),
+      ...(repayment ? {repayment:repayment.repayment}:{}) },
+    evidence:evidence.evidence
+  };
+}
+
 export function createLocalReferenceAgentHttpService({
   createAgentSession,
   gateway,
   networkContext,
-  proveAccount
+  proveAccount,
+  enrollment
 }) {
   if (
     typeof createAgentSession !== "function" ||
@@ -441,13 +487,33 @@ export function createLocalReferenceAgentHttpService({
         );
       }
       assertPrincipal(authenticationContext);
+      if (url.pathname.startsWith("/local/v1/reference-agent/enrollment/")) {
+        const body = await readJson();
+        const revoke = url.pathname === LOCAL_REFERENCE_AGENT_HTTP_ROUTES.enrollmentRevoke;
+        if (!body || typeof body !== "object" || !exactKeys(body, revoke ? ["schemaVersion", "actorId"] : ["schemaVersion"]) ||
+            body.schemaVersion !== "local_principal_agent_runtime_request.v1" || (revoke && !IDENTIFIER.test(body.actorId ?? ""))) invalid("Exact local Agent enrollment request required");
+        if (!enrollment) {
+          if (url.pathname === LOCAL_REFERENCE_AGENT_HTTP_ROUTES.enrollmentStatus) return sendJson(200, { available:false, schemaVersion:"local_principal_agent_runtime_view.v1" });
+          throw new DomainError("local_agent_enrollment_unavailable", "Local Agent enrollment is not configured");
+        }
+        const value = url.pathname === LOCAL_REFERENCE_AGENT_HTTP_ROUTES.enrollmentCreate
+          ? await enrollment.create(authenticationContext)
+          : revoke ? await enrollment.revoke(authenticationContext, body) : await enrollment.status(authenticationContext);
+        return sendJson(200, value);
+      }
       const input = assertBody(await readJson(), url.pathname);
       if (url.pathname === LOCAL_REFERENCE_AGENT_HTTP_ROUTES.accountProof) {
-        const proof = await proveAccount(input.challenge);
+        const proof = await proveAccount(input.challenge, authenticationContext);
+        // AgentTenantCommandClient returns Subject.status, not subjectStatus.
+        // Reject an incomplete result instead of displaying a false success.
+        if (proof.subjectId !== input.subjectId || proof.status !== "active" ||
+            !proof.accountBinding || proof.challengeConsumed !== true) {
+          throw new DomainError("local_agent_account_proof_incomplete", "The Agent account proof did not return an active verified binding");
+        }
         return sendJson(200, {
           status: "account_bound",
           subjectId: proof.subjectId,
-          subjectStatus: proof.subjectStatus,
+          subjectStatus: proof.status,
           accountBinding: proof.accountBinding,
           challengeConsumed: proof.challengeConsumed,
           sandboxOnly: true,
@@ -485,7 +551,7 @@ export function createLocalReferenceAgentHttpService({
         );
       }
 
-      const session = await createAgentSession(manifest);
+      const session = await createAgentSession(manifest, authenticationContext);
       try {
         if (url.pathname === LOCAL_REFERENCE_AGENT_HTTP_ROUTES.continuation) {
           const result = await session.client.resumeWorkspace({
@@ -558,7 +624,9 @@ export function createLocalReferenceAgentHttpService({
             schemaVersion: "local_reference_agent_runtime_step_result.v1"
           });
         }
-        const lifecycle = await runLocalAgentRuntimeWorkflow({
+        const lifecycle = input.obligationId
+          ? await resumeLocalAgentRuntimeWorkflow({input, manifest, session})
+          : await runLocalAgentRuntimeWorkflow({
           manifest,
           offerReceipt: input.offerReceipt,
           session

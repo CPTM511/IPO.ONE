@@ -4,7 +4,7 @@
   "private": true,
   "license": "MIT",
   "type": "module",
-  "packageManager": "pnpm@11.1.3",
+  "packageManager": "pnpm@11.11.0",
   "engines": {
     "node": ">=24.19.0 <25 || >=26.5.0 <27"
   },
@@ -82,7 +82,7 @@
     "testnet:m2b003:recovery:prewrite": "node deploy/testnet/m2b-003-recovery-prewrite.mjs",
     "lint:source": "node scripts/lint-source.mjs",
     "lint:boundaries": "node scripts/lint-boundaries.mjs",
-    "lint": "pnpm run lint:source && pnpm run lint:boundaries",
+    "lint": "pnpm run check:ui-baseline && pnpm run lint:source && pnpm run lint:boundaries",
     "typecheck": "node scripts/check-contract-types.mjs",
     "check:schemas": "node scripts/check-schemas.mjs",
     "check:openapi": "node scripts/check-openapi.mjs",
@@ -155,9 +155,11 @@
     "local:evidence-anchor:enable": "node scripts/local-evidence-anchor.mjs enable",
     "local:evidence-anchor:disable": "node scripts/local-evidence-anchor.mjs disable",
     "demo": "node packages/mvp-flow/src/run-vertical-slice.js",
-    "demo:vertical-slice": "node packages/mvp-flow/src/run-vertical-slice.js"
+    "demo:vertical-slice": "node packages/mvp-flow/src/run-vertical-slice.js",
+    "check:ui-baseline": "node scripts/check-product-ui-baseline.mjs"
   },
   "dependencies": {
+    "@simplewebauthn/server": "14.0.1",
     "@walletconnect/ethereum-provider": "2.23.10",
     "jose": "6.2.3",
     "pg": "^8.22.0",
@@ -169,6 +171,7 @@
     "@playwright/test": "1.62.1",
     "esbuild": "0.28.1",
     "forge-std": "https://codeload.github.com/foundry-rs/forge-std/tar.gz/620536fa5277db4e3fd46772d5cbc1ea0696fb43",
+    "qrcode": "1.5.3",
     "solc": "0.8.30"
   }
 }

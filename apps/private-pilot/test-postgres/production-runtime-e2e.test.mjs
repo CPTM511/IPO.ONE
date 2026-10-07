@@ -23,6 +23,8 @@ import {
   EvmWalletSignatureVerifier,
   X_LAYER_TESTNET_PROFILE
 } from "../../../modules/chain-adapter/src/index.js";
+import { readFile } from "node:fs/promises";
+import { migrationStatus } from "../../../scripts/migrate.mjs";
 import { createPostgresPool } from "../../../modules/persistence/src/index.js";
 import { hashId } from "../../../packages/domain/src/index.js";
 import {
@@ -34,15 +36,16 @@ import { createProductionClosedPilotRuntime } from "../src/production-runtime.js
 
 const { Pool } = pg;
 const CONNECTION_STRING = process.env.DATABASE_URL;
+const readBnbRollback = await readFile(new URL("../../../db/migrations/0074_bnb_no_funds_wallet_networks.down.sql", import.meta.url), "utf8");
 const SECRET_REF =
   "projects/ipo-one-public-sandbox-cptm511/secrets/predeploy/versions/1";
 const LOCAL_EOA_BLOCK_HASH = `0x${"77".repeat(32)}`;
 
-function localReadOnlyEoaRpc(_url, options) {
+function localReadOnlyEoaRpc(chainId, _url, options) {
   const request = JSON.parse(options.body);
   let result;
   if (request.method === "eth_chainId") {
-    result = "0x14a34";
+    result = `0x${chainId.toString(16)}`;
   } else if (request.method === "eth_getBlockByNumber") {
     result = {
       number: "0x123",
@@ -95,8 +98,8 @@ function hostedMeteredProvider() {
   });
 }
 
-test(
-  "production public Beta self-provisions a wallet, executes a durable Human command, logs out, and signs in again with real EIP-191 signatures",
+for (const walletChainId of [84532, 97, 56]) test(
+  `network ${walletChainId}: production public Beta self-provisions a wallet, executes a durable Human command, logs out, and signs in again with real EIP-191 signatures`,
   { timeout: 120_000 },
   async () => {
     assert.ok(
@@ -142,7 +145,7 @@ test(
         clientId: walletClientId,
         issuer: browserOrigin,
         externalSubject:
-          `eip155:84532:${preprovisionedAccount.address.toLowerCase()}`,
+          `eip155:${walletChainId}:${preprovisionedAccount.address.toLowerCase()}`,
         invitationId: `invite_predeploy_borrower_${suffix}`,
         expiresAt:
           new Date(Date.now() + 30 * 24 * 60 * 60 * 1_000).toISOString()
@@ -185,7 +188,7 @@ test(
       IPO_ONE_AUTH_ENCRYPTION_KEY_REF: SECRET_REF
     });
     const walletSignatureVerifier = new EvmWalletSignatureVerifier({
-      fetchImpl: localReadOnlyEoaRpc
+      fetchImpl: (...args) => localReadOnlyEoaRpc(walletChainId, ...args)
     });
     const referenceHasher = createReferenceHashKeyring({
       mode: "single_v2",
@@ -197,7 +200,7 @@ test(
       max: 1
     });
     try {
-      runtime = await createProductionClosedPilotRuntime({
+      const runtimeInput = {
         gatewayPool,
         authenticationPool,
         browserOrigin,
@@ -258,7 +261,8 @@ test(
             source: "verified_proxy"
           });
         }
-      });
+      };
+      runtime = await createProductionClosedPilotRuntime(runtimeInput);
       const address = await runtime.listen();
       assert.deepEqual(address, { host: "0.0.0.0", port });
       const baseUrl = `http://127.0.0.1:${port}`;
@@ -287,8 +291,9 @@ test(
           sessionWorkspaceRole: null,
           oidcProviders: [],
           walletAuthentication: true,
+          riskPasskey: false,
           walletWorkspaceRoles: ["human_borrower", "principal_controller"],
-          supportedChains: ["eip155:84532", "eip155:1952"],
+          supportedChains: ["eip155:84532", "eip155:1952", "eip155:97", "eip155:56"],
           boundary:
             "Authentication proves presence; internal policy and Mandates separately decide authority."
         }
@@ -305,7 +310,7 @@ test(
           },
           body: JSON.stringify({
             address: account.address,
-            chainId: 84532,
+            chainId: walletChainId,
             workspaceRole: "human_borrower"
           })
         }
@@ -586,7 +591,7 @@ test(
           },
           body: JSON.stringify({
             address: account.address,
-            chainId: 84532,
+            chainId: walletChainId,
             workspaceRole: "human_borrower"
           })
         }
@@ -657,13 +662,38 @@ test(
             },
             body: JSON.stringify({
               address: account.address,
-              chainId: 84532,
+              chainId: walletChainId,
               workspaceRole: "human_borrower"
             })
           }
         );
         assert.equal(boundedChallenge.status, 201);
       }
+      if (walletChainId === 97 || walletChainId === 56) {
+        const before = await ownerPool.query(
+          "SELECT count(*)::int AS count FROM authentication_wallet_transactions WHERE chain_id = $1",
+          [walletChainId]
+        );
+        assert.ok(before.rows[0].count > 0);
+        const rollback = await ownerPool.connect();
+        try {
+          await rollback.query("BEGIN");
+          await assert.rejects(
+            () => rollback.query(readBnbRollback),
+            (error) => error.code === "23514"
+          );
+        } finally {
+          await rollback.query("ROLLBACK");
+          rollback.release();
+        }
+        assert.equal((await migrationStatus({ pool: ownerPool })).at(-1).applied, true);
+        const after = await ownerPool.query(
+          "SELECT count(*)::int AS count FROM authentication_wallet_transactions WHERE chain_id = $1",
+          [walletChainId]
+        );
+        assert.deepEqual(after.rows, before.rows, "rollback must retain BNB authentication records");
+      }
+
       const exhaustedChallenge = await fetch(
         `${baseUrl}/auth/v1/wallet/challenge`,
         {
@@ -675,7 +705,7 @@ test(
           },
           body: JSON.stringify({
             address: account.address,
-            chainId: 84532,
+            chainId: walletChainId,
             workspaceRole: "human_borrower"
           })
         }
@@ -686,6 +716,35 @@ test(
         (await exhaustedChallenge.json()).code,
         "request_budget_exceeded"
       );
+      // Risk uses the same kernel without the Primary-only metered signer.
+      // Verify actual cold-start composition/HTTP and reject an extra signer.
+      if (walletChainId === 56) {
+        await runtime.close();
+        const riskInput = {
+          ...runtimeInput,
+          deploymentRole: "risk",
+          gatewayPool: createPostgresPool({ connectionString: gatewayUrl.toString(), max: 1 }),
+          authenticationPool: createPostgresPool({ connectionString: authenticationUrl.toString(), max: 1 })
+        };
+        delete riskInput.meteredUsageProvider;
+        runtime = await createProductionClosedPilotRuntime(riskInput);
+        await runtime.listen();
+        const response = await fetch(
+          `http://127.0.0.1:${riskInput.port}/.well-known/ipo-one.json`,
+          { headers: edgeHeaders }
+        );
+        assert.equal(response.status, 200);
+        const capabilities = await response.json();
+        assert.equal(capabilities.deployment.deploymentRole, "risk");
+        assert.equal(capabilities.safety.realFundsEnabled, false);
+        assert.equal(capabilities.providers.syntheticMeteredResource.status, "UNAVAILABLE");
+        await assert.rejects(() => createProductionClosedPilotRuntime({
+          ...riskInput,
+          gatewayPool: createPostgresPool({ connectionString: gatewayUrl.toString(), max: 1 }),
+          authenticationPool: createPostgresPool({ connectionString: authenticationUrl.toString(), max: 1 }),
+          meteredUsageProvider: hostedMeteredProvider()
+        }), (error) => error.code === "invalid_production_runtime_config");
+      }
     } finally {
       await runtime?.close().catch(() => {});
       await Promise.allSettled([

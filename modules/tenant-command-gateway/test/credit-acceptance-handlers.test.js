@@ -344,3 +344,11 @@ test("Human Consent and Agent Mandate must remain current at Offer acceptance", 
     );
   }
 });
+
+test("Offer acceptance does not precede the Offer's serialized update timestamp", async () => {
+  const values = fixture(ActorType.HUMAN);
+  values.offer.updatedAt = new Date(ACCEPTED_AT.getTime() + 1).toISOString();
+  const result = await planAcceptanceWith(values, ActorType.HUMAN);
+  const offer = result.writes.find((write) => write.type === CoreProjectionType.CREDIT_OFFER);
+  assert.ok(Date.parse(offer.value.updatedAt) >= Date.parse(values.offer.updatedAt));
+});

@@ -118,8 +118,8 @@
     },
     "operations": {
       "type": "array",
-      "minItems": 114,
-      "maxItems": 115,
+      "minItems": 122,
+      "maxItems": 122,
       "uniqueItems": true,
       "items": {
         "$ref": "#/$defs/operation"
@@ -261,11 +261,18 @@
       "properties": {
         "operationId": {
           "enum": [
+            "pilotProposeApproval",
+            "pilotReadApproval",
+            "pilotDecideApproval",
+            "pilotCancelApproval",
+            "pilotReadApprovalInbox",
+            "pilotReadRiskAgentDirectory",
             "pilotAcceptCreditOffer",
             "pilotActivateSandboxMandate",
             "pilotCreateAgentAccountChallenge",
             "pilotCreateAgentSubject",
             "pilotCreateConsent",
+            "pilotActivateSandboxHumanSubject",
             "pilotCreateHumanSubject",
             "pilotCreateDraftMandate",
             "pilotCreateCreditPassportArtifact",
@@ -403,6 +410,7 @@
         },
         "resourceType": {
           "enum": [
+            "approval_proposal",
             "subject",
             "capital_partner_profile",
             "consent",
@@ -440,6 +448,10 @@
         },
         "requiredCapability": {
           "enum": [
+            "approval.propose",
+            "approval.read",
+            "approval.decide",
+            "approval.cancel",
             "agent.create",
             "agent_account.binding.read.self",
             "agent_account.challenge.create.owned",
@@ -468,6 +480,7 @@
             "evidence.read",
             "evidence.read.owned",
             "obligation.read.owned",
+            "subject.activate.sandbox.self",
             "human_subject.create.self",
             "identity_reference.read.self",
             "integration.read.owned",
@@ -571,6 +584,12 @@
         },
         "responseSchemaVersion": {
           "enum": [
+            "tenant_approval_proposed.v1",
+            "tenant_approval_view.v1",
+            "tenant_approval_decided.v1",
+            "tenant_approval_canceled.v1",
+            "tenant_approval_inbox.v1",
+            "tenant_risk_agent_directory.v1",
             "tenant_credit_offer_accepted.v1",
             "tenant_sandbox_obligation_executed.v1",
             "tenant_sandbox_repayment_posted.v1",
@@ -586,6 +605,7 @@
             "tenant_consent_created.v1",
             "tenant_consent_view.v1",
             "tenant_consent_revoked.v1",
+            "tenant_sandbox_human_subject_activated.v1",
             "tenant_human_subject_created.v1",
             "tenant_credit_intent_created.v1",
             "tenant_credit_application_evaluated.v2",
@@ -696,6 +716,223 @@
         }
       },
       "oneOf": [
+        {
+          "properties": {
+            "operationId": {
+              "const": "pilotProposeApproval"
+            },
+            "kind": {
+              "const": "command"
+            },
+            "actorTypes": {
+              "const": [
+                "risk_operator",
+                "operations_operator"
+              ]
+            },
+            "resourceType": {
+              "const": "approval_proposal"
+            },
+            "requiredCapability": {
+              "const": "approval.propose"
+            },
+            "idempotency": {
+              "const": "required"
+            },
+            "quotaClass": {
+              "const": "privileged"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_approval_proposed.v1"
+            }
+          }
+        },
+        {
+          "properties": {
+            "operationId": {
+              "const": "pilotReadApproval"
+            },
+            "kind": {
+              "const": "query"
+            },
+            "actorTypes": {
+              "const": [
+                "risk_operator",
+                "operations_operator",
+                "auditor"
+              ]
+            },
+            "resourceType": {
+              "const": "approval_proposal"
+            },
+            "requiredCapability": {
+              "const": "approval.read"
+            },
+            "idempotency": {
+              "const": "prohibited"
+            },
+            "quotaClass": {
+              "const": "read"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_approval_view.v1"
+            }
+          }
+        },
+        {
+          "properties": {
+            "operationId": {
+              "const": "pilotDecideApproval"
+            },
+            "kind": {
+              "const": "command"
+            },
+            "actorTypes": {
+              "const": [
+                "risk_operator",
+                "operations_operator"
+              ]
+            },
+            "resourceType": {
+              "const": "approval_proposal"
+            },
+            "requiredCapability": {
+              "const": "approval.decide"
+            },
+            "idempotency": {
+              "const": "required"
+            },
+            "quotaClass": {
+              "const": "privileged"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_approval_decided.v1"
+            }
+          }
+        },
+        {
+          "properties": {
+            "operationId": {
+              "const": "pilotCancelApproval"
+            },
+            "kind": {
+              "const": "command"
+            },
+            "actorTypes": {
+              "const": [
+                "risk_operator",
+                "operations_operator"
+              ]
+            },
+            "resourceType": {
+              "const": "approval_proposal"
+            },
+            "requiredCapability": {
+              "const": "approval.cancel"
+            },
+            "idempotency": {
+              "const": "required"
+            },
+            "quotaClass": {
+              "const": "privileged"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_approval_canceled.v1"
+            }
+          }
+        },
+        {
+          "properties": {
+            "operationId": {
+              "const": "pilotReadApprovalInbox"
+            },
+            "kind": {
+              "const": "query"
+            },
+            "actorTypes": {
+              "const": [
+                "risk_operator",
+                "operations_operator",
+                "auditor"
+              ]
+            },
+            "resourceType": {
+              "const": "approval_proposal"
+            },
+            "requiredCapability": {
+              "const": "approval.read"
+            },
+            "idempotency": {
+              "const": "prohibited"
+            },
+            "quotaClass": {
+              "const": "read"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_approval_inbox.v1"
+            }
+          }
+        },
+        {
+          "properties": {
+            "operationId": {
+              "const": "pilotReadRiskAgentDirectory"
+            },
+            "kind": {
+              "const": "query"
+            },
+            "actorTypes": {
+              "const": [
+                "risk_operator"
+              ]
+            },
+            "resourceType": {
+              "const": "risk_portfolio"
+            },
+            "requiredCapability": {
+              "const": "risk.read.tenant"
+            },
+            "idempotency": {
+              "const": "prohibited"
+            },
+            "quotaClass": {
+              "const": "read"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_risk_agent_directory.v1"
+            }
+          }
+        },
+        {
+          "properties": {
+            "operationId": {
+              "const": "pilotActivateSandboxHumanSubject"
+            },
+            "kind": {
+              "const": "command"
+            },
+            "actorTypes": {
+              "const": [
+                "human"
+              ]
+            },
+            "resourceType": {
+              "const": "subject"
+            },
+            "requiredCapability": {
+              "const": "subject.activate.sandbox.self"
+            },
+            "idempotency": {
+              "const": "required"
+            },
+            "quotaClass": {
+              "const": "mutation"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_sandbox_human_subject_activated.v1"
+            }
+          }
+        },
         {
           "properties": {
             "operationId": { "const": "pilotReadCapitalPartnerSelf" },

@@ -90,6 +90,7 @@ test("Borrower visibly reviews an exact secured-Pool action without submission",
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await page.getByRole("button", { name: "Open navigation" }).click();
+  await page.getByRole("button", { name: "More tools" }).click();
   await page.getByRole("button", { name: /^Secured Pool/ }).click();
 
   const pool = page.getByRole("region", { name: /Secured Pool, read from server truth/ });
@@ -122,6 +123,7 @@ test("Borrower visibly reviews an exact secured-Pool action without submission",
 
 test("Borrower without a recovered Subject still sees public Pool truth", async ({ page }) => {
   await page.goto("/?browser_qa_workspace=no_subject");
+  await page.getByRole("button", { name: "More tools" }).click();
   await page.getByRole("button", { name: /^Secured Pool/ }).click();
 
   await expect(page.locator("#securedPoolStatus")).toHaveText("Live read-only state");
@@ -144,6 +146,7 @@ test("Borrower files and reloads one closed-category case through visible contro
   await page.goto("/#request-credit");
 
   await page.getByRole("button", { name: "Load timeline" }).click();
+  await page.getByText("Get help with a record · Cases & corrections", { exact: true }).click();
   const target = page.locator("#pilotCaseTarget");
   await expect.poll(() => target.locator("option").count()).toBeGreaterThan(1);
   await target.selectOption({ index: 1 });
@@ -180,7 +183,7 @@ test("secured-Pool controls remain usable at 200 percent zoom", async ({ page })
 test("Capital Partner reaches the bilateral workspace without public-pool authority", async ({ page }) => {
   await page.goto("http://127.0.0.1:4174/");
 
-  const entry = page.getByRole("button", { name: /^Capital Partners/ });
+  const entry = page.locator('.nav-item[data-view="capital-partners"]');
   await expect(entry).toBeVisible();
   await entry.click();
 
@@ -200,7 +203,7 @@ test("Capital Partner reaches the bilateral workspace without public-pool author
 test("Risk reaches the aggregate secured-Pool control view with visible clicks", async ({ page }) => {
   await page.goto("http://127.0.0.1:4175/");
 
-  const entry = page.getByRole("button", { name: /^Risk & Operations/ });
+  const entry = page.locator('.nav-item[data-view="risk-operations"]');
   await expect(entry).toBeVisible();
   await entry.click();
 

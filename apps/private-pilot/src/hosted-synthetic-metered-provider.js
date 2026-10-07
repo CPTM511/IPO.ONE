@@ -192,7 +192,7 @@ export function createHostedSyntheticMeteredResourceService({
         obligation.status !== "active" || obligation.executionStatus !== "executed" ||
         obligation.sandboxOnly !== true || obligation.productionFundsMoved !== false
       ) invalid("synthetic_metered_resource_unavailable", "An active executed sandbox Obligation is required");
-      const systemContext = systemBoundary.createContext();
+      const systemContext = await systemBoundary.createContext();
       const runId = `hosted_${hashId("hosted_metered_request", {
         tenantId: authenticationContext.tenantId,
         actorId: authenticationContext.actorId,

@@ -38,7 +38,7 @@ function h(scope) {
   return hashId(`agentic_execution_test_${scope}`, { fixture: true });
 }
 
-function canonicalAuthority(now) {
+function canonicalAuthority(now, chainId = "eip155:84532") {
   const mandate = {
     mandateId: "mandate_agentic_execution_local",
     mandateHash: h("mandate"),
@@ -193,7 +193,7 @@ function canonicalAuthority(now) {
       accountBindingId: "account_binding_agentic_execution_local",
       accountHash: h("account"),
       subjectId: SUBJECT_ID,
-      chainId: "eip155:84532",
+      chainId,
       status: "active",
       schemaVersion: "account_binding.v2"
     }
@@ -239,7 +239,7 @@ async function authorizedDecision(
   });
 }
 
-async function grantFixture() {
+async function grantFixture(chainId = "eip155:84532") {
   const harness = createAuthorizationHarness();
   const identity = harness.addIdentity({
     tenantId: TENANT_ID,
@@ -255,10 +255,10 @@ async function grantFixture() {
     now: FIXED_NOW
   });
   const now = new Date(FIXED_NOW.getTime() + 2_000);
-  const authority = canonicalAuthority(now);
+  const authority = canonicalAuthority(now, chainId);
   const targetPolicy = createExecutionTargetPolicy({
     providerId: PROVIDER_ID,
-    chainId: "eip155:84532",
+    chainId,
     targetAddress: "0x1111111111111111111111111111111111111111",
     codeHash: h("target_code"),
     allowedFunctionSelectors: ["0x12345678"],
@@ -343,7 +343,7 @@ test("EXEC-001 derives an exact local no-funds grant from canonical authority", 
   assert.deepEqual(describeAgenticExecutionGrantBoundary(), {
     schemaVersion: "agentic_execution_grant_boundary.v1",
     deliveryMode: "L0_LOCAL_NO_FUNDS",
-    enabledChains: ["eip155:84532", "eip155:1952"],
+    enabledChains: ["eip155:84532", "eip155:1952", "eip155:97", "eip155:56"],
     enabledAdapters: ["local_sandbox"],
     mutationRoles: ["principal_controller"],
     agentMutationAllowed: false,
@@ -444,3 +444,13 @@ test("EXEC-001 creates short-lived pending exposure without transaction authorit
   assert.equal(released.status, "released");
   assert.equal(released.releaseReasonCode, "cancelled_before_submission");
 });
+
+for (const chainId of ["eip155:97", "eip155:56"]) {
+  test(`BNB ${chainId} admits an exact synthetic grant without external funds authority`, async () => {
+    const state = await grantFixture(chainId);
+    assert.deepEqual(state.activation.value.chainIds, [chainId]);
+    assert.equal(state.activation.value.transactionsAllowed, false);
+    assert.equal(state.activation.value.fundsAuthority, false);
+    assert.equal(state.activation.value.productionAuthority, false);
+  });
+}

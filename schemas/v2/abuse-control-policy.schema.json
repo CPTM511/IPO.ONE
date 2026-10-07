@@ -196,21 +196,47 @@
         "venueSubmitExecution",
         "venuePrepareDelegate",
         "venueActivateDelegate",
-        "venueRevokeDelegate"
+        "venueRevokeDelegate",
+        "pilotReadApprovalInbox",
+        "pilotReadRiskAgentDirectory"
       ],
       "properties": {
-        "pilotReadOwnSecuredPool": { "const": "read" },
-        "pilotReviewSecuredPoolAction": { "const": "read" },
-        "pilotReadSecuredPoolRisk": { "const": "read" },
-        "pilotReadClosedPilotReadiness": { "const": "read" },
-        "pilotListOwnCases": { "const": "read" },
-        "pilotReadCaseQueue": { "const": "read" },
-        "pilotReadOwnCreditState": { "const": "read" },
-        "agentReadSecuredFacilityAuthorization": { "const": "read" },
-        "pilotFileCase": { "const": "mutation" },
-        "pilotTransitionCase": { "const": "mutation" },
-        "agentCreateSecuredFacilityAuthorization": { "const": "mutation" },
-        "agentRevokeSecuredFacilityAuthorization": { "const": "mutation" },
+        "pilotReadOwnSecuredPool": {
+          "const": "read"
+        },
+        "pilotReviewSecuredPoolAction": {
+          "const": "read"
+        },
+        "pilotReadSecuredPoolRisk": {
+          "const": "read"
+        },
+        "pilotReadClosedPilotReadiness": {
+          "const": "read"
+        },
+        "pilotListOwnCases": {
+          "const": "read"
+        },
+        "pilotReadCaseQueue": {
+          "const": "read"
+        },
+        "pilotReadOwnCreditState": {
+          "const": "read"
+        },
+        "agentReadSecuredFacilityAuthorization": {
+          "const": "read"
+        },
+        "pilotFileCase": {
+          "const": "mutation"
+        },
+        "pilotTransitionCase": {
+          "const": "mutation"
+        },
+        "agentCreateSecuredFacilityAuthorization": {
+          "const": "mutation"
+        },
+        "agentRevokeSecuredFacilityAuthorization": {
+          "const": "mutation"
+        },
         "pilotAcceptCreditOffer": {
           "const": "economic"
         },
@@ -569,6 +595,12 @@
           "const": "economic"
         },
         "walletReadExecution": {
+          "const": "read"
+        },
+        "pilotReadApprovalInbox": {
+          "const": "read"
+        },
+        "pilotReadRiskAgentDirectory": {
           "const": "read"
         }
       }

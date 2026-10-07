@@ -83,6 +83,11 @@ function directory({ allowed = true } = {}) {
 test("official report creation persists server bytes but returns metadata only", async () => {
   const handler = createOfficialReportCommandHandler();
   const authDirectory = directory();
+  authDirectory.listActiveResourceBindings = async function() {
+    this.calls += 1;
+    return [{actorId:actor.actorId,actorType:"human",relationship:"controller",version:1},
+      {actorId:"actor_report_agent",actorType:"agent",relationship:"owner",controllerActorId:actor.actorId,version:1}];
+  };
   const plan = await handler.plan({
     client: {},
     coreRepository: {
@@ -116,6 +121,7 @@ test("official report creation persists server bytes but returns metadata only",
   });
   assert.equal(authDirectory.calls, 1);
   assert.equal(plan.authorizationResource.resourceType, "official_report");
+  assert.deepEqual(plan.authorizationResource.actorBindings,[{actorId:actor.actorId,actorType:"human",relationship:"controller"},{actorId:"actor_report_agent",actorType:"agent",relationship:"owner"}]);
   assert.equal(plan.writes[0].value.browserAuthored, false);
   assert.equal(plan.writes[0].value.piiIncluded, false);
   assert.equal(plan.writes[0].value.feeAuditPolicy.productionPolicyAvailable, false);

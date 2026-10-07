@@ -404,6 +404,20 @@ test("Servicing Operations queue uses one bounded parameterized adverse projecti
   }]);
 });
 
+test("a newly overdue plan remains reachable during zero-day grace", async () => {
+  const repository=new PostgresCoreRepository({pool:{query:async()=>({rows:[]})},eventRepository:{}});
+  const row={obligation_id:"obligation_zero_day",subject_id:"subject_zero_day",asset_id:"usd-cent",
+    status:"delinquent",servicing_classification:"grace_period",days_past_due:0,priority_rank:5,
+    outstanding_principal_minor:"100",outstanding_interest_minor:"0",outstanding_fees_minor:"0",
+    past_due_principal_minor:"100",past_due_interest_minor:"0",past_due_fees_minor:"0",
+    oldest_unpaid_installment_id:"installment_zero_day",oldest_due_at:new Date("2026-09-08T09:00:00.000Z"),
+    servicing_effective_at:new Date("2026-09-08T12:00:00.000Z"),schedule_sequence:1,servicing_owner_code:"sandbox_platform"};
+  const query=values=>repository.getServicingOperationsQueueInTransaction({query:async()=>({rows:[values]})},{classifications:["grace_period"],limit:25});
+  assert.equal((await query(row))[0].daysPastDue,0);
+  for(const invalid of [{...row,days_past_due:4},{...row,status:"active"},{...row,oldest_unpaid_installment_id:null}])
+    await assert.rejects(query(invalid),error=>error.code==="projection_integrity_mismatch");
+});
+
 test("Servicing Operations queue rejects unsafe filters and inconsistent projections", async () => {
   const repository = new PostgresCoreRepository({
     pool: { query: async () => ({ rows: [] }) },

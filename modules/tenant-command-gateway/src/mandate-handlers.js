@@ -546,6 +546,10 @@ export function activateSandboxMandateCommandHandler() {
       ) {
         throw new DomainError("tenant_resource_unavailable", "The requested resource is not available.");
       }
+      // The persisted Mandate may be newer than the request's sampled clock
+      // after an immediately preceding decision. Keep its next event causal;
+      // expiry and authority checks below still use this effective time.
+      now = new Date(Math.max(now.getTime(), Date.parse(mandate.createdAt), Date.parse(mandate.updatedAt)));
       const subjectState = await coreRepository.getProjectionStateInTransaction(
         client,
         CoreProjectionType.SUBJECT,

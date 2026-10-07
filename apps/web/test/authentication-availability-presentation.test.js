@@ -3,8 +3,50 @@ import test from "node:test";
 import {
   AUTHENTICATION_AVAILABILITY_PRESENTATION_SCHEMA_VERSION,
   createAccessSupportDiagnostic,
-  createAuthenticationAvailabilityPresentation
+  createAuthenticationAvailabilityPresentation,
+  createManagementAccessPresentation,
+  createSandboxProfileActivationPresentation
 } from "../src/authentication-availability-presentation.js";
+
+test("management availability preserves public scope and fails closed without installed local MFA", () => {
+  const local = { optionsState: "ready", authenticationProfile: "local_no_funds", riskPasskey: true };
+  assert.equal(createManagementAccessPresentation(local).passkeyAvailable, true);
+  for (const input of [
+    {}, { ...local, optionsState: "checking" }, { ...local, optionsState: "failed" },
+    { ...local, riskPasskey: undefined }, { ...local, riskPasskey: false },
+    { ...local, authenticationProfile: "public_authenticated_no_funds_beta" }
+  ]) {
+    const result = createManagementAccessPresentation(input);
+    assert.equal(result.passkeyAvailable, false);
+    assert.match(result.passkeyDetail, /wallet sign-in cannot replace/i);
+    assert.match(result.passkeyDetail, /independent approvals/i);
+  }
+  const hosted = createManagementAccessPresentation({ optionsState: "ready", authenticationProfile: "public_authenticated_no_funds_beta" });
+  assert.equal(hosted.publicScopeVisible, true);
+  assert.match(hosted.publicScopeDetail, /Human and Principal\/Agent no-funds/);
+  assert.match(hosted.publicScopeDetail, /Capital Partner, Risk, Operations and Auditor workspaces remain private/);
+  assert.match(hosted.publicScopeDetail, /separately reviewed release, named role bindings and strong authentication/);
+  assert.equal(createManagementAccessPresentation({ ...local, optionsState: "failed" }).publicScopeVisible, false);
+});
+
+test("profile activation reflects installed workspace support without granting new authority", () => {
+  for (const authenticationProfile of [undefined, "public_authenticated_no_funds_beta", "production_closed_pilot"]) {
+    const view = createSandboxProfileActivationPresentation({
+      authenticationProfile, catalogAvailable: true, profileStatus: "pending", canAct: true
+    });
+    assert.equal(view.disabled, true);
+    assert.equal(view.available, false);
+    assert.match(view.label, /unavailable/);
+    assert.match(view.detail, /request and repay synthetic credit/);
+    assert.match(view.detail, /when profile activation is enabled/);
+  }
+  const local = { authenticationProfile: "local_no_funds", catalogAvailable: true, profileStatus: "pending", canAct: true };
+  assert.equal(createSandboxProfileActivationPresentation(local).disabled, false);
+  assert.equal(createSandboxProfileActivationPresentation({ ...local, catalogAvailable: false }).disabled, true);
+  assert.equal(createSandboxProfileActivationPresentation({ ...local, canAct: false }).disabled, true);
+  assert.equal(createSandboxProfileActivationPresentation({ ...local, profileStatus: "suspended" }).disabled, true);
+  assert.equal(createSandboxProfileActivationPresentation({ ...local, profileStatus: "active" }).label, "Sandbox profile active");
+});
 
 function presentation(overrides = {}) {
   return createAuthenticationAvailabilityPresentation({

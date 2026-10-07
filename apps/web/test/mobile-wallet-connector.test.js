@@ -26,7 +26,9 @@ function fakeProvider() {
   }
   return {
     requests,
-    async connect() {
+    connectOptions: [],
+    async connect(options) {
+      this.connectOptions.push(structuredClone(options));
       emit("connect", { chainId: "eip155:84532" });
       return { uri: "redacted" };
     },
@@ -110,7 +112,7 @@ test("mobile connector rejects origin drift, invalid Project ID, and expired app
   }
 });
 
-test("initialization proves exact package, fixed Testnets/methods, and memory-only storage", async () => {
+test("initialization proves exact package, fixed signature networks/methods, and memory-only storage", async () => {
   const fixture = connectorFixture();
   const before = fixture.connector.getSnapshot();
   assert.equal(before.status, "approved_not_initialized");
@@ -123,10 +125,12 @@ test("initialization proves exact package, fixed Testnets/methods, and memory-on
   assert.equal(load.packageName, APPROVED_WALLETCONNECT_PACKAGE);
   assert.equal(load.packageVersion, APPROVED_WALLETCONNECT_VERSION);
   assert.equal(load.options.relayUrl, APPROVED_WALLETCONNECT_RELAY_URL);
-  assert.deepEqual(load.options.optionalChains, [84532, 1952]);
+  assert.deepEqual(load.options.optionalChains, [84532, 1952, 97, 56]);
   assert.deepEqual(load.options.rpcMap, {
     84532: "https://sepolia.base.org/",
-    1952: "https://testrpc.xlayer.tech/terigon"
+    1952: "https://testrpc.xlayer.tech/terigon",
+    97: "https://bsc-testnet-dataseed.bnbchain.org/",
+    56: "https://bsc-dataseed.bnbchain.org/"
   });
   assert.equal(load.options.methods.includes("eth_sendTransaction"), false);
   assert.equal(load.options.methods.includes("wallet_getCapabilities"), true);
@@ -382,7 +386,7 @@ test("approved real-package loader passes and attests the exact memory storage i
     storage,
     options: {
       projectId: PROJECT_ID,
-      optionalChains: [84532, 1952],
+      optionalChains: [84532, 1952, 97, 56],
       methods: ["personal_sign", "eth_signTypedData_v4"],
       events: ["accountsChanged", "chainChanged"],
       showQrModal: false
@@ -418,9 +422,53 @@ test("approved loader fails closed when the initialized package does not retain 
     storage,
     options: {
       projectId: PROJECT_ID,
-      optionalChains: [84532, 1952],
+      optionalChains: [84532, 1952, 97, 56],
       showQrModal: false
     }
   });
   assert.equal(loaded.storageApplied, false);
+});
+
+for (const chainId of [97, 56]) test(`mobile pairing requires selected BNB network ${chainId}`, async () => {
+  const fixture = connectorFixture();
+  await fixture.connector.connect({ chainId: `eip155:${chainId}` });
+  assert.deepEqual(fixture.provider.connectOptions, [{
+    chains: [chainId],
+    optionalChains: [84532, 1952, 97, 56].filter((id) => id !== chainId)
+  }]);
+  assert.equal(fixture.connector.getSnapshot().transactionsAllowed, false);
+  await assert.rejects(
+    () => fixture.connector.connect({ chainId: "eip155:1" }),
+    /not approved/
+  );
+  assert.equal(fixture.provider.connectOptions.length, 1);
+  await fixture.connector.dispose();
+});
+
+for (const phase of ["initialization", "pairing"]) test(`cancelling pending ${phase} rejects immediately and late completion cannot reconnect`, async () => {
+  const provider = fakeProvider();
+  let release;
+  const pending = new Promise((resolve) => { release = resolve; });
+  const connector = createMobileWalletConnector({
+    projectId: PROJECT_ID, expectedOrigin: APPROVED_WALLETCONNECT_ORIGIN,
+    currentOrigin: APPROVED_WALLETCONNECT_ORIGIN, clock: () => NOW,
+    async loadEthereumProvider(input) {
+      if (phase === "initialization") await pending;
+      return { packageName: input.packageName, packageVersion: input.packageVersion, storageApplied: true, provider };
+    }
+  });
+  if (phase === "pairing") {
+    await connector.initialize();
+    provider.connect = () => pending;
+  }
+  const connection = connector.connect({ chainId: "eip155:97" });
+  const rejected = assert.rejects(connection, (error) => error.code === 4001);
+  await assert.rejects(connector.connect({ chainId: "eip155:56" }), /already pending/);
+  await connector.dispose();
+  await rejected;
+  release({ approved: true });
+  await new Promise((resolve) => setImmediate(resolve));
+  provider.emit("connect", { chainId: "eip155:97" });
+  assert.equal(connector.getSnapshot().status, "disposed");
+  await assert.rejects(connector.provider.request({ method: "eth_accounts" }), /not initialized/);
 });
