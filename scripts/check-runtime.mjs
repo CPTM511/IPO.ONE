@@ -15,7 +15,7 @@ const [packageJson, nodeVersion, nvmVersion, workflow, dockerfile] = await Promi
 
 const manifest = JSON.parse(packageJson);
 const expectedNodeVersion = nodeVersion.trim();
-const expectedPackageManager = "pnpm@11.1.3";
+const expectedPackageManager = "pnpm@11.11.0";
 
 assert.equal(expectedNodeVersion, "26.5.0", ".node-version must remain on the reviewed runtime");
 assert.equal(nvmVersion.trim(), expectedNodeVersion, ".nvmrc and .node-version must agree");
@@ -30,6 +30,11 @@ assert.match(
   /node-version-file:\s*\.node-version/,
   "CI must resolve Node from the reviewed version file"
 );
+assert.match(workflow, /package-manager-cache:\s*false/, "CI bootstrap must not resolve pnpm through an earlier cache step");
+assert.match(workflow, /--registry=https:\/\/registry\.npmjs\.org pnpm@11\.11\.0/, "CI must install the reviewed pnpm directly from the public registry");
+assert.match(workflow, /assert\.equal\(installer\.integrity, "sha512-RGP2X9gO2A1pvB1L8WPulPYFxzgPwxi7Wy6\+FfjNEtScUaTVnpUbQB52TTtsp1HL9RvFDtcAGmvLSTXmhMNIgg=="\)/, "CI must bind pnpm to the reviewed tarball integrity");
+assert.match(workflow, /npm audit --prefix "\$tool_prefix" --audit-level=moderate/, "CI must audit the installer independently");
+assert.doesNotMatch(workflow, /pnpm\/action-setup|pnpm self-update/, "CI must not execute an older pnpm bootstrap");
 assert.match(
   workflow,
   /fetch-depth:\s*0/,
@@ -42,7 +47,7 @@ assert.match(
 );
 assert.match(
   dockerfile,
-  /npm install --global pnpm@11\.1\.3 --ignore-scripts/,
+  /npm install --global pnpm@11\.11\.0 --ignore-scripts/,
   "the Node 26 build image must install the reviewed pnpm version explicitly"
 );
 assert.doesNotMatch(
@@ -57,8 +62,8 @@ assert.equal(
 );
 assert.match(
   process.env.npm_config_user_agent ?? "",
-  /^pnpm\/11\.1\.3\s/,
-  "IPO.ONE checks must be launched by pnpm 11.1.3"
+  /^pnpm\/11\.11\.0\s/,
+  "IPO.ONE checks must be launched by pnpm 11.11.0"
 );
 
-console.log(`Runtime contract satisfied: Node ${process.version}, pnpm 11.1.3.`);
+console.log(`Runtime contract satisfied: Node ${process.version}, pnpm 11.11.0.`);

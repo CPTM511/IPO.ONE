@@ -8,7 +8,7 @@ ARG RUNTIME_IMAGE=gcr.io/distroless/nodejs26-debian13:nonroot@sha256:d440510c9ef
 FROM ${BUILD_IMAGE} AS dependencies
 WORKDIR /app
 COPY --chown=node:node . .
-RUN npm install --global pnpm@11.1.3 --ignore-scripts \
+RUN npm install --global pnpm@11.11.0 --ignore-scripts \
     && pnpm install --frozen-lockfile --prod --ignore-scripts \
     && npm cache clean --force
 

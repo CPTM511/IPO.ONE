@@ -2085,7 +2085,12 @@ test("public beta launch configuration is bounded and supply-chain pinned", asyn
   assert.ok(server.includes("x-ipo-one-sandbox-session"));
   assert.match(workflow, /actions\/checkout@[a-f0-9]{40}/);
   assert.match(workflow, /actions\/setup-node@[a-f0-9]{40}/);
-  assert.match(workflow, /pnpm\/action-setup@[a-f0-9]{40}/);
+  assert.doesNotMatch(workflow, /pnpm\/action-setup|pnpm self-update/);
+  assert.match(workflow, /--registry=https:\/\/registry\.npmjs\.org pnpm@11\.11\.0/);
+  assert.ok(workflow.includes('assert.equal(installer.version, "11.11.0")'));
+  assert.ok(workflow.includes('assert.equal(installer.integrity, "sha512-RGP2X9gO2A1pvB1L8WPulPYFxzgPwxi7Wy6+FfjNEtScUaTVnpUbQB52TTtsp1HL9RvFDtcAGmvLSTXmhMNIgg==")'));
+  assert.ok(workflow.includes('npm audit --prefix "$tool_prefix" --audit-level=moderate'));
+  assert.match(workflow, /package-manager-cache:\s*false/);
   assert.equal(/uses:\s+[^\s]+@v\d/.test(workflow), false, "CI actions must be pinned to immutable SHAs");
   assert.ok(workflow.includes("pnpm run check"));
   assert.ok(packageJson.scripts.check.includes("pnpm run test:postgres"));
