@@ -336,3 +336,46 @@ for (const method of ["personal_sign", "eth_signTypedData_v4"]) test(`${method} 
     (error) => error.code === "wallet_context_changed"
   );
 });
+
+test("interrupted account approval cannot proceed to network RPCs", async () => {
+  const controller = new AbortController();
+  const { connector, provider } = injectedFixture();
+  let release;
+  provider.request = input => {
+    provider.requests.push(input);
+    return new Promise(resolve => { release = resolve; });
+  };
+  const result = connector.connect({ chainId: "eip155:56", signal: controller.signal });
+  controller.abort();
+  release([ACCOUNT]);
+  await assert.rejects(result, { code: "wallet_sign_in_interrupted" });
+  assert.deepEqual(provider.requests.map(value => value.method), ["eth_requestAccounts"]);
+  connector.dispose();
+});
+
+test("interrupted switch rejection cannot open an add-network approval", async () => {
+  const controller = new AbortController();
+  const { connector, provider } = injectedFixture();
+  provider.request = async input => {
+    provider.requests.push(input);
+    controller.abort();
+    throw Object.assign(new Error("unknown chain"), { code: 4902 });
+  };
+  await assert.rejects(connector.switchChain("eip155:97", { signal: controller.signal }), { code: "wallet_sign_in_interrupted" });
+  assert.deepEqual(provider.requests.map(value => value.method), ["wallet_switchEthereumChain"]);
+  connector.dispose();
+});
+
+test("interruption during account recheck cannot open a signing prompt", async () => {
+  const controller = new AbortController();
+  const { connector, provider } = injectedFixture();
+  const original = provider.request.bind(provider);
+  provider.request = async input => {
+    const result = await original(input);
+    if (input.method === "eth_accounts") controller.abort();
+    return result;
+  };
+  await assert.rejects(connector.signMessage({ accountId: ACCOUNT_ID, message: "No-funds test", signal: controller.signal }), { code: "wallet_sign_in_interrupted" });
+  assert.equal(provider.requests.some(value => value.method === "personal_sign"), false);
+  connector.dispose();
+});
