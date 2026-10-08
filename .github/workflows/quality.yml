@@ -87,6 +87,9 @@ jobs:
       - name: Run real browser click-path gate
         run: pnpm run test:browser:click-path
 
+      - name: Run isolated BNB wallet sign-in regression gate
+        run: pnpm run test:browser:wallet-sign-in
+
       - name: Run isolated vertical slice
         if: github.event_name == 'workflow_dispatch'
         run: pnpm run demo

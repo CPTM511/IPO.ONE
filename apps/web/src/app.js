@@ -1,4 +1,5 @@
 import { WALLET_NETWORK_PROFILES, WALLET_NETWORK_IDS } from "./wallet-networks.js";
+import { createWalletSignInAttempt, walletSignInErrorMessage } from "./wallet-sign-in-attempt.js";
 import { createLocalReviewWorkspace, localReviewOperationAvailable } from "./local-review-workspace.js";
 import { arrangeWorkspaceNavigation, updateWorkspaceChrome, renderHumanTaskSummary, renderAgentTaskHeading, renderAgentTaskControls, renderPrecisionAuthority } from "./workspace-experience.js";
 import {
@@ -655,6 +656,10 @@ const walletAuthorityLifecycle = createWalletAuthorityLifecycle({
 });
 
 function handleMaterialWalletContextChange(reasonCode) {
+  if (walletSignInAttempt && (
+    walletSignInAttempt.phase !== "connect" ||
+    ["wallet_provider_changed", "wallet_provider_disconnected"].includes(reasonCode)
+  )) interruptWalletSignIn();
   accessState.walletAddress = null;
   accessState.connectedChainId = null;
   executionWalletPilot.connectedAccountId = null;
@@ -1136,6 +1141,7 @@ function openAccess() {
 }
 
 function closeAccess({ restoreFocus = true } = {}) {
+  interruptWalletSignIn();
   el("accessLayer").hidden = true;
   document.body.classList.remove("access-open");
   syncNavigationAccessibility();
@@ -1173,9 +1179,10 @@ function handleAccessKeys(event) {
   }
 }
 
-async function authJson(path, { method = "GET", body, headers = {} } = {}) {
+async function authJson(path, { method = "GET", body, headers = {}, signal } = {}) {
   const response = await fetch(path, {
     method,
+    ...(signal === undefined ? {} : { signal }),
     credentials: "same-origin",
     headers: {
       accept: "application/json, application/problem+json",
@@ -1375,6 +1382,17 @@ async function switchWalletChain(connector, chain) {
   return connector.switchChain(`eip155:${chain.chainId}`);
 }
 
+let walletSignInAttempt;
+
+function interruptWalletSignIn() {
+  if (!walletSignInAttempt) return;
+  walletSignInAttempt.cancel();
+  walletSignInAttempt = undefined;
+  accessState.busy = false;
+  accessState.helper = "Wallet sign-in interrupted. Dismiss any pending wallet request before trying again.";
+  renderAccess();
+}
+
 async function connectApprovedNetwork({ authenticate = false } = {}) {
   if (accessState.busy) return;
   if (
@@ -1395,14 +1413,21 @@ async function connectApprovedNetwork({ authenticate = false } = {}) {
     return;
   }
   if (authenticate) rememberPostLoginViewIntent();
+  const attempt = createWalletSignInAttempt();
+  walletSignInAttempt = attempt;
+  const selectedRole = accessState.selectedWorkspaceRole;
+  const chain = SUPPORTED_WALLET_CHAINS[accessState.selectedChainId];
+  const walletName = accessState.walletProviders.find(
+    provider => provider.providerId === accessState.selectedWalletProviderId
+  )?.name ?? "selected wallet";
   accessState.busy = true;
-  accessState.helper = "Waiting for wallet approval…";
+  accessState.helper = `Waiting for ${walletName} account approval and ${chain.name} network connection. Open your wallet extension or wallet app to review the request.`;
   renderAccess();
   try {
-    const chain = SUPPORTED_WALLET_CHAINS[accessState.selectedChainId];
-    const connection = await connector.connect({
-      chainId: `eip155:${chain.chainId}`
-    });
+    const connection = await attempt.run(() => connector.connect({
+      chainId: `eip155:${chain.chainId}`,
+      signal: attempt.signal
+    }), { phase: "connect", timeoutMs: 60_000 });
     const account = connection.accounts[0];
     const address = account?.address;
     if (!/^0x[0-9a-fA-F]{40}$/.test(address ?? "")) {
@@ -1426,26 +1451,33 @@ async function connectApprovedNetwork({ authenticate = false } = {}) {
         walletAuthorityLifecycle.getSnapshot().contextEpoch;
       accessState.helper = "Preparing one-use wallet sign-in…";
       renderAccess();
-      const challenge = await authJson("/auth/v1/wallet/challenge", {
+      const challenge = await attempt.run(() => authJson("/auth/v1/wallet/challenge", {
         method: "POST",
+        signal: attempt.signal,
         body: {
           address,
           chainId: connectedChainId,
-          workspaceRole: accessState.selectedWorkspaceRole
+          workspaceRole: selectedRole
         }
-      });
+      }), { phase: "challenge", timeoutMs: 20_000 });
       walletAuthorityLifecycle.assertContextEpoch(walletChallengeEpoch);
-      const signature = await connector.signMessage({
+      accessState.helper = `Review the one-use sign-in message in ${walletName}. This signature does not submit a transaction or charge a fee.`;
+      renderAccess();
+      const signature = await attempt.run(() => connector.signMessage({
         accountId: account.accountId,
-        message: challenge.message
-      });
+        message: challenge.message,
+        signal: attempt.signal
+      }), { phase: "signature", timeoutMs: 120_000 });
       walletAuthorityLifecycle.assertContextEpoch(walletChallengeEpoch);
-      const authentication = await authJson("/auth/v1/wallet/verify", {
+      accessState.helper = "Verifying your wallet sign-in…";
+      renderAccess();
+      const authentication = await attempt.run(() => authJson("/auth/v1/wallet/verify", {
         method: "POST",
+        signal: attempt.signal,
         body: { transactionHandle: challenge.handle, signature }
-      });
+      }), { phase: "verify", timeoutMs: 20_000 });
       walletAuthorityLifecycle.assertContextEpoch(walletChallengeEpoch);
-      if (authentication?.workspaceRole !== accessState.selectedWorkspaceRole) {
+      if (authentication?.workspaceRole !== selectedRole) {
         throw new Error("The issued session does not match the selected workspace.");
       }
       accessState.sessionActive = true;
@@ -1459,13 +1491,16 @@ async function connectApprovedNetwork({ authenticate = false } = {}) {
       window.location.reload();
     }
   } catch (error) {
-    accessState.helper = error?.code === 4001
-      ? "Wallet request cancelled. Nothing was signed or submitted."
-      : error?.message ?? "Wallet connection failed.";
+    if (walletSignInAttempt !== attempt) return;
+    accessState.helper = walletSignInErrorMessage(error, { phase: attempt.phase });
   } finally {
-    accessState.busy = false;
-    renderAccess();
-    renderTenantPilot();
+    if (walletSignInAttempt === attempt) {
+      attempt.cancel();
+      walletSignInAttempt = undefined;
+      accessState.busy = false;
+      renderAccess();
+      renderTenantPilot();
+    }
   }
 }
 

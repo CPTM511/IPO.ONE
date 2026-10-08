@@ -86,6 +86,12 @@ function checkedProvider(value) {
   return value;
 }
 
+function assertWalletOperationActive(signal) {
+  if (signal?.aborted) {
+    fail("wallet_sign_in_interrupted", "Wallet sign-in was interrupted.");
+  }
+}
+
 function checkedChainId(value) {
   const profile = CHAIN_PROFILES[value];
   if (!profile) {
@@ -384,8 +390,9 @@ export function createEvmWalletConnector({
     });
   }
 
-  async function switchChain(chainId) {
+  async function switchChain(chainId, { signal } = {}) {
     assertAvailable();
+    assertWalletOperationActive(signal);
     const profile = checkedChainId(chainId);
     try {
       await provider.request({
@@ -393,6 +400,7 @@ export function createEvmWalletConnector({
         params: [{ chainId: profile.chainIdHex }]
       });
     } catch (error) {
+      assertWalletOperationActive(signal);
       if (Number(error?.code) !== 4902) throw error;
       await provider.request({
         method: "wallet_addEthereumChain",
@@ -405,6 +413,7 @@ export function createEvmWalletConnector({
         }]
       });
     }
+    assertWalletOperationActive(signal);
     const current = await getChain();
     if (current.chainId !== chainId) {
       fail("wallet_chain_switch_failed", "Wallet did not switch to the requested chain");
@@ -412,20 +421,26 @@ export function createEvmWalletConnector({
     return current;
   }
 
-  async function connect({ chainId } = {}) {
+  async function connect({ chainId, signal } = {}) {
     assertAvailable();
+    assertWalletOperationActive(signal);
     const profile = checkedChainId(chainId);
     if (connectProvider) await connectProvider({ chainId });
+    assertWalletOperationActive(signal);
     const addresses = await rawAccounts({ requestAccess: true });
+    assertWalletOperationActive(signal);
     if (addresses.length === 0) {
       fail("wallet_account_unavailable", "Wallet returned no account");
     }
     const currentChain = await provider.request({ method: "eth_chainId" });
+    assertWalletOperationActive(signal);
     if (typeof currentChain !== "string" ||
         currentChain.toLowerCase() !== profile.chainIdHex) {
-      await switchChain(profile.chainId);
+      await switchChain(profile.chainId, { signal });
     }
+    assertWalletOperationActive(signal);
     const accounts = await getAccounts();
+    assertWalletOperationActive(signal);
     invalidateContext("wallet_provider_connected");
     return deepFreeze({
       schemaVersion: "evm_wallet_connection.v1",
@@ -469,14 +484,18 @@ export function createEvmWalletConnector({
     return { accounts, address };
   }
 
-  async function signMessage({ accountId, message } = {}) {
+  async function signMessage({ accountId, message, signal } = {}) {
+    assertWalletOperationActive(signal);
     const { accounts, address } = await assertCurrentAccount(accountId);
+    assertWalletOperationActive(signal);
     const signature = checkedSignature(await provider.request({
       method: "personal_sign",
       params: [encodedPersonalSignMessage(message), address]
     }));
+    assertWalletOperationActive(signal);
     assertContextEpoch(accounts.contextEpoch);
     await assertCurrentAccount(accountId);
+    assertWalletOperationActive(signal);
     assertContextEpoch(accounts.contextEpoch);
     return signature;
   }

@@ -54,6 +54,7 @@ const WEB_ASSETS = Object.freeze({
   "/wallet-authority-lifecycle.js": Object.freeze({ file: "wallet-authority-lifecycle.js", contentType: "text/javascript; charset=utf-8" }),
   "/wallet-provider-registry.js": Object.freeze({ file: "wallet-provider-registry.js", contentType: "text/javascript; charset=utf-8" }),
   "/wallet-sign-out.js": Object.freeze({ file: "wallet-sign-out.js", contentType: "text/javascript; charset=utf-8" }),
+  "/wallet-sign-in-attempt.js": Object.freeze({ file: "wallet-sign-in-attempt.js", contentType: "text/javascript; charset=utf-8" }),
   "/mobile-wallet-access.js": Object.freeze({ file: "mobile-wallet-access.js", contentType: "text/javascript; charset=utf-8" }),
   "/workspace-navigation.js": Object.freeze({ file: "workspace-navigation.js", contentType: "text/javascript; charset=utf-8" }),
   "/workspace-surface-access.js": Object.freeze({ file: "workspace-surface-access.js", contentType: "text/javascript; charset=utf-8" }),

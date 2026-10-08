@@ -2,6 +2,8 @@ import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./apps/web/test/e2e",
+  // This fixture has its own unauthenticated, pre-signature loopback server.
+  testIgnore: "wallet-sign-in-local.spec.mjs",
   fullyParallel: false,
   forbidOnly: true,
   retries: process.env.CI ? 1 : 0,
