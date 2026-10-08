@@ -90,6 +90,9 @@ jobs:
       - name: Run isolated BNB wallet sign-in regression gate
         run: pnpm run test:browser:wallet-sign-in
 
+      - name: Run isolated read-only record recovery regression gate
+        run: pnpm run test:browser:record-recovery
+
       - name: Run isolated vertical slice
         if: github.event_name == 'workflow_dispatch'
         run: pnpm run demo

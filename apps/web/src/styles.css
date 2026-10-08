@@ -4578,9 +4578,8 @@ body.private-session-closed [data-view-panel] {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
   gap: 10px 12px;
-  padding: 18px 28px;
-  border-bottom: 1px solid var(--line);
-  background: #fbfaff;
+  padding: 18px 0 0;
+  background: var(--surface);
 }
 
 .owned-obligation-restore label span {

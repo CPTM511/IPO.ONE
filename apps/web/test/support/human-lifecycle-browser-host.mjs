@@ -25,6 +25,7 @@ if (!Number.isSafeInteger(browserQaPort) || browserQaPort < 0 || browserQaPort >
   throw new Error("invalid_browser_qa_port");
 }
 const browserQaRole = process.env.IPO_ONE_BROWSER_QA_ROLE ?? "borrower";
+const readOnlyRecoveryReview = process.env.IPO_ONE_BROWSER_QA_RECOVERY_REVIEW === "1";
 const BROWSER_QA_ROLES = Object.freeze({
   borrower: Object.freeze({
     actorId: "actor_human_lifecycle_browser_qa",
@@ -756,7 +757,7 @@ function resultFor(command) {
         relationship: "owner"
       });
     }
-    if (!browserQaSiweReconnectScenario) {
+    if (!browserQaSiweReconnectScenario && !readOnlyRecoveryReview) {
       resources.push({
         resourceType: "obligation",
         resourceId: secondaryCurrentObligation.obligationId,
@@ -1294,6 +1295,9 @@ const host = createTenantHttpServer({
   credentialSource: "local_test",
   gateway: {
     async execute(command) {
+      if (readOnlyRecoveryReview && !command.operationId.startsWith("pilotRead")) {
+        throw new DomainError("authorization_denied", "This synthetic recovery review permits queries only.");
+      }
       if (
         evidenceScenario === "slow-read" &&
         command.operationId === "pilotReadOwnObligationEvidence"

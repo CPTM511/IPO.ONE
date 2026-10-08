@@ -2364,6 +2364,15 @@
                 <div><p class="eyebrow">Read boundary</p><h3 id="privateCreditBoundaryTitle">One state machine, exact owner reads</h3></div>
                 <p id="privateCreditBoundary">Human Consent and Agent Mandate change entry presentation only. List references come from the bounded authenticated workspace and every value is reauthorized by exact Obligation ID.</p>
               </section>
+              <details class="panel protocol-disclosure" id="ownedObligationRecoveryDetails">
+                <summary>Find an older record by ID</summary>
+                <form class="owned-obligation-restore" id="ownedObligationRestore">
+                  <p>Recovered references are recent, not a complete history. Load an older record from its receipt; current owner access is checked again. This reads a record without changing it.</p>
+                  <label for="ownedObligationId"><span>Obligation ID from your receipt</span><input id="ownedObligationId" name="obligationId" type="text" maxlength="256" autocomplete="off" spellcheck="false" aria-describedby="ownedObligationRestoreHelper" placeholder="Paste an existing Obligation ID" /></label>
+                  <button class="secondary" id="loadOwnedObligationBtn" type="submit">Load record</button>
+                  <p id="ownedObligationRestoreHelper" role="status" aria-live="polite">Paste an existing record ID. Only records available to this signed-in workspace can be loaded.</p>
+                </form>
+              </details>
             </section>
 
 
@@ -2393,11 +2402,6 @@
                   <p id="ownedPositionRefreshState" role="status" aria-live="polite">Refresh to load current balances and trusted-time servicing state for these authorized references.</p>
                   <p id="ownedPositionBoundary">Only Actor-bound opaque references are shown. Select one position to load its exact authorized state.</p>
                 </section>
-                <form class="owned-obligation-restore" id="ownedObligationRestore" hidden>
-                  <input id="ownedObligationId" name="obligationId" type="hidden" />
-                  <button class="secondary" id="loadOwnedObligationBtn" type="submit" hidden>Load case</button>
-                  <p id="ownedObligationRestoreHelper" role="status" aria-live="polite">The selected Obligation is recovered from authenticated server truth.</p>
-                </form>
                 <div class="servicing-case-empty" id="servicingCaseEmpty">
                   <strong id="servicingCaseEmptyTitle">No active case</strong>
                   <p id="servicingCaseEmptyCopy">Accept and execute one exact sandbox Obligation to open its servicing view.</p>
