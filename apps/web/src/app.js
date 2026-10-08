@@ -167,7 +167,7 @@ const tenantPilot = {
   obligationReadAvailable: false,
   obligationHydrationBusy: false,
   obligationHydrationAsOf: null,
-  obligationHydrationHelper: "Enter an exact Obligation ID or create one in Human Pilot.",
+  obligationHydrationHelper: "Paste an existing record ID. Only records available to this signed-in workspace can be loaded.",
   obligationHydrationError: false,
   workspaceKind: null,
   workspaceResume: null,
@@ -2807,7 +2807,7 @@ function resetHumanObligationWorkflow() {
   tenantPilot.servicingAction = null;
   tenantPilot.obligationHydrationAsOf = null;
   tenantPilot.obligationHydrationError = false;
-  tenantPilot.obligationHydrationHelper = "Enter an exact Obligation ID or create one in Human Pilot.";
+  tenantPilot.obligationHydrationHelper = "Paste an existing record ID. Only records available to this signed-in workspace can be loaded.";
   forgetOwnedObligationId();
   resetOwnedEvidenceState();
 }
@@ -5032,7 +5032,8 @@ function currentServicingPositionIndex() {
   );
   if (!servicingWorkspace) return null;
   const referenceIds = new Set(
-    tenantPilot.workspaceObligations
+    servicingWorkspace.resources
+      .filter(({ resourceType }) => resourceType === "obligation")
       .slice(0, SERVICING_POSITION_INDEX_LIMIT)
       .map(({ resourceId }) => resourceId)
   );
@@ -5407,8 +5408,8 @@ function renderObligationPortfolio() {
   el("obligationPortfolioCoverage").textContent = !index
     ? "Unavailable"
     : index.coverage === "complete"
-      ? "Complete server coverage"
-      : "Partial coverage";
+      ? "Recovered references verified"
+      : "Recovered references incomplete";
   el("obligationPortfolioCoverage").className =
     `state-pill ${index?.coverage === "complete" ? "neutral" : "warning"}`;
   el("obligationPortfolioOutstanding").textContent = index?.aggregate
@@ -5429,8 +5430,8 @@ function renderObligationPortfolio() {
   el("obligationPortfolioBoundary").textContent = index?.hasMoreReferences
     ? `This view is capped at ${SERVICING_POSITION_INDEX_LIMIT} exact references. Additional resources are not enumerated.`
     : index?.coverage === "complete"
-      ? "Every visible amount reconciles to the exact canonical Obligation schedule. Browser aggregation is read-only."
-      : "Unrefreshed or denied references reveal no amount or lifecycle status.";
+      ? "These recent references are verified, not a complete history. An older record loaded by ID appears in the selected detail."
+      : "Recent references are not a complete history. Unrefreshed or denied references reveal no amount or lifecycle status.";
 
   const detailEmpty = el("obligationDetailEmpty");
   const detailContent = el("obligationDetailContent");
@@ -5526,22 +5527,27 @@ function renderServicingCase({ humanMode, obligation, nextInstallment }) {
   const content = el("servicingCaseContent");
   const actionButton = el("postServicingRepaymentBtn");
   const status = el("privatePaymentsStatus");
-  const restore = el("ownedObligationRestore");
   const restoreInput = el("ownedObligationId");
   const restoreButton = el("loadOwnedObligationBtn");
   const closedNextButton = el("servicingClosedNextBtn");
   renderOwnedPositionPicker({ humanMode });
-  restore.hidden = !humanMode;
-  restoreInput.disabled = tenantPilot.obligationHydrationBusy || !tenantPilot.connected;
+  const recoveryAvailable = tenantPilot.connected && tenantPilot.obligationReadAvailable &&
+    (tenantPilot.workspaceKind === "human_borrower" || (
+      tenantPilot.workspaceKind === "principal_controller" &&
+      agentAuthorityPilot.workspaceSelection?.status === "selected" &&
+      exactResourceId(agentAuthorityPilot.workspaceSelection.subjectId)
+    ));
+  restoreInput.disabled = tenantPilot.obligationHydrationBusy || !recoveryAvailable;
   restoreButton.disabled = tenantPilot.obligationHydrationBusy || !tenantPilot.connected ||
-    !tenantPilot.obligationReadAvailable || !exactResourceId(restoreInput.value.trim());
+    !recoveryAvailable || !restoreInput.value.trim();
   restoreButton.toggleAttribute("aria-busy", tenantPilot.obligationHydrationBusy);
   restoreButton.textContent = tenantPilot.obligationHydrationBusy
     ? "Loading server state…"
-    : obligation
-      ? "Refresh case"
-      : "Load case";
-  el("ownedObligationRestoreHelper").textContent = tenantPilot.obligationHydrationHelper;
+    : "Load record";
+  el("ownedObligationRestoreHelper").textContent = recoveryAvailable
+    ? tenantPilot.obligationHydrationHelper
+    : "A signed-in workspace with owner-read access is required to load a record.";
+  restoreInput.setAttribute("aria-invalid", String(tenantPilot.obligationHydrationError));
   el("ownedObligationRestoreHelper").classList.toggle(
     "error",
     tenantPilot.obligationHydrationError
@@ -9250,10 +9256,21 @@ function cacheOwnedObligationView(obligationId, view) {
   return accepted;
 }
 
-async function loadOwnedObligation({ obligationId, quiet = false } = {}) {
+async function loadOwnedObligation({ obligationId, quiet = false, historicalRecovery = false } = {}) {
   if (tenantPilot.obligationHydrationBusy) return false;
+  const requestDataEpoch = authenticatedDataEpoch;
+  const selectedAgent = historicalRecovery && tenantPilot.workspaceKind === "principal_controller"
+    ? agentAuthorityPilot.workspaceSelection
+    : null;
+  const isCurrentRead = () => requestDataEpoch === authenticatedDataEpoch &&
+    (!selectedAgent || (
+      selectedAgent.status === "selected" &&
+      agentAuthorityPilot.workspaceSelection?.actorId === selectedAgent.actorId &&
+      agentAuthorityPilot.workspaceSelection?.subjectId === selectedAgent.subjectId
+    ));
   const exactObligationId = (obligationId ?? tenantInputValue("ownedObligationId")).trim();
   if (!exactResourceId(exactObligationId)) {
+    resetHumanObligationWorkflow();
     tenantPilot.obligationHydrationError = true;
     tenantPilot.obligationHydrationHelper = "Enter one exact Obligation ID with no spaces.";
     renderTenantPilot();
@@ -9261,45 +9278,51 @@ async function loadOwnedObligation({ obligationId, quiet = false } = {}) {
   }
   const switchingObligation =
     tenantPilot.obligation?.obligationId !== exactObligationId;
+  const previousView = tenantPilot.workspacePositionViews.get(exactObligationId);
   if (switchingObligation) {
-    resetOwnedEvidenceState({
-      obligationId: exactObligationId,
-      helper: "Evidence cleared while the selected Obligation is reauthorized."
-    });
+    tenantPilot.receipt = null;
+    tenantPilot.offerReview = null;
+    resetHumanObligationWorkflow();
+    tenantPilot.intent = null;
+    tenantPilot.decision = null;
+    tenantPilot.offer = null;
   }
+  tenantPilot.obligation = null;
+  tenantPilot.servicingAction = null;
+  tenantPilot.obligationHydrationAsOf = null;
+  tenantPilot.workspacePositionViews.delete(exactObligationId);
+  forgetOwnedObligationId();
+  resetOwnedEvidenceState({
+    obligationId: exactObligationId,
+    helper: "Evidence cleared while the selected Obligation is reauthorized."
+  });
   tenantPilot.obligationHydrationBusy = true;
   tenantPilot.obligationHydrationError = false;
   tenantPilot.obligationHydrationHelper = "Verifying ownership and loading current server state…";
   renderTenantPilot();
   try {
     const response = await readOwnedObligationView(exactObligationId);
-    if (switchingObligation) {
-      tenantPilot.receipt = null;
-      tenantPilot.offerReview = null;
-      tenantPilot.obligationReceipt = null;
-      tenantPilot.obligationWorkflowId = null;
-      tenantPilot.obligationCorrelationId = null;
-      tenantPilot.acceptanceStep = null;
-      tenantPilot.executionStep = null;
-      tenantPilot.repaymentStep = null;
-      tenantPilot.repaymentSequence = 0;
-      tenantPilot.acceptance = null;
-      tenantPilot.intent = null;
-      tenantPilot.decision = null;
-      tenantPilot.offer = null;
-      tenantPilot.executionReceipt = null;
-      tenantPilot.repayment = null;
+    if (!isCurrentRead()) return false;
+    if (selectedAgent && response.obligation?.subjectId !== selectedAgent.subjectId) {
+      throw Object.assign(new Error("The requested resource is not available."), {
+        code: "tenant_resource_unavailable"
+      });
     }
-    tenantPilot.obligation = response.obligation;
-    tenantPilot.servicingAction = response.latestServicingAction ?? null;
-    tenantPilot.obligationHydrationAsOf = response.asOf;
-    cacheOwnedObligationView(exactObligationId, response);
+    const accepted = acceptServicingPositionRefresh(previousView, response);
+    if (!accepted || accepted.obligation.obligationId !== exactObligationId) {
+      throw new Error("Current position failed trusted-time and servicing-state verification.");
+    }
+    tenantPilot.obligation = accepted.obligation;
+    tenantPilot.servicingAction = accepted.latestServicingAction ?? null;
+    tenantPilot.obligationHydrationAsOf = accepted.asOf;
+    tenantPilot.workspacePositionViews.set(exactObligationId, accepted);
     tenantPilot.workspacePositionRefreshHelper =
       "Selected position refreshed from the authenticated server. Refresh all to update every visible position.";
     tenantPilot.obligationHydrationHelper =
       "Current server state loaded. This browser retains only the opaque ID for reload navigation.";
     el("ownedObligationId").value = exactObligationId;
-    rememberWorkspaceObligation(exactObligationId);
+    rememberWorkspaceObligation(exactObligationId,
+      accepted.obligation.authorityType === "mandate" ? "controller" : "owner");
     rememberOwnedObligationId(exactObligationId);
     tenantPilot.helper = "Owned Obligation restored through the authenticated Gateway.";
     if (!quiet) {
@@ -9308,6 +9331,7 @@ async function loadOwnedObligation({ obligationId, quiet = false } = {}) {
     }
     return true;
   } catch (error) {
+    if (!isCurrentRead()) return false;
     const nonEnumerating = error.status === 401 || error.status === 403 || error.status === 404 ||
       new Set(["authorization_denied", "tenant_resource_unavailable", "resource_not_found"])
         .has(error.code);
@@ -9323,8 +9347,10 @@ async function loadOwnedObligation({ obligationId, quiet = false } = {}) {
     }
     return false;
   } finally {
-    tenantPilot.obligationHydrationBusy = false;
-    renderTenantPilot();
+    if (requestDataEpoch === authenticatedDataEpoch) {
+      tenantPilot.obligationHydrationBusy = false;
+      renderTenantPilot();
+    }
   }
 }
 
@@ -9526,9 +9552,11 @@ async function recoverAuthenticatedWorkspace({
       }
     }
     const rememberedObligationId = rememberedOwnedObligationId();
-    const selectedObligation = workspaceObligations.find(
-      (item) => item.resourceId === rememberedObligationId
-    ) ?? obligation;
+    // A remembered locator never supplies state or authority. Reauthorize it
+    // even when the recent-reference recovery response does not enumerate it.
+    const selectedObligation = rememberedObligationId
+      ? { resourceId: rememberedObligationId }
+      : obligation;
     if (actionableHumanOfferRecovered) {
       humanNewApplicationMode = true;
       resetHumanObligationWorkflow();
@@ -9607,7 +9635,14 @@ async function recoverAuthenticatedWorkspace({
       };
     }
     const currentMandateId = agentAuthorityPilot.mandate?.mandateId;
-    if (exactResourceId(currentMandateId) && tenantPilot.obligationReadAvailable) {
+    const rememberedPrincipalObligationId = rememberedOwnedObligationId();
+    if (rememberedPrincipalObligationId && tenantPilot.obligationReadAvailable) {
+      await loadOwnedObligation({
+        obligationId: rememberedPrincipalObligationId,
+        quiet: true,
+        historicalRecovery: true
+      });
+    } else if (exactResourceId(currentMandateId) && tenantPilot.obligationReadAvailable) {
       let exactMandateObligation = null;
       for (const candidate of workspaceObligations.slice(
         0,
@@ -14166,7 +14201,11 @@ function bindActions() {
   );
   el("ownedObligationRestore").addEventListener("submit", (event) => {
     event.preventDefault();
-    loadOwnedObligation();
+    loadOwnedObligation({ historicalRecovery: true });
+  });
+  el("ownedObligationId").addEventListener("input", () => {
+    tenantPilot.obligationHydrationError = false;
+    renderTenantPilot();
   });
   el("refreshOwnedPositionsBtn").addEventListener("click", refreshOwnedPositionIndex);
   el("obligationPortfolioRefreshBtn").addEventListener(

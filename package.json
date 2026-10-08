@@ -23,6 +23,7 @@
     "test:transport": "node --test apps/tenant-api/test/*.test.mjs apps/agent-mcp/test/*.test.mjs packages/sdk/test/*.test.js",
     "test:browser:click-path": "playwright test --config playwright.config.mjs",
     "test:browser:wallet-sign-in": "playwright test --config playwright.wallet-sign-in.config.mjs",
+    "test:browser:record-recovery": "playwright test --config playwright.record-recovery.config.mjs",
     "test:provider": "node --test apps/provider-sandbox/test/*.test.mjs modules/provider-sandbox/test/*.test.js",
     "test:agent-credit": "node --test packages/reference-economic-agent/test/*.test.js modules/agent-credit-execution/test/*.test.js",
     "test:venue:hyperliquid": "node --test modules/hyperliquid-execution/test/*.test.js modules/hyperliquid-reconciliation/test/*.test.js modules/hyperliquid-settlement/test/*.test.js modules/hypercore-venue-adapter/test/*.test.js",
