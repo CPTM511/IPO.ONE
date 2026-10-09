@@ -199,6 +199,13 @@ not assert online identity or lending acceptance, and this fix is still local.
 
 ## Migration, rollback, permissions and remaining gates
 
+Subsequent scope approval at 05:19 UTC authorizes the separate
+[ABUSE-002 policy drift repair](ABUSE_002_POLICY_DRIFT_GATE.md), CI integration,
+push and a draft PR on this same branch. The abuse-policy failures above are
+historical evidence from before that repair. ABUSE-002 fixes the missing
+declarations and makes the gate mandatory without changing runtime quotas or
+role grants. Merge, deployment and production acceptance remain unauthorized.
+
 - Apply 0088 before running the new worker/query code. For a separately approved
   rollback, restore old worker/query code before removing the scheduling columns.
   Down migration preserves outcome records and public v1 projection JSON; old

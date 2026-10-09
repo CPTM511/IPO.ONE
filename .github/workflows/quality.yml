@@ -78,6 +78,11 @@ jobs:
       - name: Prepare reviewed private temporary boundary
         run: sudo install -d -m 1777 /private/tmp
 
+      - name: Verify abuse policy classification and drift regressions
+        run: |
+          pnpm run check:abuse-policy
+          node --test modules/abuse-control/test/abuse-policy-gate.test.js
+
       - name: Run repository quality gate
         run: pnpm run check
 
