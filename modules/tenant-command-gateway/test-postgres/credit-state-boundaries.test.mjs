@@ -41,7 +41,16 @@ test("PostgreSQL complete credit histories and fair bounded refresh", { timeout:
         const query = client.query.bind(client);
         return {
           async query(sql, params) {
+            if (sql.startsWith("SELECT p.projection") && instrument.slowRead) {
+              instrument.slowRead = false;
+              await query("SELECT pg_sleep(0.1)");
+            }
             const result = await query(sql, params);
+            if (sql.includes("FROM pg_settings") && instrument.afterBudget) {
+              const hook = instrument.afterBudget;
+              instrument.afterBudget = undefined;
+              await hook();
+            }
             if (sql.startsWith("FETCH FORWARD")) {
               if (instrument.slowFetch) {
                 instrument.slowFetch = false;
@@ -81,7 +90,7 @@ test("PostgreSQL complete credit histories and fair bounded refresh", { timeout:
       return {
         repository, materializer,
         subject: (key) => `subject_credit_boundary_${runId}_${name}_${key}`,
-        async seed(key, start, count, { losses = [], late = false, padding = 0 } = {}) {
+        async seed(key, start, count, { losses = [], late = false, padding = 0, microseconds = false } = {}) {
           const subjectKey = `${runId}_${name}_${key}`;
           await seedRepository.withTenantWrite(async (client) => {
             // Transaction-local fixture bypass, never used by the tested worker.
@@ -93,6 +102,7 @@ test("PostgreSQL complete credit histories and fair bounded refresh", { timeout:
               const value = creditBoundaryFixture(subjectKey, i, losses.includes(i));
               value.obligation.updatedAt = late ? "2026-08-01T00:00:00.000Z"
                 : new Date(Date.UTC(2026, 7, 23, 0, i)).toISOString();
+              if (microseconds) value.obligation.updatedAt = value.obligation.updatedAt.replace(".000Z", ".000456Z");
               if (padding) value.riskDecision.riskFeatureSnapshot.padding = "x".repeat(padding);
               const entries = [];
               if (!seen.has(key) && i === start) entries.push(
@@ -143,6 +153,7 @@ test("PostgreSQL complete credit histories and fair bounded refresh", { timeout:
       const initial = await scenario.projection("one");
       assert.equal(initial.trackRecord.length, 512);
       await scenario.seed("one", 512, 1, { losses: [512] });
+      await assert.rejects(scenario.view("one"), { code: "credit_state_projection_incomplete" });
       await scenario.materializer.run();
       const state = await scenario.projection("one");
       assert.equal(state.metrics.completedCycleCount, 513);
@@ -154,6 +165,7 @@ test("PostgreSQL complete credit histories and fair bounded refresh", { timeout:
       assert.equal(state.factors.repaymentReliability, "adverse_loss_recorded");
       assert.deepEqual((await scenario.view("one")).creditState, state);
       await scenario.seed("one", 513, 1, { late: true, losses: [513] });
+      await assert.rejects(scenario.view("one"), { code: "credit_state_projection_incomplete" });
       await scenario.materializer.run();
       const late = await scenario.projection("one");
       assert.equal(late.metrics.completedCycleCount, 514);
@@ -296,9 +308,112 @@ test("PostgreSQL complete credit histories and fair bounded refresh", { timeout:
         "SELECT count(*)::int AS count FROM credit_outcomes"
       )).rows[0].count);
       assert.equal(count, 1, "new outcome and refresh metadata roll back with the failed run");
+      await assert.rejects(scenario.view("one"), { code: "credit_state_projection_incomplete" });
       scenario.repository.withTenantWrite = write;
       await scenario.materializer.run();
       assert.equal((await scenario.view("one")).creditState.metrics.completedCycleCount, 2);
+    });
+
+    await t.test("cooperative deadline rolls back new outcomes and refuses stale reads until retry", async (subtest) => {
+      const scenario = await tenant("deadline");
+      await scenario.seed("one", 0, 1, { losses: [0] });
+      await scenario.materializer.run();
+      const before = await scenario.projection("one");
+      await scenario.seed("one", 1, 1, { late: true, losses: [1] });
+      const realNow = performance.now.bind(performance);
+      let elapsed = 0;
+      const timer = subtest.mock.method(performance, "now", () => realNow() + elapsed);
+      try {
+        instrument.afterFetch = () => { elapsed = 30_001; };
+        await assert.rejects(scenario.materializer.run(), { code: "credit_state_refresh_timeout" });
+      } finally { timer.mock.restore(); instrument.afterFetch = undefined; }
+      assert.deepEqual(await scenario.projection("one"), before);
+      await assert.rejects(scenario.view("one"), { code: "credit_state_projection_incomplete" });
+      await scenario.materializer.run();
+      const recovered = (await scenario.view("one")).creditState;
+      assert.equal(recovered.metrics.completedCycleCount, 2);
+      assert.equal(recovered.metrics.outcomeCounts.writtenOff, 2);
+      assert.deepEqual(recovered.latestOutcome, before.latestOutcome);
+      assert.equal((await scenario.materializer.run()).creditStateUpdatedCount, 0);
+      assert.deepEqual((await scenario.view("one")).creditState, recovered);
+    });
+
+    await t.test("real serialization failure refuses stale reads and retry remains idempotent", async () => {
+      const scenario = await tenant("serialization");
+      await scenario.seed("one", 0, 1);
+      await scenario.materializer.run();
+      const before = await scenario.projection("one");
+      await scenario.seed("one", 1, 1, { losses: [1] });
+      scenario.repository.transactionRetries = 0;
+      // The worker already has its serializable snapshot. A separate committed
+      // writer changes its subject before it can lock it for refresh.
+      instrument.afterBudget = () => scenario.repository.withTenantWrite(client => client.query(
+        "UPDATE subjects SET credit_state_refreshed_at = clock_timestamp() WHERE id = $1",
+        [scenario.subject("one")]
+      ));
+      await assert.rejects(scenario.materializer.run(), { code: "40001" });
+      assert.deepEqual(await scenario.projection("one"), before);
+      await assert.rejects(scenario.view("one"), { code: "credit_state_projection_incomplete" });
+      const recovered = await scenario.materializer.run();
+      assert.equal(recovered.materializedCount, 1);
+      assert.equal((await scenario.view("one")).creditState.metrics.outcomeCounts.writtenOff, 1);
+      const replay = await scenario.materializer.run();
+      assert.equal(replay.materializedCount, 0);
+      assert.equal(replay.creditStateUpdatedCount, 0);
+    });
+
+    await t.test("freshness is scoped to the owned subject and tenant with a bounded as-of read", async () => {
+      const first = await tenant("freshness_a");
+      const second = await tenant("freshness_b");
+      for (const scenario of [first, second]) {
+        await scenario.seed("one", 0, 1);
+        await scenario.materializer.run();
+      }
+      await second.seed("one", 1, 1, { losses: [1], late: true });
+      await assert.rejects(second.view("one"), { code: "credit_state_projection_incomplete" });
+      await first.seed("another", 0, 1, { losses: [0] });
+      assert.equal((await first.view("one")).creditState.metrics.completedCycleCount, 1);
+      await first.repository.withTenantRead(async client => {
+        const boundary = (await client.query("SELECT transaction_timestamp() AS as_of")).rows[0].as_of;
+        await client.query("SET LOCAL statement_timeout = '25ms'");
+        const view = await readOwnCreditStateQueryHandler().execute({
+          client, resource: { resourceType: "subject", resourceId: first.subject("one") }, payload: {}, now: NOW
+        });
+        assert.equal(view.asOf, boundary.toISOString());
+        assert.notEqual(view.asOf, NOW.toISOString(), "asOf must come from the database read boundary");
+        assert.equal((await client.query("SHOW statement_timeout")).rows[0].statement_timeout, "25ms");
+      });
+      instrument.slowRead = true;
+      await assert.rejects(first.repository.withTenantRead(async client => {
+        await client.query("SET LOCAL statement_timeout = '25ms'");
+        return readOwnCreditStateQueryHandler().execute({
+          client, resource: { resourceType: "subject", resourceId: first.subject("one") }, payload: {}, now: NOW
+        });
+      }), { code: "57014" });
+      assert.equal((await first.view("one")).creditState.metrics.completedCycleCount, 1);
+      await second.materializer.run();
+      assert.equal((await second.view("one")).creditState.metrics.outcomeCounts.writtenOff, 1);
+    });
+
+    await t.test("source coverage preserves v1 timestamp precision and rejects changed terminal sources", async () => {
+      const scenario = await tenant("source_precision");
+      await scenario.seed("one", 0, 1, { microseconds: true });
+      await scenario.materializer.run();
+      const view = await scenario.view("one");
+      assert.equal(view.creditState.metrics.completedCycleCount, 1);
+      await scenario.repository.withTenantWrite(async client => {
+        const source = (await client.query(
+          "SELECT to_char(updated_at, 'US') AS fraction FROM obligations WHERE subject_id = $1",
+          [scenario.subject("one")]
+        )).rows[0];
+        assert.equal(source.fraction, "000456", "fixture must exercise PostgreSQL microseconds");
+        // A revised terminal source cannot be declared current from its old
+        // immutable outcome. This fixture-only change simulates source drift.
+        await client.query("UPDATE obligations SET updated_at = updated_at + interval '1 second' WHERE subject_id = $1",
+          [scenario.subject("one")]);
+      });
+      await assert.rejects(scenario.view("one"), { code: "credit_state_projection_incomplete" });
+      assert.deepEqual(await scenario.projection("one"), view.creditState);
     });
 
     await t.test("refresh metadata migration rolls back without changing v1 projections", async () => {

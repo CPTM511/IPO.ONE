@@ -9,6 +9,7 @@ import {
   assertCreditStateOutcomeBytes,
   createCreditStateProjection
 } from "./credit-state-projection.js";
+import { TERMINAL_CREDIT_SOURCE_SQL, boundCreditStatementTime } from "./postgres-credit-source.js";
 
 const DEFAULT_LIMIT = 25;
 const MAX_RUN_MS = 30_000;
@@ -350,10 +351,7 @@ export class PostgresCreditOutcomeMaterializer {
     const deadline = performance.now() + MAX_RUN_MS;
     return this.eventRepository.withTenantWrite(async (client) => {
       assertDeadline(deadline);
-      // Respect any stricter caller setting. Local settings disappear at commit.
-      await client.query(`SELECT set_config('statement_timeout',
-        LEAST(COALESCE(NULLIF(setting::int, 0), 5000), 5000)::text, true)
-        FROM pg_settings WHERE name = 'statement_timeout'`);
+      await boundCreditStatementTime(client);
 
       const candidates = await client.query(
         `SELECT
@@ -391,15 +389,7 @@ export class PostgresCreditOutcomeMaterializer {
            ON d.tenant_id = o.tenant_id AND d.id = o.risk_decision_id
          LEFT JOIN credit_outcomes c
            ON c.tenant_id = o.tenant_id AND c.obligation_id = o.id
-        WHERE o.schema_version = 'obligation.v2'
-          AND o.status IN ('fully_repaid', 'written_off')
-          AND o.execution_status = 'executed'
-          AND o.sandbox_only = TRUE
-          AND o.production_funds_moved = FALSE
-          AND d.schema_version = 'risk_decision.v3'
-          AND d.status = 'approved'
-          AND d.sandbox_only = TRUE
-          AND d.production_authority = FALSE
+        WHERE ${TERMINAL_CREDIT_SOURCE_SQL}
           AND c.id IS NULL
         ORDER BY o.updated_at, o.id
         LIMIT $1

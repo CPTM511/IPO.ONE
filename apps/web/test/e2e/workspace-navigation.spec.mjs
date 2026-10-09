@@ -287,6 +287,9 @@ test("Credit State refresh failure clears the previous verified history", async 
   const load = page.getByRole("button", { name: "Load verified record" });
   await load.click();
   await expect(page.locator("#creditTrackRecordStateTitle")).toHaveText("1 completed credit cycle");
+  await expect(page.locator("#creditTrackRecordStateCopy")).toContainText("Snapshot as of Aug 16, 2026, 12:00:00 PM UTC");
+  await expect(page.locator("#creditTrackRecordStateCopy")).toContainText("this view does not update automatically");
+  await expect(page.locator("#creditTrackRecordFinality")).toHaveText("Verified snapshot · v1");
   await page.route("**/tenant/v1/operations", async route => {
     const command = route.request().postDataJSON();
     if (command.operationId !== "pilotReadOwnCreditState") return route.fallback();
@@ -295,8 +298,10 @@ test("Credit State refresh failure clears the previous verified history", async 
       message: "Credit State is awaiting a complete history refresh"
     } });
   });
-  await load.click();
+  await page.getByRole("button", { name: "Reload verified record" }).click();
   await expect(page.locator("#creditTrackRecordStateTitle")).toHaveText("Credit State not available yet");
   await expect(page.locator("#creditTrackRecordReliability")).not.toHaveText("Verified On Time History");
   await expect(page.locator("#creditTrackRecordRows")).not.toContainText("Positive Repayment History");
+  await expect(page.locator("#creditTrackRecordStateCopy")).not.toContainText("Snapshot as of");
+  await expect(load).toBeEnabled();
 });

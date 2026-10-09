@@ -1,4 +1,5 @@
 import { DomainError } from "../../../packages/domain/src/index.js";
+import { TERMINAL_CREDIT_SOURCE_SQL, boundCreditStatementTime } from "../../credit-learning/src/postgres-credit-source.js";
 
 function unavailable() {
   throw new DomainError(
@@ -48,11 +49,29 @@ export function readOwnCreditStateQueryHandler() {
         !(now instanceof Date) ||
         !Number.isFinite(now.getTime())
       ) unavailable();
+      await boundCreditStatementTime(client);
+      // Source projections and their events commit atomically. Check source ->
+      // immutable outcomes -> Credit State in one snapshot, including outcomes
+      // not yet materialized after a failed or skipped worker run. A timestamp
+      // high-water mark alone cannot detect backdated terminal sources.
       const result = await client.query(
-        `SELECT p.projection,
+        `SELECT p.projection, transaction_timestamp() AS as_of,
                 s.credit_state_refresh_error IS NULL AND p.projected_outcome_count = (
                   SELECT count(*) FROM credit_outcomes c
                    WHERE c.tenant_id = p.tenant_id AND c.subject_id = p.subject_id
+                ) AND NOT EXISTS (
+                  SELECT 1 FROM obligations o
+                  JOIN risk_decisions d
+                    ON d.tenant_id = o.tenant_id AND d.id = o.risk_decision_id
+                  LEFT JOIN credit_outcomes c
+                    ON c.tenant_id = o.tenant_id AND c.obligation_id = o.id
+                   AND c.subject_id = o.subject_id
+                   AND c.risk_decision_id = d.id
+                   AND c.decision_hash = d.decision_hash
+                   AND c.outcome_finalized_at = date_trunc('milliseconds', o.updated_at)
+                  WHERE o.tenant_id = p.tenant_id AND o.subject_id = p.subject_id
+                    AND ${TERMINAL_CREDIT_SOURCE_SQL}
+                    AND c.id IS NULL
                 ) AS complete
            FROM credit_state_projections p
            JOIN subjects s ON s.tenant_id = p.tenant_id AND s.id = p.subject_id
@@ -75,7 +94,9 @@ export function readOwnCreditStateQueryHandler() {
       );
       return {
         creditState: projection,
-        asOf: now.toISOString(),
+        // Use the database transaction boundary, not a wall clock sampled after
+        // its repeatable-read snapshot. This is an as-of read, not a live feed.
+        asOf: new Date(result.rows[0].as_of).toISOString(),
         schemaVersion: "tenant_owned_credit_state_view.v1"
       };
     }

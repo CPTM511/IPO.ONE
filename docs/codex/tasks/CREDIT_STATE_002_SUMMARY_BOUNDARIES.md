@@ -56,17 +56,19 @@ This is the active scoped repair; it does not authorize push, PR, merge or deplo
    and includes repository retries; an in-flight statement or bounded synchronous
    projection may finish after that check deadline. SQL/time failures roll back
    the transaction. Byte-budget failures are isolated to their subject.
-5. Owned-state reads require canonical outcome count equality and no recorded
-   resource block. Incomplete state raises `credit_state_projection_incomplete`.
-   On read failure the existing UI clears its previous projection/as-of value,
-   so a previously verified record cannot mask the failure.
+5. Owned-state reads require canonical outcome count equality, no recorded
+   resource block, and complete coverage of eligible terminal sources in the
+   same database snapshot (see the freshness follow-up below). Incomplete state
+   raises `credit_state_projection_incomplete`. On read failure the existing UI
+   clears its previous projection/as-of value. A loaded view explicitly shows
+   its UTC as-of time and requires a visible reload to check for newer records.
 6. Update exact hosted candidate migration count/digest (78 retained migrations)
    and assert the previously deployed 77-migration set remains an exact prefix.
    This prepares a reviewable candidate; it does not approve or apply a hosted
    migration. Existing migration rollback tests retain their original target
    versions with the additional step included.
 
-## Validation
+## Initial revision validation (8e5e1c3)
 
 Runtime: Node v26.5.0, pinned pnpm 11.11.0, PostgreSQL 17.10. Reused installed
 locked dependencies with local workspace links; no dependency/lockfile change.
@@ -107,6 +109,93 @@ directory of the task workspace, including `baseline-regression.log`,
 `transport.log`, `browser-credit.log`, `lint-final.log`, `dependency-audit.json`
 and `baseline-abuse-policy.log`. The accompanying handoff report records any
 additional final browser recovery result and the exact local commit.
+
+## Freshness follow-up
+
+The initial count/error check did not cover committed terminal source records
+whose derived outcomes rolled back with a failed materializer transaction. Two
+real-PostgreSQL regression assertions failed against that initial revision:
+a newly committed 513th write-off was readable as the old 512-record state, and
+the old state was readable after an actual SQL timeout rolled back the new
+outcome. This is reproduced locally, not evidence of a production incident.
+
+The reader now checks the complete source -> outcome -> projection relationship
+in one tenant read snapshot. The worker and reader share one static source
+eligibility predicate: executed sandbox obligation.v2 terminal records with
+approved, non-production risk_decision.v3 sources. An anti-join rejects a read
+if any eligible source lacks its tenant/subject/obligation/decision outcome,
+matching the original decision hash and terminal finalization time at the
+materializer's existing JavaScript millisecond precision. PostgreSQL source
+microseconds are normalized for this comparison, preserving v1 compatibility.
+It does not
+use a maximum timestamp: a new source with an older date still blocks the old
+projection. The source is the canonical obligations/risk_decisions layer, whose
+projection writes and domain events commit in the same repository transaction.
+A failed materializer therefore cannot erase the committed pending source.
+
+Outcomes are immutable and unique by tenant/obligation. Combined with the
+existing exact outcome count check, this covers both a not-yet-derived outcome
+and an already-derived outcome omitted by a skipped/stale projection refresh.
+No persisted failure marker outside the failed transaction is needed. The
+existing v1 terminal-obligation hash is a composite digest, not obligation_hash;
+these different hash types must not be compared. Existing outcome JSON, hashes,
+projection hashes, schema versions and API envelope fields remain unchanged.
+
+Reader statements use the same transaction-local 5-second cap as the worker,
+preserving stricter caller caps. The anti-join and scalar count use existing
+subject/status and tenant/outcome identity indexes; no entire source history is
+loaded into JavaScript, and no row-count cap silently treats a prefix as complete.
+Timeouts fail the request. Actual production query cost remains unmeasured.
+No additional migration or dependency is introduced by this follow-up.
+
+The existing `asOf` response field now comes from the database transaction start,
+the conservative boundary of the repository's repeatable-read snapshot, rather
+than the caller's wall clock. The UI calls the result a verified snapshot,
+displays its UTC time, and provides "Reload verified record". It explicitly says
+the view does not update automatically. An already-open snapshot can remain
+visible while new sources commit; it is never labeled a realtime feed. A failed
+reload clears the record and timestamp.
+
+The follow-up regression suite adds pre-materialization and late-source refusal,
+actual stricter SQL cancellation, a controlled cooperative-deadline expiry,
+actual PostgreSQL 40001 serialization failure, recovery/replay, unaffected other
+subjects/tenants, the database as-of boundary and a bounded read timeout. The
+original >512, old-loss, rotation, concurrency, byte-budget and migration checks
+remain enabled. A PostgreSQL microsecond fixture confirms existing v1 reads
+remain compatible; a changed terminal source is refused without mutating its
+immutable old outcome or projection. Such source drift needs reconciliation,
+not automatic rewriting of old credit history. Browser coverage checks the
+timestamp, snapshot label, reload control and failure clearing.
+
+Final follow-up validation on 2026-10-09:
+
+| Check | Result |
+| --- | --- |
+| Complete `pnpm check` on final code | PASS, exit 0 (`freshness-full-check-final.log`) |
+| Included PostgreSQL suite | 114 passed, 0 failed/skipped; all 12 credit-boundary tests passed |
+| Included complete unit suite | 1507 passed, 0 failed/skipped |
+| Included security / transport | 35 / 99 passed |
+| Included lint / contract / migration checks | Passed; 929 source modules, 89 migration pairs |
+| Included Foundry | 25 passed, 2 fork-dependent tests skipped; no external fork URL |
+| Full browser click-path / record-recovery | 66 / 15 passed |
+| Loaded credit snapshot visual QA | 1440px and 390px, dark/light: 4 layout/contrast checks passed; screenshots inspected |
+| Production dependency audit | 0 reported vulnerabilities, 288 dependency entries |
+| Extra approval / operations policy | Passed |
+| Extra abuse policy | FAILED, unchanged pre-existing coverage/classification drift; not modified |
+
+`freshness-before-fix.log` preserves the two expected regression failures on
+8e5e1c3. An intermediate hash comparison failed compatibility tests and was
+removed; final checks use the existing v1 timestamp semantics. Final exact
+commit and log checksums are recorded in the task's `FRESHNESS_VALIDATION.json`.
+The local synthetic UI preview is `http://127.0.0.1:4173/` (More tools -> Credit
+Track Record -> Load verified record); it is fixture-backed and does not prove
+production data freshness. PostgreSQL coverage is reported separately above.
+
+Independent read-only rechecks at about 05:08 UTC still found GitHub main and
+the online `/livez`/`/readyz` release ID at `30c49a81…`, with real funds disabled.
+The user's original checkout remains on 9636ec2… with its same 363 dirty entries;
+the source release checkout remains clean. These point-in-time observations do
+not assert online identity or lending acceptance, and this fix is still local.
 
 ## Migration, rollback, permissions and remaining gates
 
