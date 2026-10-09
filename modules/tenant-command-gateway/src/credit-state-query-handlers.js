@@ -49,13 +49,24 @@ export function readOwnCreditStateQueryHandler() {
         !Number.isFinite(now.getTime())
       ) unavailable();
       const result = await client.query(
-        `SELECT projection
-           FROM credit_state_projections
-          WHERE subject_id = $1
+        `SELECT p.projection,
+                s.credit_state_refresh_error IS NULL AND p.projected_outcome_count = (
+                  SELECT count(*) FROM credit_outcomes c
+                   WHERE c.tenant_id = p.tenant_id AND c.subject_id = p.subject_id
+                ) AS complete
+           FROM credit_state_projections p
+           JOIN subjects s ON s.tenant_id = p.tenant_id AND s.id = p.subject_id
+          WHERE p.subject_id = $1
           LIMIT 2`,
         [resource.resourceId]
       );
       if (result.rowCount !== 1) unavailable();
+      if (result.rows[0].complete !== true) {
+        throw new DomainError(
+          "credit_state_projection_incomplete",
+          "Credit State is awaiting a complete history refresh"
+        );
+      }
       const projection = assertProjection(
         typeof result.rows[0].projection === "string"
           ? JSON.parse(result.rows[0].projection)

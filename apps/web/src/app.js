@@ -9763,6 +9763,9 @@ async function loadCreditTrackRecord() {
   } catch (error) {
     const message =
       error?.message ?? "The verified Credit Track Record could not be loaded.";
+    // A failed completeness check must not leave a previous verified record visible.
+    creditStatePilot.projection = null;
+    creditStatePilot.asOf = null;
     creditStatePilot.error = true;
     creditStatePilot.helper = message;
     toast(message, "error");

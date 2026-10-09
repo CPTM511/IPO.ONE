@@ -278,3 +278,25 @@ test("restored SIWE session exposes wallet reconnect before Obligation creation"
     name: "Confirm & create sandbox Obligation"
   })).toBeEnabled();
 });
+
+
+test("Credit State refresh failure clears the previous verified history", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "More tools" }).click();
+  await page.getByRole("button", { name: /^Credit Track Record/ }).click();
+  const load = page.getByRole("button", { name: "Load verified record" });
+  await load.click();
+  await expect(page.locator("#creditTrackRecordStateTitle")).toHaveText("1 completed credit cycle");
+  await page.route("**/tenant/v1/operations", async route => {
+    const command = route.request().postDataJSON();
+    if (command.operationId !== "pilotReadOwnCreditState") return route.fallback();
+    await route.fulfill({ status: 409, json: {
+      code: "credit_state_projection_incomplete",
+      message: "Credit State is awaiting a complete history refresh"
+    } });
+  });
+  await load.click();
+  await expect(page.locator("#creditTrackRecordStateTitle")).toHaveText("Credit State not available yet");
+  await expect(page.locator("#creditTrackRecordReliability")).not.toHaveText("Verified On Time History");
+  await expect(page.locator("#creditTrackRecordRows")).not.toContainText("Positive Repayment History");
+});

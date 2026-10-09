@@ -230,3 +230,34 @@ test("Credit State replay is deterministic and rejects duplicates", () => {
     (error) => error?.code === "invalid_credit_state_projection"
   );
 });
+
+
+test("complete Credit State retains early and latest loss beyond 512 records", () => {
+  const outcomes = Array.from({ length: 640 }, (_, sequence) => finalizedOutcome({
+    sequence,
+    status: sequence === 0 || sequence === 639 ? "written_off" : "fully_repaid",
+    recordedAt: new Date(Date.UTC(2026, 0, 1, 0, sequence)).toISOString()
+  }));
+  const state = createCreditStateProjection({ outcomes, updatedAt: outcomes.at(-1).recordedAt });
+  assert.equal(state.metrics.completedCycleCount, 640);
+  assert.equal(state.trackRecord.length, 640);
+  assert.equal(state.metrics.outcomeCounts.writtenOff, 2);
+  assert.equal(state.metrics.totalLossMinor, "16000");
+  assert.equal(state.trackRecord[0].outcomeLabel, "written_off");
+  assert.equal(state.latestOutcome.outcomeLabel, "written_off");
+  assert.deepEqual(createCreditStateProjection({
+    outcomes: [...outcomes].reverse(), updatedAt: state.updatedAt
+  }), state);
+});
+
+test("Credit State rejects oversized histories instead of publishing a prefix", () => {
+  const outcome = finalizedOutcome({ sequence: 1 });
+  assert.throws(() => createCreditStateProjection({
+    outcomes: [{ ...outcome, padding: "x".repeat(128 * 1024) }],
+    updatedAt: outcome.recordedAt
+  }), { code: "credit_state_resource_limit" });
+  const padded = { ...outcome, padding: "x".repeat(120 * 1024) };
+  assert.throws(() => createCreditStateProjection({
+    outcomes: Array(140).fill(padded), updatedAt: outcome.recordedAt
+  }), { code: "credit_state_resource_limit" });
+});

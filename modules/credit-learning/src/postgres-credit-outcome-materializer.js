@@ -4,9 +4,20 @@ import {
   createFinalizedCreditOutcome,
   hashId
 } from "../../../packages/domain/src/index.js";
-import { createCreditStateProjection } from "./credit-state-projection.js";
+import {
+  MAX_CREDIT_STATE_ENTRY_BYTES,
+  assertCreditStateOutcomeBytes,
+  createCreditStateProjection
+} from "./credit-state-projection.js";
 
 const DEFAULT_LIMIT = 25;
+const MAX_RUN_MS = 30_000;
+
+function assertDeadline(deadline) {
+  if (performance.now() >= deadline) {
+    invalid("credit_state_refresh_timeout", "Credit State refresh time budget exhausted");
+  }
+}
 
 function invalid(code, message) {
   throw new DomainError(code, message);
@@ -202,18 +213,42 @@ async function insertOutcome(client, outcome, committed) {
   );
 }
 
-async function refreshCreditState(client, subjectId) {
-  const outcomes = await client.query(
-    `SELECT outcome
+async function refreshCreditState(client, subjectId, deadline) {
+  // A transaction-local cursor gives every page the same snapshot, including
+  // when a caller uses READ COMMITTED. Late inserts are picked up on the next run.
+  await client.query(
+    `DECLARE credit_state_outcomes NO SCROLL CURSOR FOR
+     SELECT CASE WHEN octet_length(outcome::text) <= $2
+                 THEN outcome::text END AS outcome,
+            octet_length(outcome::text) AS bytes
        FROM credit_outcomes
       WHERE subject_id = $1
-      ORDER BY outcome_finalized_at, recorded_at, id
-      LIMIT 512`,
-    [subjectId]
+      ORDER BY outcome_finalized_at, recorded_at, id`,
+    [subjectId, MAX_CREDIT_STATE_ENTRY_BYTES]
   );
-  if (outcomes.rowCount < 1) return undefined;
-  const values = outcomes.rows.map(({ outcome }) =>
-    typeof outcome === "string" ? JSON.parse(outcome) : outcome);
+  const values = [];
+  let bytes = 0;
+  try {
+    while (true) {
+      assertDeadline(deadline);
+      const page = await client.query("FETCH FORWARD 64 FROM credit_state_outcomes");
+      if (page.rowCount === 0) break;
+      for (const row of page.rows) {
+        bytes += row.bytes;
+        assertCreditStateOutcomeBytes(bytes, row.bytes);
+        values.push(JSON.parse(row.outcome));
+      }
+    }
+  } catch (error) {
+    // Byte-budget errors leave SQL usable; close before processing another
+    // subject. SQL errors roll back through withTenantWrite, closing the cursor.
+    if (error.code === "credit_state_resource_limit") {
+      await client.query("CLOSE credit_state_outcomes");
+    }
+    throw error;
+  }
+  await client.query("CLOSE credit_state_outcomes");
+  if (values.length === 0) return undefined;
   const updatedAt = values.reduce(
     (latest, outcome) => outcome.recordedAt > latest ? outcome.recordedAt : latest,
     values[0].recordedAt
@@ -264,18 +299,39 @@ async function refreshCreditState(client, subjectId) {
   });
 }
 
-async function refreshCreditStates(client, limit) {
+async function refreshCreditStates(client, limit, deadline) {
   const subjects = await client.query(
-    `SELECT subject_id
-       FROM credit_outcomes
-      GROUP BY subject_id
-      ORDER BY MIN(outcome_finalized_at), subject_id
-      LIMIT $1`,
+    `SELECT s.id AS subject_id
+       FROM subjects s
+      WHERE EXISTS (
+        SELECT 1 FROM credit_outcomes c
+         WHERE c.tenant_id = s.tenant_id AND c.subject_id = s.id
+      )
+      ORDER BY s.credit_state_refreshed_at NULLS FIRST, s.id
+      LIMIT $1
+      FOR NO KEY UPDATE OF s SKIP LOCKED`,
     [limit]
   );
   const projections = [];
   for (const { subject_id: subjectId } of subjects.rows) {
-    projections.push(await refreshCreditState(client, subjectId));
+    assertDeadline(deadline);
+    let blockedReason = null;
+    try {
+      projections.push(await refreshCreditState(client, subjectId, deadline));
+    } catch (error) {
+      if (error.code !== "credit_state_resource_limit") throw error;
+      blockedReason = error.code;
+      projections.push(Object.freeze({ subjectId, updated: false,
+        status: "blocked", reasonCode: blockedReason }));
+    }
+    // Rotate even a blocked or previously unprojected subject so that a large
+    // history cannot starve the rest of the Tenant. Never change public hashes.
+    await client.query(
+      `UPDATE subjects SET credit_state_refreshed_at = clock_timestamp(),
+                           credit_state_refresh_error = $2
+        WHERE id = $1`,
+      [subjectId, blockedReason]
+    );
   }
   return projections.filter(Boolean);
 }
@@ -291,7 +347,14 @@ export class PostgresCreditOutcomeMaterializer {
 
   async run({ limit = DEFAULT_LIMIT } = {}) {
     const checkedLimit = assertLimit(limit);
+    const deadline = performance.now() + MAX_RUN_MS;
     return this.eventRepository.withTenantWrite(async (client) => {
+      assertDeadline(deadline);
+      // Respect any stricter caller setting. Local settings disappear at commit.
+      await client.query(`SELECT set_config('statement_timeout',
+        LEAST(COALESCE(NULLIF(setting::int, 0), 5000), 5000)::text, true)
+        FROM pg_settings WHERE name = 'statement_timeout'`);
+
       const candidates = await client.query(
         `SELECT
            o.id AS obligation_id,
@@ -345,6 +408,7 @@ export class PostgresCreditOutcomeMaterializer {
       );
       const outcomes = [];
       for (const candidate of candidates.rows) {
+        assertDeadline(deadline);
         const recordedAt = this.clock().toISOString();
         const sourceEvidenceHashes = await loadSourceEvidenceHashes(client, candidate);
         const servicingSummary = await loadServicingSummary(
@@ -414,12 +478,13 @@ export class PostgresCreditOutcomeMaterializer {
         });
         outcomes.push({ ...committed.response, replayed: committed.replayed });
       }
-      const creditStates = await refreshCreditStates(client, checkedLimit);
+      const creditStates = await refreshCreditStates(client, checkedLimit, deadline);
       return Object.freeze({
         candidateCount: candidates.rowCount,
         materializedCount: outcomes.length,
         outcomes: Object.freeze(outcomes),
-        creditStateProjectionCount: creditStates.length,
+        creditStateProjectionCount: creditStates.filter(({ status }) => status !== "blocked").length,
+        creditStateBlockedCount: creditStates.filter(({ status }) => status === "blocked").length,
         creditStateUpdatedCount: creditStates.filter(({ updated }) => updated).length,
         creditStates: Object.freeze(creditStates),
         nonAuthorizing: true,

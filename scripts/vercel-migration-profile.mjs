@@ -1,13 +1,15 @@
 import { createHash } from "node:crypto";
 
+// Candidate schema preparation only; deployment remains separately authorized.
+// CREDIT-STATE-002 adds internal refresh scheduling metadata.
 // BNB-004 adds only offchain BNB network identity after conditional public-release authorization.
 // Local invitation,
 // runtime enrollment and Passkey migrations are not production migrations.
 export const VERCEL_MIGRATION_PROFILE = Object.freeze({
-  id: "bnb004_no_funds_wallet_networks_v1",
+  id: "credit_state_refresh_rotation_v1",
   baselineCommit: "7ce4b9500ea98744afd9df4087e6a2f203c8b36c",
-  count: 77,
-  setSha256: "9449c310a601f0be115c36ee99f0b39a2ac5b41a48ce1f18811b8342d4943c77",
+  count: 78,
+  setSha256: "bf6b911d03bf0a1fd3164c8fb109b1e061ac8ee625a68d42858cc9fd4e93e2b2",
   localOnly: Object.freeze([
     "0074_bnb_no_funds_wallet_networks",
     "0076_invited_wallet_role_enrollment",

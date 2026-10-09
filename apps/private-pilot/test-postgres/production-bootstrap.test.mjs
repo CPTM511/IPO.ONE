@@ -61,7 +61,7 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
     const applied = await migrateUp({ pool: target });
     assert.equal(
       applied.at(-1),
-      "0087_hosted_bnb_no_funds_wallet_networks"
+      "0088_credit_state_refresh_rotation"
     );
     assert.ok(applied.includes("0008_durable_tenant_command_gateway"));
     const runtimePrivilegeRole = `ipo_privilege_${suffix}`;
@@ -75,7 +75,8 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
       await target.query(
         `GRANT INSERT ON obligations TO "${runtimePrivilegeRole}"`
       );
-      assert.deepEqual(await migrateDown({ pool: target, steps: 18 }), [
+      assert.deepEqual(await migrateDown({ pool: target, steps: 19 }), [
+        "0088_credit_state_refresh_rotation",
         "0087_hosted_bnb_no_funds_wallet_networks",
         "0086_local_bnb_risk_passkey_origin",
         "0085_local_bnb_ordinary_wallet_access",
@@ -113,7 +114,8 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
         "0084_verified_ordinary_wallet_expiry_recovery",
         "0085_local_bnb_ordinary_wallet_access",
         "0086_local_bnb_risk_passkey_origin",
-        "0087_hosted_bnb_no_funds_wallet_networks"
+        "0087_hosted_bnb_no_funds_wallet_networks",
+        "0088_credit_state_refresh_rotation"
       ]);
       const capabilityClient = await target.connect();
       let systemWorkerCapability;
@@ -339,7 +341,7 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
     upgradePool = new Pool({ connectionString: upgradeUrl.toString(), max: 1 });
     assert.equal(
       (await migrateUp({ pool: upgradePool })).at(-1),
-      "0087_hosted_bnb_no_funds_wallet_networks"
+      "0088_credit_state_refresh_rotation"
     );
     const upgradeBootstrap = await bootstrapProductionDatabase({
       ...parameters,
@@ -351,7 +353,8 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       })
     });
     assert.equal(upgradeBootstrap.insertedCredentials, 4);
-    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 26 }), [
+    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 27 }), [
+      "0088_credit_state_refresh_rotation",
       "0087_hosted_bnb_no_funds_wallet_networks",
       "0086_local_bnb_risk_passkey_origin",
         "0085_local_bnb_ordinary_wallet_access",
@@ -405,7 +408,8 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
         "0084_verified_ordinary_wallet_expiry_recovery",
       "0085_local_bnb_ordinary_wallet_access",
       "0086_local_bnb_risk_passkey_origin",
-      "0087_hosted_bnb_no_funds_wallet_networks"
+      "0087_hosted_bnb_no_funds_wallet_networks",
+      "0088_credit_state_refresh_rotation"
     ]);
     const backfilled = await upgradePool.query(
       `SELECT count(*)::int AS count
