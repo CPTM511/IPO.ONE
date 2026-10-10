@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { TENANT_OPERATION_POLICIES } from "../../authorization/src/index.js";
+import { PilotCapability, ROLE_BUNDLE_CAPABILITIES, TENANT_OPERATION_POLICIES } from "../../authorization/src/index.js";
 import {
   ABUSE_CONTROL_POLICY,
   ABUSE_POLICY_VERSION,
@@ -116,5 +116,28 @@ test("all configured values remain within immutable hard ceilings", () => {
     }
     assert.ok(profile.admissionLeaseMs <= HARD_CEILINGS.admissionLeaseMs);
     assert.ok(profile.maxAutomaticRetries <= HARD_CEILINGS.automaticRetries);
+  }
+});
+
+test("sandbox Human activation retains mutation quotas and explicit owned Human authority", () => {
+  const operationId = "pilotActivateSandboxHumanSubject";
+  const abuse = TENANT_ABUSE_OPERATION_POLICIES.find(item => item.operationId === operationId);
+  const authorization = TENANT_OPERATION_POLICIES.find(item => item.operationId === operationId);
+  assert.equal(abuse.quotaClass, QuotaClass.MUTATION);
+  assert.equal(abuse.profile, QUOTA_PROFILES.mutation);
+  assert.equal(abuse.profile.idempotencyRequired, true);
+  assert.equal(abuse.profile.maxAutomaticRetries, 0);
+  assert.equal(abuse.profile.rate.actor, 120);
+  assert.equal(abuse.profile.rate.tenant, 600);
+  assert.equal(abuse.profile.concurrency.actor, 4);
+  assert.deepEqual(authorization.allowedActorTypes, ["human"]);
+  assert.equal(authorization.ownershipRule, "actor");
+  assert.equal(authorization.requiredCapability, PilotCapability.SUBJECT_ACTIVATE_SANDBOX_SELF);
+  assert.equal(authorization.idempotencyRequirement, "required");
+  assert.deepEqual(authorization.liveChecks, ["subject_state", "principal_state"]);
+  // Classification is admission policy, not a grant: no default role bundle
+  // gains this local-only capability by repairing the schema declaration.
+  for (const capabilities of Object.values(ROLE_BUNDLE_CAPABILITIES)) {
+    assert.equal(capabilities.includes(authorization.requiredCapability), false);
   }
 });

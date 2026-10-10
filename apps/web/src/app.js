@@ -6356,8 +6356,7 @@ function renderV9ShellStates() {
     el("creditTrackRecordStateTitle").textContent =
       `${projection.metrics.completedCycleCount} completed credit cycle${projection.metrics.completedCycleCount === 1 ? "" : "s"}`;
     el("creditTrackRecordStateCopy").textContent =
-      `${titleize(projection.latestOutcome.outcomeLabel)} is the latest terminal Credit Outcome. ` +
-      `State ${compactDecisionProofHash(projection.creditStateHash)} was rebuilt from finalized outcomes only; it does not authorize funds or an automatic limit change.`;
+      creditStateSnapshotCopy(projection);
   } else if (creditStatePilot.error) {
     el("creditTrackRecordStateTitle").textContent = "Credit State not available yet";
     el("creditTrackRecordStateCopy").textContent = creditStatePilot.helper;
@@ -7180,7 +7179,7 @@ function renderCreditPassportPilot() {
   finality.textContent = creditStatePilot.busy
     ? "Loading"
     : creditState
-      ? `Outcome-derived · v${creditState.projectionVersion}`
+      ? `Verified snapshot · v${creditState.projectionVersion}`
       : creditStatePilot.error
         ? "Not available yet"
         : "Not loaded";
@@ -7188,12 +7187,24 @@ function renderCreditPassportPilot() {
     el("creditTrackRecordStateTitle").textContent =
       `${creditState.metrics.completedCycleCount} completed credit cycle${creditState.metrics.completedCycleCount === 1 ? "" : "s"}`;
     el("creditTrackRecordStateCopy").textContent =
-      `${titleize(creditState.latestOutcome.outcomeLabel)} is the latest terminal Credit Outcome. ` +
-      `State ${compactDecisionProofHash(creditState.creditStateHash)} was rebuilt from finalized outcomes only; it does not authorize funds or an automatic limit change.`;
+      creditStateSnapshotCopy(creditState);
   } else if (creditStatePilot.error) {
     el("creditTrackRecordStateTitle").textContent = "Credit State not available yet";
     el("creditTrackRecordStateCopy").textContent = creditStatePilot.helper;
   }
+}
+
+function creditStateSnapshotCopy(projection) {
+  const date = new Date(creditStatePilot.asOf ?? "");
+  const asOf = Number.isFinite(date.getTime())
+    ? new Intl.DateTimeFormat("en-US", {
+        dateStyle: "medium", timeStyle: "long", timeZone: "UTC"
+      }).format(date)
+    : "Unavailable";
+  return `Snapshot as of ${asOf}. ` +
+    `${titleize(projection.latestOutcome.outcomeLabel)} is the latest terminal Credit Outcome in this snapshot. ` +
+    "Reload the verified record to check for newer outcomes; this view does not update automatically. " +
+    "It does not authorize funds or an automatic limit change.";
 }
 
 function capitalNetworkAmount(assetId, minor) {
@@ -9758,11 +9769,14 @@ async function loadCreditTrackRecord() {
     creditStatePilot.asOf = result.response.asOf;
     creditStatePilot.helper =
       "Durable Credit State loaded from finalized terminal outcomes and Evidence lineage.";
-    toast("Verified Credit Track Record loaded");
-    announce("Verified Credit Track Record loaded from durable Credit State");
+    toast("Verified Credit Track Record snapshot loaded");
+    announce("Verified Credit Track Record snapshot loaded. Reload to check for newer outcomes.");
   } catch (error) {
     const message =
       error?.message ?? "The verified Credit Track Record could not be loaded.";
+    // A failed completeness check must not leave a previous verified record visible.
+    creditStatePilot.projection = null;
+    creditStatePilot.asOf = null;
     creditStatePilot.error = true;
     creditStatePilot.helper = message;
     toast(message, "error");
@@ -9771,7 +9785,7 @@ async function loadCreditTrackRecord() {
   } finally {
     creditStatePilot.busy = false;
     button.removeAttribute("aria-busy");
-    button.textContent = "Load verified record";
+    button.textContent = creditStatePilot.projection ? "Reload verified record" : "Load verified record";
     renderTenantPilot();
   }
 }

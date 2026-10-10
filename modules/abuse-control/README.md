@@ -26,7 +26,18 @@ store remain independent deployment controls.
 service, concurrency, byte, count, and cost values under immutable hard
 ceilings. `check:abuse-policy` rejects missing operation classifications,
 weakened idempotency, automatic high-impact retries, SEC-D08 drift, schema
-drift, or values above those ceilings.
+drift, or values above those ceilings. Operation properties and required keys
+must both match the complete runtime set, including the original classification.
+The check runs in `pnpm check` and as an explicit push/PR Quality Gate step,
+alongside CLI regressions that must reject additions, omissions, same-count
+replacements, misclassifications and weakened required/closed-object declarations.
+
+`pilotActivateSandboxHumanSubject` retains the existing mutation profile and
+requires an explicitly granted, owned Human capability. No default role bundle
+grants it; the handler remains default-off and restricted to its reviewed local
+database allowlist, Human Borrower role, exact acknowledgement, current Consent
+and synthetic identity reference. Its policy declaration is not activation
+authority and does not enable hosted identity, credit or funds.
 
 ## Admission Semantics
 

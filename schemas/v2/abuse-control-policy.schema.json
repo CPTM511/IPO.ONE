@@ -90,6 +90,7 @@
         "pilotCreateAgentSubject",
         "pilotCreateAgentAccountChallenge",
         "pilotCreateHumanSubject",
+        "pilotActivateSandboxHumanSubject",
         "pilotReadHumanSelf",
         "pilotReadWorkspaceResume",
         "pilotReadCapitalPartnerSelf",
@@ -198,7 +199,19 @@
         "venueActivateDelegate",
         "venueRevokeDelegate",
         "pilotReadApprovalInbox",
-        "pilotReadRiskAgentDirectory"
+        "pilotReadRiskAgentDirectory",
+        "pilotReadOwnSecuredPool",
+        "pilotReviewSecuredPoolAction",
+        "pilotReadSecuredPoolRisk",
+        "pilotReadClosedPilotReadiness",
+        "pilotListOwnCases",
+        "pilotReadCaseQueue",
+        "pilotReadOwnCreditState",
+        "agentReadSecuredFacilityAuthorization",
+        "pilotFileCase",
+        "pilotTransitionCase",
+        "agentCreateSecuredFacilityAuthorization",
+        "agentRevokeSecuredFacilityAuthorization"
       ],
       "properties": {
         "pilotReadOwnSecuredPool": {
@@ -274,6 +287,9 @@
           "const": "credential"
         },
         "pilotCreateHumanSubject": {
+          "const": "mutation"
+        },
+        "pilotActivateSandboxHumanSubject": {
           "const": "mutation"
         },
         "pilotReadHumanSelf": {

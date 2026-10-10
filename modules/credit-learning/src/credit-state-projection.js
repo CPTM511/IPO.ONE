@@ -7,6 +7,20 @@ import {
 export const CREDIT_STATE_PROJECTION_SCHEMA_VERSION =
   "credit_state_projection.v1";
 
+// A byte budget protects the complete v1 history contract without a record-count
+// truncation. Oversized histories must fail closed, never publish a partial state.
+export const MAX_CREDIT_STATE_ENTRY_BYTES = 128 * 1024;
+export const MAX_CREDIT_STATE_OUTCOME_BYTES = 16 * 1024 * 1024;
+
+export function assertCreditStateOutcomeBytes(bytes, entryBytes = 0) {
+  if (bytes > MAX_CREDIT_STATE_OUTCOME_BYTES || entryBytes > MAX_CREDIT_STATE_ENTRY_BYTES) {
+    throw new DomainError(
+      "credit_state_resource_limit",
+      "complete Credit State history exceeds the projection byte budget"
+    );
+  }
+}
+
 const IMPACT_BY_OUTCOME = Object.freeze({
   on_time_repaid: "positive_repayment_history",
   late_or_modified_repaid: "modified_or_late_repayment_history",
@@ -49,8 +63,14 @@ function factorState(counts, maximumDaysPastDue, outcomes) {
 }
 
 export function createCreditStateProjection({ outcomes, updatedAt }) {
-  if (!Array.isArray(outcomes) || outcomes.length < 1 || outcomes.length > 512) {
-    invalid("one through 512 finalized outcomes are required");
+  if (!Array.isArray(outcomes) || outcomes.length < 1) {
+    invalid("at least one finalized outcome is required");
+  }
+  let bytes = 0;
+  for (const outcome of outcomes) {
+    const entryBytes = Buffer.byteLength(JSON.stringify(outcome), "utf8");
+    bytes += entryBytes;
+    assertCreditStateOutcomeBytes(bytes, entryBytes);
   }
   const normalized = outcomes.map((outcome) =>
     structuredClone(assertFinalizedCreditOutcome(outcome))).sort(compareOutcome);
@@ -75,8 +95,8 @@ export function createCreditStateProjection({ outcomes, updatedAt }) {
   });
   if (counts.onTimeRepaid + counts.lateOrModifiedRepaid + counts.writtenOff !==
       normalized.length) invalid("an outcome label is unsupported");
-  const maximumDaysPastDue = Math.max(
-    ...normalized.map(({ maxDaysPastDue }) => maxDaysPastDue)
+  const maximumDaysPastDue = normalized.reduce(
+    (maximum, { maxDaysPastDue }) => Math.max(maximum, maxDaysPastDue), 0
   );
   const history = normalized.map((outcome) => Object.freeze({
     creditOutcomeId: outcome.creditOutcomeId,

@@ -18,6 +18,8 @@ const byOperation = new Map(TENANT_ABUSE_OPERATION_POLICIES.map((item) => [item.
 fail(ABUSE_CONTROL_POLICY.policyVersion === ABUSE_POLICY_VERSION, "policy version drifted");
 fail(Object.isFrozen(ABUSE_CONTROL_POLICY), "policy snapshot must be frozen");
 fail(byOperation.size === TENANT_OPERATION_POLICIES.length, "tenant operation coverage drifted");
+fail(byOperation.size === TENANT_ABUSE_OPERATION_POLICIES.length,
+  "duplicate tenant operation classification");
 for (const authorization of TENANT_OPERATION_POLICIES) {
   const abuse = byOperation.get(authorization.operationId);
   fail(Boolean(abuse), `missing operation classification: ${authorization.operationId}`);
@@ -78,6 +80,16 @@ const schema = JSON.parse(await readFile(
   "utf8"
 ));
 const schemaOperations = schema.properties?.operations?.properties ?? {};
+const schemaRequired = schema.properties?.operations?.required;
+fail(schema.properties?.operations?.type === "object" &&
+  schema.properties?.operations?.additionalProperties === false,
+  "policy schema operations must remain a closed object");
+// Match required keys as well as properties: counts cannot detect a renamed
+// operation, and a declared-but-optional operation still weakens the contract.
+fail(Array.isArray(schemaRequired) &&
+  JSON.stringify([...schemaRequired].sort()) ===
+    JSON.stringify(Object.keys(ABUSE_CONTROL_POLICY.operations).sort()),
+  "policy schema required operation coverage drifted");
 fail(
   JSON.stringify(Object.keys(schemaOperations).sort()) ===
     JSON.stringify(Object.keys(ABUSE_CONTROL_POLICY.operations).sort()),

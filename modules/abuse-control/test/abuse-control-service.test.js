@@ -70,6 +70,29 @@ async function complete(service, admission, outcome = AdmissionOutcome.SUCCEEDED
   await service.complete({ admission, outcome });
 }
 
+test("sandbox Human activation consumes mutation admission capacity without granting execution authority", async () => {
+  const state = harness();
+  const input = { authenticationContext: authenticationContext({ actorType: ActorType.HUMAN }),
+    operationId: "pilotActivateSandboxHumanSubject", idempotencyKey: "activation-admission-fixture" };
+  await assert.rejects(state.service.admitTenant({ ...input, retryAttempt: 1 }),
+    { code: "automatic_retry_prohibited" });
+  const active = [];
+  for (let index = 0; index < 4; index++) {
+    active.push(await state.service.admitTenant({ ...input, idempotencyKey: `activation-concurrent-${index}` }));
+  }
+  await assert.rejects(state.service.admitTenant(input), { code: "request_budget_exceeded" });
+  for (const admission of active) await complete(state.service, admission);
+  // The four completed reservations count towards the same 120/minute quota.
+  for (let index = 4; index < 120; index++) {
+    await complete(state.service, await state.service.admitTenant({
+      ...input, idempotencyKey: `activation-rate-${index}`
+    }));
+  }
+  await assert.rejects(state.service.admitTenant(input), { code: "request_budget_exceeded" });
+  state.advance(60_001);
+  await complete(state.service, await state.service.admitTenant(input));
+});
+
 test("tenant admission derives identity only from trusted Authentication Context", async () => {
   const state = harness();
   const context = authenticationContext();
