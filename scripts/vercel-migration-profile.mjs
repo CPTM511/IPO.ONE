@@ -9,7 +9,7 @@ export const VERCEL_MIGRATION_PROFILE = Object.freeze({
   id: "credit_state_refresh_rotation_v1",
   baselineCommit: "7ce4b9500ea98744afd9df4087e6a2f203c8b36c",
   count: 78,
-  setSha256: "bf6b911d03bf0a1fd3164c8fb109b1e061ac8ee625a68d42858cc9fd4e93e2b2",
+  setSha256: "8953e5caef5455d85a0bcb34a5ad117c59ebdfb84c193021a620536431e54275",
   localOnly: Object.freeze([
     "0074_bnb_no_funds_wallet_networks",
     "0076_invited_wallet_role_enrollment",

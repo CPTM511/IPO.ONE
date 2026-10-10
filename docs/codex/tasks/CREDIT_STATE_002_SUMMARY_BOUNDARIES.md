@@ -224,3 +224,64 @@ role grants. Merge, deployment and production acceptance remain unauthorized.
   is not DEPLOYED/REACHABLE/USER-VERIFIED. Product release verdict remains
   `BLOCKED — NOT COMPLETE` until separately authorized release and acceptance.
   Green local checks do not establish online identity or real lending readiness.
+
+## Release preflight follow-up (2026-10-10)
+
+Scope: complete PR #92's manual-only CI gates and rehearse migration/backfill
+behavior before requesting approval for the exact production change. No merge,
+production migration, deployment, credential provisioning, Anvil activation or
+funds action is part of this preflight.
+
+The rotation index now explicitly uses `credit_state_refreshed_at NULLS FIRST`,
+matching the worker's ascending order. Without that clause PostgreSQL sorted
+all 50,000 rows in an isolated ordering experiment before selecting 64. With
+the matching index it read the first 64 through the index. These local synthetic
+plans establish the ordering mismatch, not production capacity or latency.
+Only the not-yet-deployed 0088 candidate checksum and hosted profile digest
+change. The retained 77-migration baseline remains an exact checksum prefix.
+
+Release requirements discovered in the actual runtime and PostgreSQL rehearsal:
+
+- `assertExactMigrationSet` requires an exact set, including row count. A cold
+  old runtime rejects the 78-migration schema; the candidate rejects the old
+  77-migration schema. Warm readiness checks only query `SELECT 1`, so an old
+  `/readyz` returning 200 after migration would not prove rollback compatibility.
+- Applying 0088 through `migrateUp` holds the `subjects` ALTER lock until the
+  normal index build commits. Use an approved maintenance window and bounded
+  session `lock_timeout` / `statement_timeout`; a lock timeout was verified to
+  roll back both the columns and migration row. Do not run an unbounded owner
+  migration or a concurrent old/new worker rollout against this shared schema.
+- Use the *hosted* migration directory selected by `selectVercelMigrations`,
+  never all 89 local migrations. The root directory contains 11 intentionally
+  local-only migrations that must not be applied to production.
+- Coordinate application/Cron quiescence, migration, exact candidate startup
+  verification and activation in that window. Staging a candidate that shares
+  the canonical DB does not isolate schema changes from the current application.
+- 0088 does not backfill or rewrite outcomes or public v1 JSON. All scheduling
+  values start NULL; the existing worker refreshes at most 64 eligible subjects
+  per hosted run. For N eligible/unlocked subjects a fixed backlog needs at least
+  ceil(N/64) successful runs. New source outcomes have their own same-size batch;
+  timeouts roll back an entire run, while byte-budget blocks rotate and preserve
+  the previous projection. Count both remaining subjects and blocked subjects;
+  a zero updated-count alone does not prove completion.
+- Rollback requires quiescing candidate writers and Cron, running only 0088 down
+  with the candidate migration directory, then restoring the exact prior
+  application and verifying its startup and Cron. The old migration runner
+  refuses the unknown 0088 row and cannot perform this rollback. The down step
+  deletes scheduling metadata only; original credit records and v1 projection
+  JSON remain. This reintroduces the old summary boundary defect and is an
+  incident recovery option, not a long-term accepted state.
+- Production approval still needs the current Neon project/branch/database,
+  exact 77 checksums, table/history sizes and blocked-history handling, backup
+  availability, maintenance window and concrete candidate/prior deployment IDs.
+  No production database access or runtime-identity acceptance is claimed here.
+
+Local validation of this follow-up passed on a fresh isolated PostgreSQL 17.10
+instance: full `pnpm check` exit 0 (1519 unit, 114 PostgreSQL, 35 security,
+99 transport; lint/type/schema/migration/policy gates included), plus 21 focused
+credit tests on Node 24.19.0. The hosted migration-profile test passed. The exact
+updated 0088 was rehearsed through lock-timeout rollback, up, repeated up,
+down and up, with old/candidate runtime migration guards checked at each schema
+boundary. External fork contract tests remain skipped; no fork URL or Anvil
+service was enabled. Remote CI and artifact identity are recorded separately
+against the final commit rather than inferred from these working-tree results.

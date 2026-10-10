@@ -6,4 +6,4 @@ ALTER TABLE subjects
     CHECK (credit_state_refresh_error IS NULL OR
            credit_state_refresh_error = 'credit_state_resource_limit');
 CREATE INDEX subjects_tenant_credit_refresh_idx
-  ON subjects(tenant_id, credit_state_refreshed_at, id);
+  ON subjects(tenant_id, credit_state_refreshed_at NULLS FIRST, id);
