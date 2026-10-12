@@ -353,6 +353,48 @@ test("Principal history uses the selected Agent Subject and reauthorizes an open
   expect(guard.writes).toEqual([]);
 });
 
+for (const lateResult of ["success", "error"]) {
+  test(`Human historical detail discards late ${lateResult} after a same-session Subject change`, async ({ page }) => {
+    const guard = await queryGuard(page);
+    await page.addInitScript(() => {
+      const originalFetch = window.fetch.bind(window);
+      window.fetch = async (...args) => {
+        const response = await originalFetch(...args);
+        const command = typeof args[1]?.body === "string" ? JSON.parse(args[1].body) : {};
+        if (command.operationId === "pilotReadOwnObligation") {
+          const originalText = response.text.bind(response);
+          response.text = async () => { const value = await originalText(); window.__historicalDetailConsumed = true; return value; };
+        }
+        return response;
+      };
+    });
+    await openRecovery(page);
+    const history = page.locator("#obligationHistoryBrowser");
+    await history.getByRole("button", { name: "Search history", exact: true }).click();
+    let release, reached;
+    const held = new Promise(resolve => { release = resolve; });
+    const entered = new Promise(resolve => { reached = resolve; });
+    await page.route("**/tenant/v1/operations", async route => {
+      const command = route.request().postDataJSON();
+      if (command.operationId !== "pilotReadOwnObligation") return route.fallback();
+      const response = lateResult === "success" ? await route.fetch() : null;
+      reached(); await held;
+      if (response) await route.fulfill({ response });
+      else await route.fulfill({ status: 503, json: { code: "gateway_unavailable", detail: "STALE_SUBJECT_PRIVATE_DETAIL" } });
+    });
+    await history.locator(".obligation-history-row").filter({ has: page.locator("code", { hasText: olderId }) }).getByRole("button").click();
+    await entered;
+    // Subject navigation can change without reauthentication or a wallet event.
+    await page.locator("#humanSubjectId").evaluate(node => { node.value = "subject_other_current"; node.dispatchEvent(new Event("change", { bubbles: true })); });
+    release();
+    await page.waitForFunction(() => window.__historicalDetailConsumed === true);
+    await expect(page.locator("#obligationDetailContent")).not.toBeVisible();
+    await expect(history.locator("[data-history-rows]")).toBeEmpty();
+    await expect(page.locator("body")).not.toContainText("STALE_SUBJECT_PRIVATE_DETAIL");
+    expect(guard.writes).toEqual([]);
+  });
+}
+
 for (const queryType of ["history", "snapshot"]) {
   for (const event of ["accountsChanged", "chainChanged"]) {
     for (const lateResult of ["success", "error"]) {

@@ -459,7 +459,7 @@ test("PostgreSQL complete credit histories and fair bounded refresh", { timeout:
       const context = scenario.repository.tenantContext;
       const authenticationContext = createAuthenticationContext({
         tenantId: context.tenantId, actorId: context.actorId, actorType: "human", clientId: "client_history_test",
-        credentialId: "credential_history_synthetic", credentialVersion: 1, policyVersion: context.policyVersion,
+        credentialId: `credential_${randomUUID()}`, credentialVersion: 1, policyVersion: context.policyVersion,
         capabilities: ["workspace.resume.self", "obligation.read.owned"], roles: ["human_borrower"],
         tokenJtiHash: "synthetic_history_context_00000000000000000000", authenticationMethod: "oidc_pkce_bff",
         senderConstraintMethod: "host_session", authenticatedAt: NOW.toISOString()
@@ -471,8 +471,25 @@ test("PostgreSQL complete credit histories and fair bounded refresh", { timeout:
       await seed.withTenantWrite(async client => {
         await client.query(`INSERT INTO memberships(id, membership_hash, tenant_id, actor_id, role_bundle, capabilities,
           client_ids, policy_version, status, valid_from, created_at, updated_at, version, schema_version)
-          VALUES ($1, $2, $3, $4, 'human_borrower', '[]', '[]', $5, 'active', $6, $6, $6, 1, 'membership.v1')`,
+          VALUES ($1, $2, $3, $4, 'human_borrower', '["workspace.resume.self", "obligation.read.owned"]',
+            '["client_history_test"]', $5, 'active', $6, $6, $6, 1, 'membership.v1')`,
           [`membership_history_${runId}`, hashId("history_membership", runId), context.tenantId, context.actorId, context.policyVersion, NOW]);
+        // Synthetic durable enrollment exercises the selected Human role path.
+        // The base credential deliberately lacks the owned-read capability.
+        await client.query(`INSERT INTO authentication_credentials(id, tenant_id, actor_id, actor_type,
+          issuer, subject_ref_hash, client_id, client_authentication_method, sender_constraint_method,
+          sender_constraint_ref_hash, roles, allowed_capabilities, policy_version, status, version,
+          created_at, updated_at, schema_version)
+          VALUES ($1, $2, $3, 'human', 'https://history-fixture.invalid', $4, 'client_history_test',
+            'oidc_pkce_bff', 'host_session', $4, '["human_borrower"]', '["workspace.resume.self"]',
+            $5, 'active', 1, $6, $6, 'authentication_credential.v1')`,
+          [authenticationContext.credentialId, context.tenantId, context.actorId, "A".repeat(43), context.policyVersion, NOW]);
+        await client.query(`INSERT INTO authentication_role_enrollments(id, tenant_id, actor_id, credential_id,
+          role_bundle, capabilities, client_ids, policy_version, status, valid_from, version,
+          created_at, updated_at, schema_version)
+          VALUES ($1, $2, $3, $4, 'human_borrower', '["workspace.resume.self", "obligation.read.owned"]',
+            '["client_history_test"]', $5, 'active', $6, 1, $6, $6, 'authentication_role_enrollment.v1')`,
+          [`role_enrollment_${randomUUID()}`, context.tenantId, context.actorId, authenticationContext.credentialId, context.policyVersion, NOW]);
         await client.query(`INSERT INTO authorization_resources(tenant_id, resource_type, resource_id, status, version, created_at, updated_at, schema_version)
           SELECT $1, 'obligation', id, 'active', 1, $2::timestamptz, $2::timestamptz, 'authorization_resource.v1' FROM obligations WHERE subject_id = $3
           UNION ALL SELECT $1, 'subject', $3, 'active', 1, $2::timestamptz, $2::timestamptz, 'authorization_resource.v1'`,
@@ -510,6 +527,17 @@ test("PostgreSQL complete credit histories and fair bounded refresh", { timeout:
       assert.equal((await history({})).obligationHistory.items.some(item => item.obligationId === first.items[0].obligationId), false);
       assert.deepEqual(await scenario.projection("one"), original);
       assert.equal(original.metrics.completedCycleCount, 53);
+      await seed.withTenantWrite(client => client.query(
+        `UPDATE authentication_role_enrollments SET capabilities = '["workspace.resume.self"]',
+          version = version + 1, updated_at = updated_at + interval '1 millisecond' WHERE credential_id = $1`,
+        [authenticationContext.credentialId]));
+      // The cached context still has obligation.read.owned and the Subject and
+      // Obligation bindings remain active. Current enrollment must win.
+      await assert.rejects(history({}), { code: "tenant_resource_unavailable" });
+      await seed.withTenantWrite(client => client.query(
+        `UPDATE authentication_role_enrollments SET capabilities = '["workspace.resume.self", "obligation.read.owned"]',
+          version = version + 1, updated_at = updated_at + interval '1 millisecond' WHERE credential_id = $1`,
+        [authenticationContext.credentialId]));
       await seed.withTenantWrite(client => client.query(
         "UPDATE authorization_resource_bindings SET status = 'revoked', version = version + 1, updated_at = updated_at + interval '1 millisecond' WHERE resource_id = $1 AND resource_type = 'subject'", [scenario.subject("one")]));
       await assert.rejects(history({}), { code: "tenant_resource_unavailable" });

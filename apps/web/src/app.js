@@ -461,7 +461,7 @@ function ownedHistoryContext() {
   const selection = agentAuthorityPilot.workspaceSelection;
   const subjectId = tenantPilot.workspaceKind === "principal_controller"
     ? (selection?.status === "selected" ? selection.subjectId : null)
-    : tenantPilot.obligation?.subjectId ?? tenantInputValue("humanSubjectId");
+    : tenantInputValue("humanSubjectId") || tenantPilot.obligation?.subjectId;
   if (!exactResourceId(subjectId)) return null;
   return { epoch: authenticatedDataEpoch, subjectId, kind: tenantPilot.workspaceKind,
     selectedAgentActorId: tenantPilot.workspaceKind === "principal_controller" ? selection.actorId : null };
@@ -9234,13 +9234,19 @@ function cacheOwnedObligationView(obligationId, view) {
   return accepted;
 }
 
+let activeOwnedObligationRead = null;
 async function loadOwnedObligation({ obligationId, quiet = false, historicalRecovery = false } = {}) {
   if (tenantPilot.obligationHydrationBusy) return false;
   const requestDataEpoch = authenticatedDataEpoch;
+  const historyContext = historicalRecovery ? ownedHistoryContext() : null;
+  if (historicalRecovery && !historyContext) return false;
+  const readOwner = Symbol("owned obligation read");
+  activeOwnedObligationRead = readOwner;
   const selectedAgent = historicalRecovery && tenantPilot.workspaceKind === "principal_controller"
     ? agentAuthorityPilot.workspaceSelection
     : null;
-  const isCurrentRead = () => requestDataEpoch === authenticatedDataEpoch &&
+  const isCurrentRead = () => activeOwnedObligationRead === readOwner && requestDataEpoch === authenticatedDataEpoch &&
+    (!historyContext || JSON.stringify(ownedHistoryContext()) === JSON.stringify(historyContext)) &&
     (!selectedAgent || (
       selectedAgent.status === "selected" &&
       agentAuthorityPilot.workspaceSelection?.actorId === selectedAgent.actorId &&
@@ -9281,7 +9287,7 @@ async function loadOwnedObligation({ obligationId, quiet = false, historicalReco
   try {
     const response = await readOwnedObligationView(exactObligationId);
     if (!isCurrentRead()) return false;
-    if (selectedAgent && response.obligation?.subjectId !== selectedAgent.subjectId) {
+    if (historyContext && response.obligation?.subjectId !== historyContext.subjectId) {
       throw Object.assign(new Error("The requested resource is not available."), {
         code: "tenant_resource_unavailable"
       });
@@ -9325,7 +9331,7 @@ async function loadOwnedObligation({ obligationId, quiet = false, historicalReco
     }
     return false;
   } finally {
-    if (requestDataEpoch === authenticatedDataEpoch) {
+    if (activeOwnedObligationRead === readOwner && requestDataEpoch === authenticatedDataEpoch) {
       tenantPilot.obligationHydrationBusy = false;
       renderTenantPilot();
     }

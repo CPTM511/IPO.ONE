@@ -110,12 +110,14 @@ deployment, production identity/data access or chain write was performed.
   described as a 15-minute hosted cadence with possible backlog/failure delays.
 - Existing 512 response-schema ceilings were repaired. No risk policy, automatic
   limits, canonical storage, authorization policy, migration or dependency changed.
-- Three feature modules total 299 lines; app.js shrinks by 82 lines. Review fixes
+- At the initial local seal, three feature modules totaled 299 lines and app.js shrank by 82 lines. Review fixes
   include exact static-asset registration, correct controller initialization,
   explicit filter labeling, native dark date controls, SQL timeout before locks,
   opt-in worker metadata and a deterministic startup test clock. Integration
   test deadlines were expanded to 180 seconds for the added cloud regressions;
   the worker's 30-second run budget and 5-second SQL cap were not relaxed.
+
+The following evidence records the initial local candidate and its follow-up checks. It is preserved as historical evidence; final review and aggregate results are recorded in the private handoff package.
 
 | Verification stage | Evidence |
 | --- | --- |
@@ -168,3 +170,24 @@ That work should preserve the original-record and chain-projection distinction.
 Exact commit, diff, changed-file inventory, command results and log digests are
 in the external cloud handoff manifest so this document has no self-referential
 commit hash.
+
+
+## Independent review closure
+
+A separate native reviewer examined the initial local candidate and confirmed
+three defects: cached Obligation-read capabilities could outlive current
+membership authority, the filter timestamp parser was narrower than the schema,
+and a late Human historical detail could restore a previous Subject. The
+bounded follow-up rechecks current membership in the existing transaction,
+normalizes RFC3339 offsets to six-digit UTC timestamps with an explicit
+microsecond precision contract, and binds historical detail responses to the
+current identity, Subject and request owner. No authorization policy or
+credential-binding exception changes.
+
+Regression coverage includes current selected Human enrollment and Agent
+membership capability removal with cached contexts, timestamp offsets and
+fraction precision, and late Human detail successes and errors after a
+same-session Subject change. Final aggregate verification is performed serially;
+prior failed attempts remain preserved and are never promoted to passing results
+by combining focused reruns. Exact candidate hashes, independent review closure,
+check outcomes and logs are delivered together in the private handoff package.

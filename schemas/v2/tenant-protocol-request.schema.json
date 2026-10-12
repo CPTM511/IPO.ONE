@@ -4087,8 +4087,8 @@
             "limit": { "type": "integer", "minimum": 1, "maximum": 50 },
             "cursor": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,1024}$" },
             "state": { "enum": ["created", "active", "partially_repaid", "fully_repaid", "delinquent", "overdue", "defaulted", "restructured", "repurchased", "written_off", "closed"] },
-            "createdFrom": { "type": "string", "format": "date-time" },
-            "createdBefore": { "type": "string", "format": "date-time" }
+            "createdFrom": { "type": "string", "format": "date-time", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?(?:Z|[+-]\\d{2}:\\d{2})$" },
+            "createdBefore": { "type": "string", "format": "date-time", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?(?:Z|[+-]\\d{2}:\\d{2})$" }
           }
         }
       }

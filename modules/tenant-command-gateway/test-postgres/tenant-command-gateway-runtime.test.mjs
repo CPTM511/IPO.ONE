@@ -4928,6 +4928,33 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         requestId: `request-history-${RUN_ID}-controller`, correlationId: `correlation-history-${RUN_ID}-controller`
       });
       assert.deepEqual(controlledHistory.response.obligationHistory.items, agentHistory.response.obligationHistory.items);
+      const agentIdentity = identities.tenantOneCreditAgent;
+      const agentContext = createTenantSecurityContext({ tenantId: TENANT_ONE,
+        actorId: agentIdentity.authenticationContext.actorId, actorType: "agent",
+        policyVersion: agentIdentity.authenticationContext.policyVersion, source: "local_test" });
+      await withTenantTransaction(ownerPool, agentContext, client => client.query(
+        `UPDATE memberships SET capabilities = capabilities - 'obligation.read.owned',
+          version = version + 1, updated_at = clock_timestamp() WHERE tenant_id = $1 AND actor_id = $2`,
+        [TENANT_ONE, agentContext.actorId]));
+      try {
+        // Cached Agent context still contains the removed capability. Resume
+        // remains permitted, while exact reads and history both fail closed.
+        assert.equal((await tenantOneCreditAgent.resumeWorkspace({
+          requestId: `request-history-${RUN_ID}-agent-resume-without-read`,
+          correlationId: `correlation-history-${RUN_ID}-agent-resume-without-read`
+        })).response.serverTruth, true);
+        await assert.rejects(ownedHistory(tenantOneCreditAgent, agentAcceptance.obligation.subjectId, "agent-cached-capability"),
+          { code: "tenant_resource_unavailable" });
+        await assert.rejects(tenantOneCreditAgent.getOwnObligation({ obligationId: agentAcceptance.obligation.obligationId,
+          requestId: `request-history-${RUN_ID}-agent-exact-without-read`,
+          correlationId: `correlation-history-${RUN_ID}-agent-exact-without-read`
+        }), { code: "authorization_denied" });
+      } finally {
+        await withTenantTransaction(ownerPool, agentContext, client => client.query(
+          `UPDATE memberships SET capabilities = $3::jsonb, version = version + 1, updated_at = clock_timestamp()
+            WHERE tenant_id = $1 AND actor_id = $2`,
+          [TENANT_ONE, agentContext.actorId, JSON.stringify(agentIdentity.membership.capabilities)]));
+      }
       for (const [suffix, filter] of [["state", { state: "written_off" }], ["date", { createdBefore: "2026-01-01T00:00:00.000Z" }]]) {
         assert.deepEqual((await ownedHistory(tenantOneBorrower, humanAcceptance.obligation.subjectId, suffix, filter)).response.obligationHistory.items, []);
       }

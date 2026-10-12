@@ -743,6 +743,12 @@ test("existing workspace protocol carries closed scoped history requests and dis
   const request = { ...base, payload: { obligationHistory: { subjectId: "subject_history_contract", limit: 25,
     state: "fully_repaid", createdFrom: "2026-08-01T00:00:00.000Z", createdBefore: "2026-09-01T00:00:00.000Z" } } };
   assert.equal(isTenantProtocolRequest(request), true);
+  for (const createdFrom of ["2026-08-01T00:00:00Z", "2026-08-01T01:00:00.000456+01:00"]) {
+    assert.equal(isTenantProtocolRequest({ ...request, payload: { obligationHistory: { ...request.payload.obligationHistory, createdFrom } } }), true);
+  }
+  assert.equal(isTenantProtocolRequest({ ...request, payload: { obligationHistory: {
+    ...request.payload.obligationHistory, createdFrom: "2026-08-01T00:00:00.0000001Z"
+  } } }), false);
   for (const extra of [{ actorId: "another_actor" }, { limit: 51 }, { state: "unknown" }]) {
     assert.equal(isTenantProtocolRequest({ ...request, payload: { obligationHistory: { ...request.payload.obligationHistory, ...extra } } }), false);
   }

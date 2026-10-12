@@ -13,12 +13,21 @@ function unavailable() {
   throw new DomainError("tenant_resource_unavailable", "The requested resource is not available.");
 }
 
-function timestamp(value) {
-  if (typeof value !== "string" || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}(?:\d{3})?Z$/.test(value)) return false;
-  const normalized = value.replace(/(\.\d{3})\d{3}Z$/, "$1Z");
-  const date = new Date(value);
-  return Number.isFinite(date.getTime()) && date.toISOString() === normalized;
+function normalizedTimestamp(value) {
+  if (typeof value !== "string") return null;
+  const parts = /^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)(?:\.(\d{1,6}))?(Z|[+-]\d\d:\d\d)$/.exec(value);
+  if (!parts) return null;
+  const fraction = (parts[2] ?? "").padEnd(6, "0");
+  const local = `${parts[1]}.${fraction.slice(0, 3)}Z`;
+  const localDate = new Date(local);
+  if (!Number.isFinite(localDate.getTime()) || localDate.toISOString() !== local ||
+      (parts[3] !== "Z" && (Number(parts[3].slice(1, 3)) > 23 || Number(parts[3].slice(4)) > 59))) return null;
+  const date = new Date(`${parts[1]}.${fraction.slice(0, 3)}${parts[3]}`);
+  if (!Number.isFinite(date.getTime()) || date.toISOString().length !== 24) return null;
+  return date.toISOString().replace(/\.\d{3}Z$/, `.${fraction}Z`);
 }
+
+const timestamp = value => normalizedTimestamp(value) !== null;
 
 export function parseObligationHistory(payload) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload) ||
@@ -29,14 +38,24 @@ export function parseObligationHistory(payload) {
       (payload.state !== undefined && !STATES.has(payload.state)) ||
       ["createdFrom", "createdBefore"].some(key => payload[key] !== undefined && !timestamp(payload[key])) ||
       (payload.createdFrom && payload.createdBefore &&
-        payload.createdFrom.replace(/(\.\d{3})Z$/, "$1000Z") >= payload.createdBefore.replace(/(\.\d{3})Z$/, "$1000Z")) ||
+        normalizedTimestamp(payload.createdFrom) >= normalizedTimestamp(payload.createdBefore)) ||
       (payload.cursor !== undefined && (typeof payload.cursor !== "string" || !/^[A-Za-z0-9_-]{1,1024}$/.test(payload.cursor)))) invalid();
-  return { ...payload, limit };
+  return { ...payload, limit,
+    ...(payload.createdFrom === undefined ? {} : { createdFrom: normalizedTimestamp(payload.createdFrom) }),
+    ...(payload.createdBefore === undefined ? {} : { createdBefore: normalizedTimestamp(payload.createdBefore) }) };
 }
 
 export async function readObligationHistory({ client, directory, authenticationContext, kind, selectedAgentActorId, history, now }) {
   if (!authenticationContext.capabilities?.includes("obligation.read.owned")) unavailable();
   await boundCreditStatementTime(client);
+  // Workspace resume authorizes only workspace.resume.self. Recheck the owned
+  // read capability against the current, locked membership before listing IDs.
+  const membership = await directory.requireActiveMembership({
+    tenantId: authenticationContext.tenantId, actorId: authenticationContext.actorId,
+    actorType: authenticationContext.actorType, clientId: authenticationContext.clientId,
+    policyVersion: authenticationContext.policyVersion, now
+  });
+  if (!membership.capabilities?.includes("obligation.read.owned")) unavailable();
   const subject = await directory.resolveResource({ resourceType: "subject", resourceId: history.subjectId,
     tenantId: authenticationContext.tenantId, actorId: authenticationContext.actorId });
   if (subject?.status !== "active" || subject.actorAuthorized !== true ||
