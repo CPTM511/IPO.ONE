@@ -9,6 +9,7 @@ import {
   summarizeCreditOffer
 } from "./credit-decision-handlers.js";
 import { summarizeCreditIntent } from "./credit-intent-handlers.js";
+import { parseObligationHistory, readObligationHistory } from "./obligation-history-query.js";
 
 const RESOURCE_TYPES = Object.freeze([
   "subject",
@@ -26,10 +27,10 @@ function selectedControlledAgentActorId(payload) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new DomainError("invalid_tenant_command_payload", "Workspace recovery payload is invalid");
   }
-  const keys = Object.keys(payload);
+  const keys = Object.keys(payload).filter(key => key !== "obligationHistory");
   if (keys.length === 0) return undefined;
   if (
-    keys.length !== 1 || keys[0] !== "selectedAgentActorId" ||
+      keys.length !== 1 || keys[0] !== "selectedAgentActorId" ||
     typeof payload.selectedAgentActorId !== "string" ||
     !IDENTIFIER.test(payload.selectedAgentActorId)
   ) {
@@ -327,6 +328,15 @@ export function readWorkspaceResumeQueryHandler() {
           "workspace_recovery_unavailable",
           "Workspace recovery is unavailable for this authenticated role"
         );
+      }
+      if (payload.obligationHistory !== undefined) {
+        const history = parseObligationHistory(payload.obligationHistory);
+        return {
+          workspaceKind: kind, resources: [], hasMore: false, serverTruth: true,
+          obligationHistory: await readObligationHistory({ client, directory, authenticationContext,
+            kind, selectedAgentActorId, history, now }),
+          schemaVersion: "tenant_workspace_resume_view.v2"
+        };
       }
       const result = await client.query(
         `WITH authorized_resources AS (

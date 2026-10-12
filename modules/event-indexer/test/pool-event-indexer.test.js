@@ -223,6 +223,26 @@ test("finalized Pool V1 events project once in canonical chain order and restore
   assert.equal(restored.stateHash, snapshot.stateHash);
 });
 
+test("chain-derived projection replay does not restore off-chain canonical credit or identity records", async () => {
+  const { store, indexer } = await buildProjectedIndexer();
+  const original = indexer.snapshot();
+  const observations = await store.listObservations();
+  // Restore from retained synthetic chain observations, with no projection,
+  // kernel database, authorization mappings, accepted Offers or original Evidence.
+  const replayStore = {
+    async listObservations() { return observations; },
+    async latestProjection() { return undefined; },
+    async commitIngestion() { assert.fail("read-only replay must not ingest or write"); }
+  };
+  const recovered = await new PoolEventIndexer({ adapter, store: replayStore }).restore();
+  assert.equal(recovered.stateHash, original.stateHash);
+  assert.deepEqual(recovered.state, original.state);
+  for (const forbidden of ["acceptedOffers", "creditHistory", "identityMappings", "authorizationMappings", "canonicalEvidence"]) {
+    assert.equal(Object.hasOwn(recovered, forbidden), false);
+    assert.equal(Object.hasOwn(recovered.state, forbidden), false);
+  }
+});
+
 test("safe observations may arrive out of order and finality still maps each tuple once", async () => {
   const store = new InMemoryPoolObservationStore();
   const indexer = new PoolEventIndexer({ adapter, store });
