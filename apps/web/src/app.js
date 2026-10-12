@@ -456,15 +456,25 @@ const executionWalletPilot = {
   executionHelper:
     "Connect and bind an execution account. Current local runtime can prepare Evidence but cannot submit a transaction or move funds."
 };
+let ownedHistoryContextKey;
+let ownedHistoryContextGeneration = 0;
 function ownedHistoryContext() {
-  if (!tenantPilot.connected || !tenantPilot.obligationReadAvailable) return null;
-  const selection = agentAuthorityPilot.workspaceSelection;
-  const subjectId = tenantPilot.workspaceKind === "principal_controller"
-    ? (selection?.status === "selected" ? selection.subjectId : null)
-    : tenantInputValue("humanSubjectId") || tenantPilot.obligation?.subjectId;
-  if (!exactResourceId(subjectId)) return null;
-  return { epoch: authenticatedDataEpoch, subjectId, kind: tenantPilot.workspaceKind,
-    selectedAgentActorId: tenantPilot.workspaceKind === "principal_controller" ? selection.actorId : null };
+  let context = null;
+  if (tenantPilot.connected && tenantPilot.obligationReadAvailable) {
+    const selection = agentAuthorityPilot.workspaceSelection;
+    const subjectId = tenantPilot.workspaceKind === "principal_controller"
+      ? (selection?.status === "selected" ? selection.subjectId : null)
+      : tenantInputValue("humanSubjectId") || tenantPilot.obligation?.subjectId;
+    if (exactResourceId(subjectId)) context = { epoch: authenticatedDataEpoch, subjectId, kind: tenantPilot.workspaceKind,
+      selectedAgentActorId: tenantPilot.workspaceKind === "principal_controller" ? selection.actorId : null };
+  }
+  const key = JSON.stringify(context);
+  if (ownedHistoryContextKey !== key) {
+    ownedHistoryContextKey = key;
+    ownedHistoryContextGeneration += 1;
+  }
+  // A -> B -> A is a new navigation generation, even within one session.
+  return context && { ...context, generation: ownedHistoryContextGeneration };
 }
 const AUTHENTICATED_BROWSER_STATE_BASELINES = new Map([
   [tenantPilot, structuredClone(tenantPilot)],

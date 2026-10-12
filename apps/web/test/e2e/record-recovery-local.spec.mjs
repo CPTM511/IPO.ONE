@@ -353,8 +353,9 @@ test("Principal history uses the selected Agent Subject and reauthorizes an open
   expect(guard.writes).toEqual([]);
 });
 
-for (const lateResult of ["success", "error"]) {
-  test(`Human historical detail discards late ${lateResult} after a same-session Subject change`, async ({ page }) => {
+for (const navigation of ["change", "round trip"]) {
+  for (const lateResult of ["success", "error"]) {
+    test(`Human historical detail discards late ${lateResult} after a same-session Subject ${navigation}`, async ({ page }) => {
     const guard = await queryGuard(page);
     await page.addInitScript(() => {
       const originalFetch = window.fetch.bind(window);
@@ -369,6 +370,7 @@ for (const lateResult of ["success", "error"]) {
       };
     });
     await openRecovery(page);
+    const initialSubject = await page.locator("#humanSubjectId").inputValue();
     const history = page.locator("#obligationHistoryBrowser");
     await history.getByRole("button", { name: "Search history", exact: true }).click();
     let release, reached;
@@ -386,13 +388,22 @@ for (const lateResult of ["success", "error"]) {
     await entered;
     // Subject navigation can change without reauthentication or a wallet event.
     await page.locator("#humanSubjectId").evaluate(node => { node.value = "subject_other_current"; node.dispatchEvent(new Event("change", { bubbles: true })); });
+    if (navigation === "round trip") {
+      await history.getByRole("button", { name: "Search history", exact: true }).click();
+      await expect(history.locator("[data-history-rows] button")).toHaveCount(0);
+      await expect(history.getByRole("button", { name: "Search history", exact: true })).toBeEnabled();
+      await page.locator("#humanSubjectId").evaluate((node, value) => { node.value = value; node.dispatchEvent(new Event("change", { bubbles: true })); }, initialSubject);
+      await history.getByRole("button", { name: "Search history", exact: true }).click();
+      await expect(history.locator("[data-history-rows] button")).toHaveCount(2);
+    }
     release();
     await page.waitForFunction(() => window.__historicalDetailConsumed === true);
     await expect(page.locator("#obligationDetailContent")).not.toBeVisible();
-    await expect(history.locator("[data-history-rows]")).toBeEmpty();
+    if (navigation === "change") await expect(history.locator("[data-history-rows]")).toBeEmpty();
     await expect(page.locator("body")).not.toContainText("STALE_SUBJECT_PRIVATE_DETAIL");
     expect(guard.writes).toEqual([]);
-  });
+    });
+  }
 }
 
 for (const queryType of ["history", "snapshot"]) {

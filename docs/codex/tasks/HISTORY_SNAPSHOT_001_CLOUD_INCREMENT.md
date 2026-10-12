@@ -181,7 +181,8 @@ and a late Human historical detail could restore a previous Subject. The
 bounded follow-up rechecks current membership in the existing transaction,
 normalizes RFC3339 offsets to six-digit UTC timestamps with an explicit
 microsecond precision contract, and binds historical detail responses to the
-current identity, Subject and request owner. No authorization policy or
+current identity, Subject, request owner and monotonic navigation generation.
+A Subject round trip invalidates the pending read even within one session. No authorization policy or
 credential-binding exception changes.
 
 Regression coverage includes current selected Human enrollment and Agent
