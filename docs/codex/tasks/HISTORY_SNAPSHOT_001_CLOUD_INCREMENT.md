@@ -192,3 +192,37 @@ same-session Subject change. Final aggregate verification is performed serially;
 prior failed attempts remain preserved and are never promoted to passing results
 by combining focused reruns. Exact candidate hashes, independent review closure,
 check outcomes and logs are delivered together in the private handoff package.
+
+
+## Event-runtime fixture follow-up — 2026-10-12
+
+The parent authorized diagnosis of the remaining PostgreSQL quality failure,
+with identical-condition baseline comparison, fixture-only optimization and
+independent native review. The event test and migration runner were identical
+at the original base and reviewed history candidate. A plain baseline run passed
+28 cases; the unchanged candidate then timed out at the existing 60-second root.
+A matched timing-observer pair reproduced the baseline timeout and passed all
+28 candidate cases. These results show variable cloud setup cost; they do not
+prove a candidate regression or establish a resolved aggregate gate.
+
+Profiling separates migration SQL, migration-file/status reads, fixture resets
+and runtime queries. Query durations include client, transport and scheduling
+time and can overlap. The observer primes migration-file caches, so its runs
+are compared only with each other. Ten repeated status reads cost about 427 ms
+in a separate synthetic measurement, which cannot explain the observed
+24.6-second migration setup difference.
+
+After the expected TC-103 down-migration refusal, capture migration status once
+and retain all eleven applied/unapplied assertions against that same state.
+There is no intervening mutation. This removes ten redundant full-file checksum
+and database-status reads. Preserve every migration cycle, transaction boundary,
+TRUNCATE/sequence reset, quota-clock wait, race case, lifecycle case order and
+assertion. The root deadline stays 60,000 ms. No production migration runner,
+authorization, database configuration, dependency or resource allocation changes.
+
+Seal a minimal local commit after independent fixture review. Run the affected
+event suite with both empty and already-migrated synthetic database starting
+states, then run the full `pnpm check` serially on that final SHA. Capture actual
+Git SHA, clean status and all tracked source hashes before and after each run.
+Keep previous failures and historical candidate evidence; record final results
+in the private handoff. A fixture improvement alone is not quality-gate closure.
