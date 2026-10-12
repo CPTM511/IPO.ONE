@@ -2,6 +2,8 @@ name: Quality Gate
 
 on:
   push:
+    branches-ignore:
+      - codex/event-runtime-diagnostic-20261012
   pull_request:
   workflow_dispatch:
 
@@ -13,8 +15,49 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  event-diagnostic:
+    name: Bounded synthetic event-runtime diagnostic
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/codex/event-runtime-diagnostic-20261012'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: "true"
+    steps:
+      - name: Start the single-job total budget
+        shell: bash
+        run: |
+          # Leave one minute inside the 15-minute job cap for cleanup/reporting.
+          echo "IPO_ONE_DIAGNOSTIC_DEADLINE=$(( $(date +%s) + 840 ))" >> "$GITHUB_ENV"
+
+      - name: Checkout approved diagnostic branch
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        timeout-minutes: 2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up reviewed Node.js 26
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        timeout-minutes: 2
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+
+      - name: Run four bounded event-runtime cases
+        shell: bash
+        run: bash scripts/ci/run-event-runtime-diagnostic.sh
+
+      - name: Remove only this run's disposable PostgreSQL containers
+        if: always()
+        shell: bash
+        run: |
+          docker ps --all --quiet \
+            --filter "label=ipo-one-event-diagnostic=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            | xargs --no-run-if-empty docker rm --force >/dev/null
+
   verify:
     name: Product, protocol, security, and PostgreSQL
+    if: github.ref != 'refs/heads/codex/event-runtime-diagnostic-20261012'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:

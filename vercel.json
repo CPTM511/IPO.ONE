@@ -1,5 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "git": {
+    "deploymentEnabled": {
+      "codex/event-runtime-diagnostic-20261012": false
+    }
+  },
   "framework": null,
   "installCommand": "corepack enable && corepack prepare pnpm@11.11.0 --activate && pnpm install --frozen-lockfile",
   "fluid": true,
