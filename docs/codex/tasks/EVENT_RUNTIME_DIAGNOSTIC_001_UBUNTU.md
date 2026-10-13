@@ -102,3 +102,46 @@ before publication; do not substitute an automatic push run or rerun the broad
 gate. No new credential, browser login, PR, merge or deployment is authorized.
 Exact connector receipts and local commit/diff evidence remain in the external
 cloud handoff directory, outside the publicly proposed source tree.
+
+## Approved setup correction — 2026-10-13
+
+The prepared c0b1ca commit was published and the parent coordinated manual run
+`38326615214` (#505). It failed during baseline-cold setup, about 2.6 seconds
+after container creation, before any event-test output or observer origin. Full
+verification was skipped and cleanup succeeded. The exact failed run, decoded
+log and original c0b1ca source remain preserved as historical evidence.
+
+The driver created root node_modules symlinks and then required an empty Git
+status. The repository's directory-only ignore pattern does not ignore that
+symlink. This is a concrete setup defect and the strongly supported failure
+explanation; the exact exiting command/status was not printed in that run.
+No conclusion about the original 60-second runtime sensitivity follows from it.
+
+Michael approved the proposed correction and one additional standard Ubuntu
+manual diagnostic with the same 15-minute total cap and zero additional spend.
+Replace the checkout-only install and root symlinks with bounded frozen-lockfile
+workspace installs inside each detached worktree. Print the pre-case checkpoint
+before the unchanged clean-worktree assertion and emit a clear failure message.
+Do not relax source cleanliness, assertions, resets, migration cycles, deadlines,
+dependency versions, deployment suppression or automatic-CI guards.
+
+Validate the correction locally using temporary baseline/candidate worktrees,
+the existing reviewed Node/pnpm and cached frozen dependencies. Check clean Git
+status, committed source hashes and dependency resolution. Do not run PostgreSQL
+or the event suite locally for this setup-only validation. Remove the fixtures.
+Preserve original source/evidence and the separate unpublished SEO candidate.
+
+Publication is limited to a corrected diagnostic commit on the same approved
+branch after fresh deployment/cost guard checks. The parent coordinates the one
+additional browser dispatch. No CLI dispatch, automatic retry, PR, merge,
+deployment, new credential, dependency or paid resource is authorized. Exact
+local/remote SHA, patch, validation logs and guard receipts remain in the
+external correction handoff; the full Quality Gate remains unresolved.
+
+Local setup validation passed at the pinned baseline and candidate using Node
+26.5.0 and pnpm 11.11.0. The previous root symlink reproduced the clean-status
+failure. Frozen installs then preserved every tracked byte, kept both worktrees
+clean, and resolved pg and workspace Ajv from their own dependency graphs. No
+package tarball was downloaded; pnpm's supply-chain checks still probed registry
+metadata. Both temporary worktrees were removed. PostgreSQL, the event suite and
+the full Quality Gate were not run during this correction.

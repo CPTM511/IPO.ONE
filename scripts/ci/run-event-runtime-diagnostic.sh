@@ -83,15 +83,14 @@ JS
 bounded 90 npm audit --prefix "$tool_prefix" --audit-level=moderate
 export PATH="$tool_prefix/node_modules/.bin:$PATH"
 test "$(pnpm --version)" = 11.11.0
-bounded 180 pnpm install --frozen-lockfile
 bounded 60 sudo install -d -m 1777 /private/tmp
 bounded 90 docker pull "$image"
 git worktree add --detach "$diagnostic_root/baseline" "$baseline"
 git worktree add --detach "$diagnostic_root/candidate" "$candidate"
 cmp "$diagnostic_root/baseline/pnpm-lock.yaml" "$diagnostic_root/candidate/pnpm-lock.yaml"
 cmp "$diagnostic_root/baseline/package.json" "$diagnostic_root/candidate/package.json"
-ln -s "$GITHUB_WORKSPACE/node_modules" "$diagnostic_root/baseline/node_modules"
-ln -s "$GITHUB_WORKSPACE/node_modules" "$diagnostic_root/candidate/node_modules"
+bounded 180 pnpm --dir "$diagnostic_root/baseline" install --frozen-lockfile
+bounded 180 pnpm --dir "$diagnostic_root/candidate" install --frozen-lockfile
 printf '::endgroup::\n'
 printf '| Case | Commit | Test exit | Passed / failed / cancelled | Root seconds | Migration invocation sum seconds | Reset query sum seconds |\n| --- | --- | --- | --- | --- | --- | --- |\n' >> "$GITHUB_STEP_SUMMARY"
 
@@ -118,7 +117,13 @@ for case_name in baseline-cold candidate-cold baseline-migrated candidate-migrat
   export IPO_ONE_DIAG_NAME="$case_name"
   cd "$case_root"
   source_checkpoint > "$diagnostic_root/$case_name-source-before.json"
-  test "$(git status --porcelain)" = ""
+  printf 'Case source before setup checks: '
+  cat "$diagnostic_root/$case_name-source-before.json"
+  if ! test "$(git status --porcelain)" = ""; then
+    printf 'Diagnostic worktree must be clean before running the case.\n' >&2
+    git status --porcelain >&2
+    exit 1
+  fi
   if [[ "$condition" = migrated ]]; then
     bounded 120 node scripts/migrate.mjs up
     prefix=$(bounded 10 docker exec "$container" psql -U postgres -d ipo_one_test -At -c \
