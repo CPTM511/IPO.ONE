@@ -165,7 +165,7 @@ test("public sandbox rejects adversarial HTTP input and bounds mutable state", a
     assert.match(robotsResponse.headers.get("content-type"), /^text\/plain/);
     assert.equal(
       await robotsResponse.text(),
-      "User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /auth/\nDisallow: /tenant/\nDisallow: /v1/\n"
+      "User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /auth/\nDisallow: /tenant/\nDisallow: /v1/\nSitemap: https://ipo.one/sitemap.xml\n"
     );
 
     for (const resource of ["/sw.js", "/robots.txt"]) {
