@@ -13238,6 +13238,15 @@ body.web009-review-mode[data-web009-theme="dark"]:not(.private-session-closed) {
   line-height: 1.7;
 }
 
+.web009-public .public-current-availability,
+.signed-out-privacy-shield .public-current-availability {
+  max-width: 40rem;
+  margin: 16px 0 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
 .web009-actions {
   margin: 34px 0 22px;
 }

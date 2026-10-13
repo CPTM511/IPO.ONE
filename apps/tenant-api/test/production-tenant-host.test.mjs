@@ -16,13 +16,13 @@ async function unusedPort() {
   return port;
 }
 
-function get(port, path, headers = {}) {
+function get(port, path, headers = {}, method = "GET") {
   return new Promise((resolve, reject) => {
     const request = httpRequest({
       hostname: "127.0.0.1",
       port,
       path,
-      method: "GET",
+      method,
       headers
     }, (response) => {
       const chunks = [];
@@ -233,6 +233,30 @@ test("production Host publishes the active no-funds remote Agent HTTPS contract 
   assert.equal(runtime.gatewayCalls, 0);
 });
 
+test("production Host serves the canonical public sitemap and robots without private operations", async (t) => {
+  const runtime = await fixture();
+  t.after(() => runtime.host.close());
+  const headers = {
+    host: "ipo.one",
+    "x-forwarded-host": "ipo.one",
+    "x-forwarded-proto": "https",
+    "x-ipo-edge": "approved"
+  };
+  const sitemap = await get(runtime.port, "/sitemap.xml", headers);
+  assert.equal(sitemap.status, 200);
+  assert.equal(sitemap.headers["content-type"], "application/xml; charset=utf-8");
+  assert.equal(sitemap.headers["set-cookie"], undefined);
+  assert.deepEqual([...sitemap.body.matchAll(/<loc>([^<]+)<\/loc>/g)].map(([, value]) => value), ["https://ipo.one/", "https://ipo.one/whitepaper"]);
+  const head = await get(runtime.port, "/sitemap.xml", headers, "HEAD");
+  assert.equal(head.status, 200);
+  assert.equal(head.headers["content-length"], sitemap.headers["content-length"]);
+  assert.equal(head.body, "");
+  const robots = await get(runtime.port, "/robots.txt", headers);
+  assert.equal(robots.status, 200);
+  assert.match(robots.body, /^Sitemap: https:\/\/ipo\.one\/sitemap\.xml$/m);
+  assert.equal(runtime.gatewayCalls, 0);
+});
+
 test("production Host publishes zero-funded real-value and Provider capability truth", async (t) => {
   const runtime = await fixture();
   t.after(() => runtime.host.close());
@@ -257,6 +281,7 @@ test("production Host publishes zero-funded real-value and Provider capability t
   assert.equal(document.realValue.activationStatus, "DISABLED");
   assert.equal(document.realValue.realFundsEnabled, false);
   assert.equal(document.realValue.productionFundsMoved, false);
+  assert.equal(document.realValue.executionSubmissionEnabled, false);
   assert.equal(document.providers.providerSandbox, "AVAILABLE");
   assert.equal(document.providers.externalProviderExecution, "DISABLED");
   assert.equal(document.providers.syntheticMeteredResource.status, "UNAVAILABLE");
@@ -266,6 +291,19 @@ test("production Host publishes zero-funded real-value and Provider capability t
   );
   assert.equal(document.safety.productionSignerAuthorityEnabled, false);
   assert.equal(document.safety.venueWriteAuthorityEnabled, false);
+  assert.equal(document.safety.syntheticOrRedactedDataOnly, true);
+  const homepage = await get(runtime.port, "/", {
+    host: "ipo.one",
+    "x-forwarded-host": "ipo.one",
+    "x-forwarded-proto": "https",
+    "x-ipo-edge": "approved"
+  });
+  assert.equal(homepage.status, 200);
+  const disclosures = [...homepage.body.matchAll(/<p class="public-current-availability" data-public-availability>(.*?)<\/p>/g)];
+  assert.equal(disclosures.length, 2);
+  for (const [, disclosure] of disclosures) {
+    assert.equal(disclosure.replace(/<[^>]+>/g, ""), "Current availability: Public sandbox with synthetic capital. Real funds, external provider execution, and production transaction submission are disabled.");
+  }
   assert.deepEqual(document.chainEvidence, {
     status: "DISABLED",
     reasonCode: "approved_testnet_authority_unavailable",
