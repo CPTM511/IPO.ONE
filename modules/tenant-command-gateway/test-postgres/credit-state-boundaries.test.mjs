@@ -9,6 +9,10 @@ import {
 } from "../../persistence/src/index.js";
 import { PostgresCreditOutcomeMaterializer, createCreditStateProjection } from "../../credit-learning/src/index.js";
 import { readOwnCreditStateQueryHandler } from "../src/credit-state-query-handlers.js";
+import { readWorkspaceResumeQueryHandler } from "../src/workspace-resume-handlers.js";
+import { PostgresAuthorizationDirectory } from "../../authorization/src/index.js";
+import { createAuthenticationContext } from "../../authentication/src/authentication-context.js";
+import { assertTenantProtocolResult } from "../../../packages/api-contract/src/index.js";
 import { migrateUp } from "../../../scripts/migrate.mjs";
 import { creditBoundaryFixture } from "./support/credit-state-boundary-fixture.mjs";
 
@@ -21,7 +25,7 @@ const role = `credit_boundary_${runId}`;
 // Only upstream fixture creation bypasses its unrelated Consent/Offer references,
 // as in pool-obligation-integration. Credit outcomes/projections never bypass RLS,
 // hash validation, foreign keys, immutability or tenant-context guards.
-test("PostgreSQL complete credit histories and fair bounded refresh", { timeout: 120_000 }, async (t) => {
+test("PostgreSQL complete credit histories and fair bounded refresh", { timeout: 180_000 }, async (t) => {
   assert.ok(CONNECTION, "DATABASE_URL is required");
   const owner = createPostgresPool({ connectionString: CONNECTION, max: 3 });
   let app;
@@ -90,7 +94,7 @@ test("PostgreSQL complete credit histories and fair bounded refresh", { timeout:
       return {
         repository, materializer,
         subject: (key) => `subject_credit_boundary_${runId}_${name}_${key}`,
-        async seed(key, start, count, { losses = [], late = false, padding = 0, microseconds = false } = {}) {
+        async seed(key, start, count, { losses = [], late = false, padding = 0, microseconds = false, historyMicroseconds = false } = {}) {
           const subjectKey = `${runId}_${name}_${key}`;
           await seedRepository.withTenantWrite(async (client) => {
             // Transaction-local fixture bypass, never used by the tested worker.
@@ -103,6 +107,7 @@ test("PostgreSQL complete credit histories and fair bounded refresh", { timeout:
               value.obligation.updatedAt = late ? "2026-08-01T00:00:00.000Z"
                 : new Date(Date.UTC(2026, 7, 23, 0, i)).toISOString();
               if (microseconds) value.obligation.updatedAt = value.obligation.updatedAt.replace(".000Z", ".000456Z");
+              if (historyMicroseconds) value.obligation.createdAt = value.obligation.createdAt.replace(".000Z", i % 2 ? ".000456Z" : ".000457Z");
               if (padding) value.riskDecision.riskFeatureSnapshot.padding = "x".repeat(padding);
               const entries = [];
               if (!seen.has(key) && i === start) entries.push(
@@ -138,9 +143,9 @@ test("PostgreSQL complete credit histories and fair bounded refresh", { timeout:
             "SELECT projection FROM credit_state_projections WHERE subject_id = $1", [this.subject(key)]
           )).rows[0]?.projection);
         },
-        async view(key) {
+        async view(key, payload = {}) {
           return repository.withTenantRead((client) => readOwnCreditStateQueryHandler().execute({
-            client, resource: { resourceType: "subject", resourceId: this.subject(key) }, payload: {}, now: NOW
+            client, resource: { resourceType: "subject", resourceId: this.subject(key) }, payload, now: NOW
           }));
         }
       };
@@ -164,6 +169,8 @@ test("PostgreSQL complete credit histories and fair bounded refresh", { timeout:
       assert.equal(state.trackRecord[0].outcomeLabel, "written_off");
       assert.equal(state.factors.repaymentReliability, "adverse_loss_recorded");
       assert.deepEqual((await scenario.view("one")).creditState, state);
+      assertTenantProtocolResult({ operationId: "pilotReadOwnCreditState", response: await scenario.view("one"),
+        replayed: false, schemaVersion: "tenant_protocol_result.v1" });
       await scenario.seed("one", 513, 1, { late: true, losses: [513] });
       await assert.rejects(scenario.view("one"), { code: "credit_state_projection_incomplete" });
       await scenario.materializer.run();
@@ -284,7 +291,7 @@ test("PostgreSQL complete credit histories and fair bounded refresh", { timeout:
       assert.equal(blocked.creditStateProjectionCount, 0);
       assert.equal(blocked.creditStates[0].reasonCode, "credit_state_resource_limit");
       assert.deepEqual(await scenario.projection("one"), before);
-      await assert.rejects(scenario.view("one"), { code: "credit_state_projection_incomplete" });
+      await assert.rejects(scenario.view("one"), { code: "credit_state_resource_limit" });
       await scenario.seed("two", 0, 1);
       await scenario.materializer.run({ limit: 1 });
       assert.equal((await scenario.view("two")).creditState.metrics.completedCycleCount, 1);
@@ -414,6 +421,126 @@ test("PostgreSQL complete credit histories and fair bounded refresh", { timeout:
       });
       await assert.rejects(scenario.view("one"), { code: "credit_state_projection_incomplete" });
       assert.deepEqual(await scenario.projection("one"), view.creditState);
+    });
+
+    await t.test("off-chain projection rebuild retains canonical outcomes, Evidence and deterministic hashes", async () => {
+      const scenario = await tenant("canonical_restore");
+      await scenario.seed("one", 0, 3, { losses: [0] });
+      await scenario.materializer.run();
+      const original = await scenario.projection("one");
+      assert.equal("lastRefreshAttemptAt" in await scenario.view("one"), false);
+      const refreshedView = await scenario.view("one", { includeRefreshMetadata: true });
+      assert.ok(refreshedView.lastRefreshAttemptAt);
+      assert.ok(new Date(refreshedView.lastRefreshAttemptAt) <= new Date(refreshedView.asOf));
+      assert.deepEqual(refreshedView.creditState, original);
+      const canonical = () => scenario.repository.withTenantRead(async client => ({
+        outcomes: (await client.query("SELECT outcome FROM credit_outcomes WHERE subject_id = $1 ORDER BY id", [scenario.subject("one")])).rows,
+        evidence: (await client.query("SELECT id, evidence_hash, payload FROM evidence_envelopes WHERE subject_id = $1 ORDER BY id", [scenario.subject("one")])).rows
+      }));
+      const before = await canonical();
+      await scenario.repository.withTenantWrite(client => client.query(
+        "DELETE FROM credit_state_projections WHERE subject_id = $1", [scenario.subject("one")]));
+      await assert.rejects(scenario.view("one"), { code: "credit_state_projection_incomplete" });
+      const rebuilt = await scenario.materializer.run();
+      assert.equal(rebuilt.materializedCount, 0);
+      assert.equal(rebuilt.creditStateUpdatedCount, 1);
+      assert.deepEqual(await scenario.projection("one"), original);
+      assert.deepEqual(await canonical(), before);
+      // This rebuild uses retained original off-chain records, not chain hashes.
+      // Loss of those originals requires canonical backup recovery, not replay
+      // from minimal attestations or manufacture of replacement outcomes.
+      assert.equal((await scenario.materializer.run()).creditStateUpdatedCount, 0);
+    });
+
+    await t.test("history pages traverse all tied and microsecond records, reauthorize and never alter full credit totals", async () => {
+      const scenario = await tenant("discovery");
+      await scenario.seed("one", 0, 53, { historyMicroseconds: true, losses: [0] });
+      await scenario.materializer.run({ limit: 100 });
+      const context = scenario.repository.tenantContext;
+      const authenticationContext = createAuthenticationContext({
+        tenantId: context.tenantId, actorId: context.actorId, actorType: "human", clientId: "client_history_test",
+        credentialId: `credential_${randomUUID()}`, credentialVersion: 1, policyVersion: context.policyVersion,
+        capabilities: ["workspace.resume.self", "obligation.read.owned"], roles: ["human_borrower"],
+        tokenJtiHash: "synthetic_history_context_00000000000000000000", authenticationMethod: "oidc_pkce_bff",
+        senderConstraintMethod: "host_session", authenticatedAt: NOW.toISOString()
+      });
+      await owner.query(`INSERT INTO actors(id, actor_hash, actor_type, status, created_at, updated_at, schema_version)
+        VALUES ($1, $2, 'human', 'active', $3, $3, 'actor.v1') ON CONFLICT (id) DO NOTHING`,
+        [context.actorId, hashId("history_actor", context.actorId), NOW]);
+      const seed = new PostgresEventRepository({ pool: owner, tenantContext: context });
+      await seed.withTenantWrite(async client => {
+        await client.query(`INSERT INTO memberships(id, membership_hash, tenant_id, actor_id, role_bundle, capabilities,
+          client_ids, policy_version, status, valid_from, created_at, updated_at, version, schema_version)
+          VALUES ($1, $2, $3, $4, 'human_borrower', '["workspace.resume.self", "obligation.read.owned"]',
+            '["client_history_test"]', $5, 'active', $6, $6, $6, 1, 'membership.v1')`,
+          [`membership_history_${runId}`, hashId("history_membership", runId), context.tenantId, context.actorId, context.policyVersion, NOW]);
+        // Synthetic durable enrollment exercises the selected Human role path.
+        // The base credential deliberately lacks the owned-read capability.
+        await client.query(`INSERT INTO authentication_credentials(id, tenant_id, actor_id, actor_type,
+          issuer, subject_ref_hash, client_id, client_authentication_method, sender_constraint_method,
+          sender_constraint_ref_hash, roles, allowed_capabilities, policy_version, status, version,
+          created_at, updated_at, schema_version)
+          VALUES ($1, $2, $3, 'human', 'https://history-fixture.invalid', $4, 'client_history_test',
+            'oidc_pkce_bff', 'host_session', $4, '["human_borrower"]', '["workspace.resume.self"]',
+            $5, 'active', 1, $6, $6, 'authentication_credential.v1')`,
+          [authenticationContext.credentialId, context.tenantId, context.actorId, "A".repeat(43), context.policyVersion, NOW]);
+        await client.query(`INSERT INTO authentication_role_enrollments(id, tenant_id, actor_id, credential_id,
+          role_bundle, capabilities, client_ids, policy_version, status, valid_from, version,
+          created_at, updated_at, schema_version)
+          VALUES ($1, $2, $3, $4, 'human_borrower', '["workspace.resume.self", "obligation.read.owned"]',
+            '["client_history_test"]', $5, 'active', $6, 1, $6, $6, 'authentication_role_enrollment.v1')`,
+          [`role_enrollment_${randomUUID()}`, context.tenantId, context.actorId, authenticationContext.credentialId, context.policyVersion, NOW]);
+        await client.query(`INSERT INTO authorization_resources(tenant_id, resource_type, resource_id, status, version, created_at, updated_at, schema_version)
+          SELECT $1, 'obligation', id, 'active', 1, $2::timestamptz, $2::timestamptz, 'authorization_resource.v1' FROM obligations WHERE subject_id = $3
+          UNION ALL SELECT $1, 'subject', $3, 'active', 1, $2::timestamptz, $2::timestamptz, 'authorization_resource.v1'`,
+          [context.tenantId, NOW, scenario.subject("one")]);
+        await client.query(`INSERT INTO authorization_resource_bindings(tenant_id, resource_type, resource_id, actor_id, relationship, status, version, created_at, updated_at, schema_version)
+          SELECT tenant_id, resource_type, resource_id, $2, 'owner', 'active', 1, $3, $3, 'authorization_resource_binding.v1'
+          FROM authorization_resources WHERE tenant_id = $1`, [context.tenantId, context.actorId, NOW]);
+      });
+      // Gateway queries use an audited write-capable transaction so active
+      // authorization rows can be locked without changing business records.
+      const history = payload => scenario.repository.withTenantWrite(client => readWorkspaceResumeQueryHandler().execute({
+        client, directory: new PostgresAuthorizationDirectory({ client, authenticationContext }), authenticationContext,
+        payload: { obligationHistory: { subjectId: scenario.subject("one"), limit: 25, ...payload } }, now: NOW
+      }));
+      const original = await scenario.projection("one");
+      const ids = []; let cursor; let first;
+      do {
+        const result = await history(cursor ? { cursor } : {});
+        assertTenantProtocolResult({ operationId: "pilotReadWorkspaceResume", response: result,
+          replayed: false, schemaVersion: "tenant_protocol_result.v1" });
+        const page = result.obligationHistory;
+        first ??= page;
+        ids.push(...page.items.map(item => item.obligationId));
+        assert.ok(page.items.length <= 25);
+        cursor = page.nextCursor;
+      } while (cursor);
+      assert.equal(ids.length, 53); assert.equal(new Set(ids).size, 53);
+      assert.equal(first.items[0].createdAt, "2026-08-23T00:00:00.000457Z");
+      assert.deepEqual((await history({ state: "written_off" })).obligationHistory.items.map(item => item.obligationId),
+        [`obligation_credit_boundary_${runId}_discovery_one_0`]);
+      assert.deepEqual((await history({ createdBefore: "2026-08-23T00:00:00.000Z" })).obligationHistory.items, []);
+      await assert.rejects(history({ cursor: first.nextCursor, state: "written_off" }), { code: "invalid_tenant_command_payload" });
+      await seed.withTenantWrite(client => client.query(
+        "UPDATE authorization_resource_bindings SET status = 'revoked', version = version + 1, updated_at = updated_at + interval '1 millisecond' WHERE resource_id = $1 AND resource_type = 'obligation'", [first.items[0].obligationId]));
+      assert.equal((await history({})).obligationHistory.items.some(item => item.obligationId === first.items[0].obligationId), false);
+      assert.deepEqual(await scenario.projection("one"), original);
+      assert.equal(original.metrics.completedCycleCount, 53);
+      await seed.withTenantWrite(client => client.query(
+        `UPDATE authentication_role_enrollments SET capabilities = '["workspace.resume.self"]',
+          version = version + 1, updated_at = updated_at + interval '1 millisecond' WHERE credential_id = $1`,
+        [authenticationContext.credentialId]));
+      // The cached context still has obligation.read.owned and the Subject and
+      // Obligation bindings remain active. Current enrollment must win.
+      await assert.rejects(history({}), { code: "tenant_resource_unavailable" });
+      await seed.withTenantWrite(client => client.query(
+        `UPDATE authentication_role_enrollments SET capabilities = '["workspace.resume.self", "obligation.read.owned"]',
+          version = version + 1, updated_at = updated_at + interval '1 millisecond' WHERE credential_id = $1`,
+        [authenticationContext.credentialId]));
+      await seed.withTenantWrite(client => client.query(
+        "UPDATE authorization_resource_bindings SET status = 'revoked', version = version + 1, updated_at = updated_at + interval '1 millisecond' WHERE resource_id = $1 AND resource_type = 'subject'", [scenario.subject("one")]));
+      await assert.rejects(history({}), { code: "tenant_resource_unavailable" });
     });
 
     await t.test("refresh metadata migration rolls back without changing v1 projections", async () => {

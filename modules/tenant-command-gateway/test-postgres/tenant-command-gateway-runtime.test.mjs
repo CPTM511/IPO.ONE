@@ -920,7 +920,7 @@ async function establishTerminalMandateFixture({
   });
 }
 
-test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { timeout: 90_000 }, async (t) => {
+test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { timeout: 180_000 }, async (t) => {
   assert.ok(CONNECTION_STRING, "DATABASE_URL is required");
   const ownerPool = createPostgresPool({
     connectionString: CONNECTION_STRING,
@@ -1095,6 +1095,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         capabilities: [
           PilotCapability.HUMAN_SUBJECT_CREATE_SELF,
           PilotCapability.SUBJECT_READ_SELF,
+          PilotCapability.WORKSPACE_RESUME_SELF,
           PilotCapability.CONSENT_CREATE_SELF,
           PilotCapability.CONSENT_READ_SELF,
           PilotCapability.CONSENT_REVOKE_SELF,
@@ -1298,6 +1299,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         capabilities: [
           PilotCapability.HUMAN_SUBJECT_CREATE_SELF,
           PilotCapability.SUBJECT_READ_SELF,
+          PilotCapability.WORKSPACE_RESUME_SELF,
           PilotCapability.CONSENT_CREATE_SELF,
           PilotCapability.CONSENT_READ_SELF,
           PilotCapability.CONSENT_REVOKE_SELF,
@@ -4906,6 +4908,65 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           relationship: "controller"
         }
       );
+      const ownedHistory = async (reader, subjectId, suffix, extra = {}) => reader.resumeWorkspace({
+        obligationHistory: { subjectId, limit: 1, ...extra },
+        requestId: `request-history-${RUN_ID}-${suffix}`,
+        correlationId: `correlation-history-${RUN_ID}-${suffix}`
+      });
+      const humanHistory = await ownedHistory(tenantOneBorrower, humanAcceptance.obligation.subjectId, "human");
+      assert.deepEqual(humanHistory.response.obligationHistory.items.map(item => item.obligationId), [humanAcceptance.obligation.obligationId]);
+      assert.equal(humanHistory.response.obligationHistory.hasMore, false);
+      await assert.rejects(tenantOneBorrower.getOwnCreditState({
+        subjectId: humanAcceptance.obligation.subjectId,
+        requestId: `request-history-${RUN_ID}-empty-credit`, correlationId: `correlation-history-${RUN_ID}-empty-credit`
+      }), { code: "credit_state_no_finalized_outcomes" });
+      const agentHistory = await ownedHistory(tenantOneCreditAgent, agentAcceptance.obligation.subjectId, "agent");
+      assert.deepEqual(agentHistory.response.obligationHistory.items.map(item => item.obligationId), [agentAcceptance.obligation.obligationId]);
+      const controlledHistory = await tenantOneController.resumeWorkspace({
+        selectedAgentActorId: identities.tenantOneCreditAgent.authenticationContext.actorId,
+        obligationHistory: { subjectId: agentAcceptance.obligation.subjectId, limit: 1 },
+        requestId: `request-history-${RUN_ID}-controller`, correlationId: `correlation-history-${RUN_ID}-controller`
+      });
+      assert.deepEqual(controlledHistory.response.obligationHistory.items, agentHistory.response.obligationHistory.items);
+      const agentIdentity = identities.tenantOneCreditAgent;
+      const agentContext = createTenantSecurityContext({ tenantId: TENANT_ONE,
+        actorId: agentIdentity.authenticationContext.actorId, actorType: "agent",
+        policyVersion: agentIdentity.authenticationContext.policyVersion, source: "local_test" });
+      await withTenantTransaction(ownerPool, agentContext, client => client.query(
+        `UPDATE memberships SET capabilities = capabilities - 'obligation.read.owned',
+          version = version + 1, updated_at = clock_timestamp() WHERE tenant_id = $1 AND actor_id = $2`,
+        [TENANT_ONE, agentContext.actorId]));
+      try {
+        // Cached Agent context still contains the removed capability. Resume
+        // remains permitted, while exact reads and history both fail closed.
+        assert.equal((await tenantOneCreditAgent.resumeWorkspace({
+          requestId: `request-history-${RUN_ID}-agent-resume-without-read`,
+          correlationId: `correlation-history-${RUN_ID}-agent-resume-without-read`
+        })).response.serverTruth, true);
+        await assert.rejects(ownedHistory(tenantOneCreditAgent, agentAcceptance.obligation.subjectId, "agent-cached-capability"),
+          { code: "tenant_resource_unavailable" });
+        await assert.rejects(tenantOneCreditAgent.getOwnObligation({ obligationId: agentAcceptance.obligation.obligationId,
+          requestId: `request-history-${RUN_ID}-agent-exact-without-read`,
+          correlationId: `correlation-history-${RUN_ID}-agent-exact-without-read`
+        }), { code: "authorization_denied" });
+      } finally {
+        await withTenantTransaction(ownerPool, agentContext, client => client.query(
+          `UPDATE memberships SET capabilities = $3::jsonb, version = version + 1, updated_at = clock_timestamp()
+            WHERE tenant_id = $1 AND actor_id = $2`,
+          [TENANT_ONE, agentContext.actorId, JSON.stringify(agentIdentity.membership.capabilities)]));
+      }
+      for (const [suffix, filter] of [["state", { state: "written_off" }], ["date", { createdBefore: "2026-01-01T00:00:00.000Z" }]]) {
+        assert.deepEqual((await ownedHistory(tenantOneBorrower, humanAcceptance.obligation.subjectId, suffix, filter)).response.obligationHistory.items, []);
+      }
+      for (const [index, reader] of [tenantOneOtherBorrower, tenantTwoBorrower].entries()) {
+        await assert.rejects(ownedHistory(reader, humanAcceptance.obligation.subjectId, `foreign-${index}`), { code: "tenant_resource_unavailable" });
+      }
+      await assert.rejects(ownedHistory(tenantOneController, agentAcceptance.obligation.subjectId, "unselected"), { code: "tenant_resource_unavailable" });
+      await assert.rejects(tenantOneController.resumeWorkspace({
+        selectedAgentActorId: identities.tenantOneControllerAgent.authenticationContext.actorId,
+        obligationHistory: { subjectId: agentAcceptance.obligation.subjectId },
+        requestId: `request-history-${RUN_ID}-wrong-agent`, correlationId: `correlation-history-${RUN_ID}-wrong-agent`
+      }), { code: "tenant_resource_unavailable" });
       for (const [index, nonOwner] of [
         tenantOneOtherBorrower,
         tenantOneOtherHuman,

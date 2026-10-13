@@ -145,10 +145,11 @@ export class HumanTenantCommandClient extends TenantProtocolClient {
     });
   }
 
-  async resumeWorkspace({ requestId, correlationId }) {
+  async resumeWorkspace({ requestId, correlationId, selectedAgentActorId, obligationHistory }) {
     return this.execute({
       operationId: "pilotReadWorkspaceResume",
-      payload: {},
+      payload: { ...(selectedAgentActorId === undefined ? {} : { selectedAgentActorId }),
+        ...(obligationHistory === undefined ? {} : { obligationHistory }) },
       requestId,
       correlationId
     });
@@ -361,10 +362,10 @@ export class HumanTenantCommandClient extends TenantProtocolClient {
     });
   }
 
-  async getOwnCreditState({ subjectId, requestId, correlationId }) {
+  async getOwnCreditState({ subjectId, includeRefreshMetadata, requestId, correlationId }) {
     return this.execute({
       operationId: "pilotReadOwnCreditState",
-      payload: {},
+      payload: includeRefreshMetadata === undefined ? {} : { includeRefreshMetadata },
       resource: { resourceType: "subject", resourceId: subjectId },
       requestId,
       correlationId
@@ -967,10 +968,11 @@ export class AgentTenantCommandClient extends TenantProtocolClient {
     });
   }
 
-  async resumeWorkspace({ requestId, correlationId }) {
+  async resumeWorkspace({ requestId, correlationId, selectedAgentActorId, obligationHistory }) {
     return this.execute({
       operationId: "pilotReadWorkspaceResume",
-      payload: {},
+      payload: { ...(selectedAgentActorId === undefined ? {} : { selectedAgentActorId }),
+        ...(obligationHistory === undefined ? {} : { obligationHistory }) },
       requestId,
       correlationId
     });
@@ -1096,10 +1098,10 @@ export class AgentTenantCommandClient extends TenantProtocolClient {
     });
   }
 
-  async getOwnCreditState({ subjectId, requestId, correlationId }) {
+  async getOwnCreditState({ subjectId, includeRefreshMetadata, requestId, correlationId }) {
     return this.execute({
       operationId: "pilotReadOwnCreditState",
-      payload: {},
+      payload: includeRefreshMetadata === undefined ? {} : { includeRefreshMetadata },
       resource: { resourceType: "subject", resourceId: subjectId },
       requestId,
       correlationId

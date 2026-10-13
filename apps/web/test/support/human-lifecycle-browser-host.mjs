@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { syntheticObligationHistory } from "./obligation-history-fixture.mjs";
 import {
   TENANT_PROTOCOL_CATALOG
 } from "../../../../packages/api-contract/src/index.js";
@@ -749,6 +750,12 @@ function resultFor(command) {
     });
   }
   if (operationId === "pilotReadWorkspaceResume") {
+    if (command.payload?.obligationHistory) return protocolResult(operationId, {
+      workspaceKind: "human_borrower", resources: [], hasMore: false, serverTruth: true,
+      obligationHistory: syntheticObligationHistory({ subjectId: subject.subjectId,
+        obligations: [currentObligation, secondaryCurrentObligation], history: command.payload.obligationHistory }),
+      schemaVersion: "tenant_workspace_resume_view.v2"
+    });
     const resources = [];
     if (currentObligation) {
       resources.push({
@@ -1074,6 +1081,7 @@ function resultFor(command) {
         scoreAuthoritative: false,
         schemaVersion: "credit_state_projection.v1"
       },
+      ...(command.payload?.includeRefreshMetadata === true ? { lastRefreshAttemptAt: "2026-08-16T11:45:00.000Z" } : {}),
       asOf: "2026-08-16T12:00:00.000Z",
       schemaVersion: "tenant_owned_credit_state_view.v1"
     });

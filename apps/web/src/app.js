@@ -1,3 +1,5 @@
+import { createObligationHistoryBrowser } from "./obligation-history-browser.js";
+import { createCreditSnapshotLoader, creditSnapshotPresentation } from "./credit-snapshot-browser.js";
 import { WALLET_NETWORK_PROFILES, WALLET_NETWORK_IDS } from "./wallet-networks.js";
 import { createWalletSignInAttempt, walletSignInErrorMessage } from "./wallet-sign-in-attempt.js";
 import { createLocalReviewWorkspace, localReviewOperationAvailable } from "./local-review-workspace.js";
@@ -454,6 +456,26 @@ const executionWalletPilot = {
   executionHelper:
     "Connect and bind an execution account. Current local runtime can prepare Evidence but cannot submit a transaction or move funds."
 };
+let ownedHistoryContextKey;
+let ownedHistoryContextGeneration = 0;
+function ownedHistoryContext() {
+  let context = null;
+  if (tenantPilot.connected && tenantPilot.obligationReadAvailable) {
+    const selection = agentAuthorityPilot.workspaceSelection;
+    const subjectId = tenantPilot.workspaceKind === "principal_controller"
+      ? (selection?.status === "selected" ? selection.subjectId : null)
+      : tenantInputValue("humanSubjectId") || tenantPilot.obligation?.subjectId;
+    if (exactResourceId(subjectId)) context = { epoch: authenticatedDataEpoch, subjectId, kind: tenantPilot.workspaceKind,
+      selectedAgentActorId: tenantPilot.workspaceKind === "principal_controller" ? selection.actorId : null };
+  }
+  const key = JSON.stringify(context);
+  if (ownedHistoryContextKey !== key) {
+    ownedHistoryContextKey = key;
+    ownedHistoryContextGeneration += 1;
+  }
+  // A -> B -> A is a new navigation generation, even within one session.
+  return context && { ...context, generation: ownedHistoryContextGeneration };
+}
 const AUTHENTICATED_BROWSER_STATE_BASELINES = new Map([
   [tenantPilot, structuredClone(tenantPilot)],
   [capitalNetworkPilot, structuredClone(capitalNetworkPilot)],
@@ -757,6 +779,26 @@ function consumePostLoginViewIntent() {
 }
 
 const el = (id) => document.getElementById(id);
+const obligationHistoryBrowser = createObligationHistoryBrowser({
+  root: el("obligationHistoryBrowser"), getContext: ownedHistoryContext, formatState: titleize,
+  searchButton: el("searchObligationHistoryBtn"), previousButton: el("previousObligationHistoryBtn"),
+  nextButton: el("nextObligationHistoryBtn"),
+  readPage: async (context, history) => (await tenantApi("pilotReadWorkspaceResume", {
+    payload: { obligationHistory: history,
+      ...(context.selectedAgentActorId ? { selectedAgentActorId: context.selectedAgentActorId } : {}) },
+    idempotent: false
+  })).response.obligationHistory,
+  openRecord: obligationId => loadOwnedObligation({ obligationId, historicalRecovery: true })
+});
+const creditSnapshotLoader = createCreditSnapshotLoader({
+  state: creditStatePilot, getContext: ownedHistoryContext,
+  read: async subjectId => (await tenantApi("pilotReadOwnCreditState", {
+    resource: { resourceType: "subject", resourceId: subjectId }, payload: { includeRefreshMetadata: true }, idempotent: false
+  })).response,
+  render: renderTenantPilot,
+  notify: (message, failed = false) => { toast(message, failed ? "error" : undefined); announce(message); },
+  onAuthenticationError: error => { if (isRejectedAuthenticationSession(error)) openAccess(); }
+});
 
 function shortWalletAddress(address) {
   return typeof address === "string" && /^0x[0-9a-fA-F]{40}$/.test(address)
@@ -6350,39 +6392,6 @@ function renderV9ShellStates() {
       : "Sign in to read an eligible application. Denied and missing applications are not enumerated.";
   }
 
-  const trackRecordState = currentOwnedEvidenceVerificationState();
-  if (creditStatePilot.projection) {
-    const { projection } = creditStatePilot;
-    el("creditTrackRecordStateTitle").textContent =
-      `${projection.metrics.completedCycleCount} completed credit cycle${projection.metrics.completedCycleCount === 1 ? "" : "s"}`;
-    el("creditTrackRecordStateCopy").textContent =
-      creditStateSnapshotCopy(projection);
-  } else if (creditStatePilot.error) {
-    el("creditTrackRecordStateTitle").textContent = "Credit State not available yet";
-    el("creditTrackRecordStateCopy").textContent = creditStatePilot.helper;
-  } else if (tenantPilot.obligation && trackRecordState === "latest_proven") {
-    el("creditTrackRecordStateTitle").textContent = "Latest lifecycle Evidence verified";
-    el("creditTrackRecordStateCopy").textContent =
-      `${ownedEvidence.items.length} latest bounded Evidence event${ownedEvidence.items.length === 1 ? "" : "s"} loaded for the selected owned Obligation. Earlier events may remain outside the browser cap.`;
-  } else if (tenantPilot.obligation && trackRecordState === "partial") {
-    el("creditTrackRecordStateTitle").textContent = "Partial lifecycle Evidence";
-    el("creditTrackRecordStateCopy").textContent =
-      `${ownedEvidence.items.length} bounded event${ownedEvidence.items.length === 1 ? " is" : "s are"} visible, but the latest lifecycle event is not yet proven. Continue the read-only cursor.`;
-  } else if (tenantPilot.obligation && trackRecordState === "delayed") {
-    el("creditTrackRecordStateTitle").textContent = "Latest Evidence delayed";
-    el("creditTrackRecordStateCopy").textContent =
-      "The lifecycle action remains accepted, but its expected Evidence is not visible yet. Retry only the Evidence read; no economic command will be resubmitted.";
-  } else if (tenantPilot.obligation) {
-    el("creditTrackRecordStateTitle").textContent = "Owned Obligation loaded";
-    el("creditTrackRecordStateCopy").textContent =
-      "Load its authenticated Evidence before treating the lifecycle as a verified track record.";
-  } else {
-    el("creditTrackRecordStateTitle").textContent = "No verified lifecycle loaded";
-    el("creditTrackRecordStateCopy").textContent = tenantPilot.connected
-      ? "Restore an owned Obligation and load its Evidence. No positive history is inferred from an empty browser state."
-      : "Sign in to load an eligible owned Obligation. Missing resources remain non-enumerating.";
-  }
-
   if (accessState.sessionActive || tenantPilot.connected) {
     el("walletPermissionsStateTitle").textContent = "Authenticated server session active";
     el("walletPermissionsStateCopy").textContent = accessState.walletAddress
@@ -7154,57 +7163,23 @@ function renderCreditPassportPilot() {
         tenantPilot.decision.decisionPassport.decisionPassportHash
       )}`
     : "Not loaded";
-  el("creditTrackRecordCycleCount").textContent = String(
-    creditState?.metrics.completedCycleCount ?? 0
-  );
-  el("creditTrackRecordLatestOutcome").textContent = creditState
-    ? titleize(creditState.latestOutcome.outcomeLabel)
-    : "Not loaded";
-  el("creditTrackRecordReliability").textContent = creditState
-    ? titleize(creditState.factors.repaymentReliability)
-    : "Not loaded";
-  el("creditTrackRecordLoss").textContent = creditState
-    ? usdMinorToMoney(creditState.metrics.totalLossMinor)
-    : "$0.00";
-  el("creditTrackRecordRows").replaceChildren(
-    ...(creditState
-      ? creditState.trackRecord.map(creditTrackRecordRow)
-      : [emptyRow("No finalized Credit Outcome is loaded for this Subject.")])
-  );
-  el("loadCreditTrackRecordBtn").disabled =
-    creditStatePilot.busy || !connected || !creditStatePilot.catalogAvailable;
+  const snapshot = creditSnapshotPresentation(creditStatePilot, titleize);
+  el("creditTrackRecordCycleCount").textContent = creditState ? String(creditState.metrics.completedCycleCount) : "Not loaded";
+  el("creditTrackRecordLatestOutcome").textContent = creditState ? titleize(creditState.latestOutcome.outcomeLabel) : "Not loaded";
+  el("creditTrackRecordReliability").textContent = creditState ? titleize(creditState.factors.repaymentReliability) : "Not loaded";
+  el("creditTrackRecordLoss").textContent = creditState ? usdMinorToMoney(creditState.metrics.totalLossMinor) : "Not loaded";
+  el("creditTrackRecordRows").replaceChildren(...(creditState ? creditState.trackRecord.map(creditTrackRecordRow)
+    : [emptyRow("No finalized Credit Outcome is loaded for this Subject.")]));
+  const button = el("loadCreditTrackRecordBtn");
+  button.disabled = creditStatePilot.busy || !connected || !creditStatePilot.catalogAvailable || !ownedHistoryContext();
+  button.toggleAttribute("aria-busy", creditStatePilot.busy);
+  button.textContent = creditStatePilot.busy ? "Updating snapshot…" : creditState ? "Reload verified record" : "Load verified record";
   const finality = el("creditTrackRecordFinality");
   finality.classList.toggle("neutral", !creditState && !creditStatePilot.error);
   finality.classList.toggle("warning", creditStatePilot.error);
-  finality.textContent = creditStatePilot.busy
-    ? "Loading"
-    : creditState
-      ? `Verified snapshot · v${creditState.projectionVersion}`
-      : creditStatePilot.error
-        ? "Not available yet"
-        : "Not loaded";
-  if (creditState) {
-    el("creditTrackRecordStateTitle").textContent =
-      `${creditState.metrics.completedCycleCount} completed credit cycle${creditState.metrics.completedCycleCount === 1 ? "" : "s"}`;
-    el("creditTrackRecordStateCopy").textContent =
-      creditStateSnapshotCopy(creditState);
-  } else if (creditStatePilot.error) {
-    el("creditTrackRecordStateTitle").textContent = "Credit State not available yet";
-    el("creditTrackRecordStateCopy").textContent = creditStatePilot.helper;
-  }
-}
-
-function creditStateSnapshotCopy(projection) {
-  const date = new Date(creditStatePilot.asOf ?? "");
-  const asOf = Number.isFinite(date.getTime())
-    ? new Intl.DateTimeFormat("en-US", {
-        dateStyle: "medium", timeStyle: "long", timeZone: "UTC"
-      }).format(date)
-    : "Unavailable";
-  return `Snapshot as of ${asOf}. ` +
-    `${titleize(projection.latestOutcome.outcomeLabel)} is the latest terminal Credit Outcome in this snapshot. ` +
-    "Reload the verified record to check for newer outcomes; this view does not update automatically. " +
-    "It does not authorize funds or an automatic limit change.";
+  finality.textContent = snapshot.label;
+  el("creditTrackRecordStateTitle").textContent = snapshot.title;
+  el("creditTrackRecordStateCopy").textContent = snapshot.copy;
 }
 
 function capitalNetworkAmount(assetId, minor) {
@@ -8652,6 +8627,8 @@ async function issueTradingCapitalProof() {
 }
 
 function renderTenantPilot() {
+  obligationHistoryBrowser.synchronize();
+  creditSnapshotLoader.synchronize();
   const connection = el("tenantPilotConnection");
   if (!connection) return;
   connection.textContent = tenantPilot.connectionLabel;
@@ -9267,13 +9244,19 @@ function cacheOwnedObligationView(obligationId, view) {
   return accepted;
 }
 
+let activeOwnedObligationRead = null;
 async function loadOwnedObligation({ obligationId, quiet = false, historicalRecovery = false } = {}) {
   if (tenantPilot.obligationHydrationBusy) return false;
   const requestDataEpoch = authenticatedDataEpoch;
+  const historyContext = historicalRecovery ? ownedHistoryContext() : null;
+  if (historicalRecovery && !historyContext) return false;
+  const readOwner = Symbol("owned obligation read");
+  activeOwnedObligationRead = readOwner;
   const selectedAgent = historicalRecovery && tenantPilot.workspaceKind === "principal_controller"
     ? agentAuthorityPilot.workspaceSelection
     : null;
-  const isCurrentRead = () => requestDataEpoch === authenticatedDataEpoch &&
+  const isCurrentRead = () => activeOwnedObligationRead === readOwner && requestDataEpoch === authenticatedDataEpoch &&
+    (!historyContext || JSON.stringify(ownedHistoryContext()) === JSON.stringify(historyContext)) &&
     (!selectedAgent || (
       selectedAgent.status === "selected" &&
       agentAuthorityPilot.workspaceSelection?.actorId === selectedAgent.actorId &&
@@ -9314,7 +9297,7 @@ async function loadOwnedObligation({ obligationId, quiet = false, historicalReco
   try {
     const response = await readOwnedObligationView(exactObligationId);
     if (!isCurrentRead()) return false;
-    if (selectedAgent && response.obligation?.subjectId !== selectedAgent.subjectId) {
+    if (historyContext && response.obligation?.subjectId !== historyContext.subjectId) {
       throw Object.assign(new Error("The requested resource is not available."), {
         code: "tenant_resource_unavailable"
       });
@@ -9358,7 +9341,7 @@ async function loadOwnedObligation({ obligationId, quiet = false, historicalReco
     }
     return false;
   } finally {
-    if (requestDataEpoch === authenticatedDataEpoch) {
+    if (activeOwnedObligationRead === readOwner && requestDataEpoch === authenticatedDataEpoch) {
       tenantPilot.obligationHydrationBusy = false;
       renderTenantPilot();
     }
@@ -9737,57 +9720,8 @@ async function restoreLatestCreditPassport() {
 }
 
 async function loadCreditTrackRecord() {
-  const button = el("loadCreditTrackRecordBtn");
-  if (!tenantPilot.connected) {
-    openAccess();
-    return;
-  }
-  button.disabled = true;
-  button.setAttribute("aria-busy", "true");
-  creditStatePilot.busy = true;
-  creditStatePilot.error = false;
-  button.textContent = "Loading Credit State…";
-  try {
-    if (!tenantPilot.obligation) await recoverAuthenticatedWorkspace();
-    const subjectId = tenantPilot.obligation?.subjectId ??
-      tenantPilot.decision?.subjectId ?? tenantInputValue("humanSubjectId");
-    if (!exactResourceId(subjectId)) {
-      throw new Error(
-        interactionMode === "agent"
-          ? "Run the Agent lifecycle online before loading its Credit Track Record."
-          : "Create or restore one Human Subject before loading its Credit Track Record."
-      );
-    }
-    const result = await tenantApi("pilotReadOwnCreditState", {
-      resource: { resourceType: "subject", resourceId: subjectId },
-      payload: {},
-      idempotent: false
-    });
-    creditStatePilot.queried = true;
-    creditStatePilot.subjectId = subjectId;
-    creditStatePilot.projection = result.response.creditState;
-    creditStatePilot.asOf = result.response.asOf;
-    creditStatePilot.helper =
-      "Durable Credit State loaded from finalized terminal outcomes and Evidence lineage.";
-    toast("Verified Credit Track Record snapshot loaded");
-    announce("Verified Credit Track Record snapshot loaded. Reload to check for newer outcomes.");
-  } catch (error) {
-    const message =
-      error?.message ?? "The verified Credit Track Record could not be loaded.";
-    // A failed completeness check must not leave a previous verified record visible.
-    creditStatePilot.projection = null;
-    creditStatePilot.asOf = null;
-    creditStatePilot.error = true;
-    creditStatePilot.helper = message;
-    toast(message, "error");
-    announce("Credit Track Record load failed");
-    if (isRejectedAuthenticationSession(error)) openAccess();
-  } finally {
-    creditStatePilot.busy = false;
-    button.removeAttribute("aria-busy");
-    button.textContent = creditStatePilot.projection ? "Reload verified record" : "Load verified record";
-    renderTenantPilot();
-  }
+  if (!tenantPilot.connected) { openAccess(); return; }
+  await creditSnapshotLoader.load();
 }
 
 function isCurrentTenantPilotProbe(owner) {

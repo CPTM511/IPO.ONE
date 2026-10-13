@@ -367,6 +367,12 @@ function protocolResult(operationId, response) {
 
 function resultFor(command) {
   if (command.operationId === "pilotReadWorkspaceResume") {
+    if (command.payload?.obligationHistory) return protocolResult(command.operationId, {
+      workspaceKind: "principal_controller", resources: [], hasMore: false, serverTruth: true,
+      obligationHistory: syntheticObligationHistory({ subjectId: activeMandate.subjectId,
+        obligations: [currentAgentObligation], history: command.payload.obligationHistory }),
+      schemaVersion: "tenant_workspace_resume_view.v2"
+    });
     const selectionResources = selectionScenario === "empty"
       ? []
       : [
@@ -872,3 +878,4 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
     process.exit(0);
   });
 }
+import { syntheticObligationHistory } from "./obligation-history-fixture.mjs";

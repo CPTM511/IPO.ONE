@@ -6062,6 +6062,7 @@
             { "$ref": "#/$defs/humanOfferReviewRecovery" }
           ]
         },
+        "obligationHistory": { "$ref": "#/$defs/ownedObligationHistoryPage" },
         "hasMore": {
           "type": "boolean"
         },
@@ -6071,6 +6072,30 @@
         "schemaVersion": {
           "const": "tenant_workspace_resume_view.v2"
         }
+      }
+    },
+    "ownedObligationHistoryPage": {
+      "type": "object", "additionalProperties": false,
+      "required": ["subjectId", "items", "hasMore", "nextCursor", "asOf", "nonAuthorizing", "schemaVersion"],
+      "properties": {
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "items": {
+          "type": "array", "maxItems": 50,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["obligationId", "state", "createdAt"],
+            "properties": {
+              "obligationId": { "$ref": "#/$defs/identifier" },
+              "state": { "enum": ["created", "active", "partially_repaid", "fully_repaid", "delinquent", "overdue", "defaulted", "restructured", "repurchased", "written_off", "closed"] },
+              "createdAt": { "$ref": "#/$defs/timestamp" }
+            }
+          }
+        },
+        "hasMore": { "type": "boolean" },
+        "nextCursor": { "oneOf": [{ "type": "null" }, { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,1024}$" }] },
+        "asOf": { "$ref": "#/$defs/timestamp" },
+        "nonAuthorizing": { "const": true },
+        "schemaVersion": { "const": "owned_obligation_history_page.v1" }
       }
     },
     "controlledAgentOption": {
@@ -8285,7 +8310,7 @@
         "creditStateHash": { "$ref": "#/$defs/hash" },
         "subjectId": { "$ref": "#/$defs/identifier" },
         "principalId": { "$ref": "#/$defs/identifier" },
-        "projectionVersion": { "type": "integer", "minimum": 1, "maximum": 512 },
+        "projectionVersion": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
         "metrics": {
           "type": "object",
           "additionalProperties": false,
@@ -8299,7 +8324,7 @@
             "schemaVersion"
           ],
           "properties": {
-            "completedCycleCount": { "type": "integer", "minimum": 1, "maximum": 512 },
+            "completedCycleCount": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
             "outcomeCounts": {
               "type": "object",
               "additionalProperties": false,
@@ -8350,7 +8375,6 @@
         "trackRecord": {
           "type": "array",
           "minItems": 1,
-          "maxItems": 512,
           "items": { "$ref": "#/$defs/creditTrackRecordEntry" }
         },
         "updatedAt": { "$ref": "#/$defs/timestamp" },
@@ -8372,6 +8396,7 @@
       "required": ["creditState", "asOf", "schemaVersion"],
       "properties": {
         "creditState": { "$ref": "#/$defs/creditStateProjection" },
+        "lastRefreshAttemptAt": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/timestamp" }] },
         "asOf": { "$ref": "#/$defs/timestamp" },
         "schemaVersion": { "const": "tenant_owned_credit_state_view.v1" }
       }
