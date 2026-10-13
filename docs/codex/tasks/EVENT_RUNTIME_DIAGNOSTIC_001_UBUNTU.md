@@ -145,3 +145,53 @@ clean, and resolved pg and workspace Ajv from their own dependency graphs. No
 package tarball was downloaded; pnpm's supply-chain checks still probed registry
 metadata. Both temporary worktrees were removed. PostgreSQL, the event suite and
 the full Quality Gate were not run during this correction.
+
+## Approved aggregate and synthetic recovery gates — 2026-10-13
+
+Run `38331504803` (#506) succeeded at the corrected workflow SHA. All four
+event cases reported 28 passed, zero failed/cancelled, with the original
+60-second root limit. Independent source/trace verification is preserved in the
+private evidence record alongside failed #505. Broad verify was skipped; one
+instrumented observation per condition establishes no speed claim.
+
+Michael approved one standard Ubuntu repository aggregate with a 30-minute total
+cap and one bounded synthetic canonical backup/restore in this saved cloud
+environment. Restore compares original credit/identity records, referenced
+Evidence bytes and permissions, with separate projection rebuild checks. Only
+new disposable synthetic databases/roles are used; no persistent credential,
+production/private data, hosted service, chain write, funds or policy change.
+Its harness and exact data/source provenance remain outside the repository.
+
+Add an optional manual validation target and one mutually exclusive aggregate
+job to the existing workflow. Default diagnostic behavior retains its 15-minute
+cap. Aggregate executes `pnpm run check` exactly once, without observer, against
+a detached checkout of `5cb16868a05fa23b9bec62975766e18b212492f2`. The published
+workflow revision is distinct from this exact product revision. No product,
+test, SQL, dependency, deadline or assertion change is permitted.
+
+Preserve exact-branch restrictions, push exclusion, broad-verify exclusion,
+contents-read permissions, non-persistent checkout and Vercel suppression. Use
+pinned tools, frozen dependencies, disposable localhost PostgreSQL and an earlier
+shared budget inside the 30-minute cap. Record source checkpoints before/after,
+actual exit and cleanup. Failure remains failure; no automatic retry or extra run.
+
+Validate shell/Python syntax, job selection for default/aggregate/other events,
+unchanged original jobs and exact product-source identity before publication.
+Publish only these validation workflow/task changes after fresh deployment/cost
+guards. The parent dispatches the one aggregate through its verified browser
+with `validation_target=repository-aggregate`; this worker must not dispatch.
+No PR, merge, deployment or SEO publication. Rollback removes only this temporary
+validation addition; no application or production rollback is involved.
+
+Full Quality Gate browser/manual smoke, real identity acceptance, production
+backup/KMS/RPO/RTO and production data/query-cost validation remain separate.
+The final product verdict remains `BLOCKED — NOT COMPLETE`.
+
+The bounded local recovery gate failed during synthetic source preparation:
+the unchanged materializer rejected missing Obligation Evidence with
+`credit_outcome_evidence_incomplete`. No dump/restore was reached. All 515 Offers
+were seeded with constraints enabled, but complete outcome/projection comparison
+and canonical record/permission round-trip remain unverified. The shared gate
+used 818.6 of 900 seconds, including retained fixture-preflight failures; cleanup
+succeeded and tracked source stayed unchanged. No additional recovery run is
+authorized by this failed result. Aggregate preparation proceeds independently.
