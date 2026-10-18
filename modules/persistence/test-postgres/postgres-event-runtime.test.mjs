@@ -5258,68 +5258,69 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         () => migrateDown({ pool, steps: 32 }),
         (error) => error.code === "23514"
       );
+      const rollbackStatus = await migrationStatus({ pool });
       assert.equal(
-        (await migrationStatus({ pool })).find(
+        rollbackStatus.find(
           ({ name }) => name === "0058_hypercore_testnet_submission_closure"
         ).applied,
         true
       );
       assert.equal(
-        (await migrationStatus({ pool })).find(
+        rollbackStatus.find(
           ({ name }) => name === "0059_hypercore_stable_intent_jit_preflight"
         ).applied,
         false
       );
       assert.equal(
-        (await migrationStatus({ pool })).find(
+        rollbackStatus.find(
           ({ name }) => name === "0060_hypercore_stable_cancel_closure"
         ).applied,
         false
       );
       assert.equal(
-        (await migrationStatus({ pool })).find(
+        rollbackStatus.find(
           ({ name }) => name === "0061_execution_account_bindings"
         ).applied,
         false
       );
       assert.equal(
-        (await migrationStatus({ pool })).find(
+        rollbackStatus.find(
           ({ name }) => name === "0062_durable_credit_state_projection"
         ).applied,
         false
       );
       assert.equal(
-        (await migrationStatus({ pool })).find(
+        rollbackStatus.find(
           ({ name }) => name === "0063_selected_human_role_enrollment"
         ).applied,
         false
       );
       assert.equal(
-        (await migrationStatus({ pool })).find(
+        rollbackStatus.find(
           ({ name }) => name === "0064_pool_chain_reconciliation"
         ).applied,
         false
       );
       assert.equal(
-        (await migrationStatus({ pool })).find(
+        rollbackStatus.find(
           ({ name }) => name === "0065_pool_obligation_integration"
         ).applied,
         false
       );
       assert.equal(
-        (await migrationStatus({ pool })).find(
+        rollbackStatus.find(
           ({ name }) => name === "0066_agent_secured_facility_authorizations"
         ).applied,
         false
       );
       assert.equal(
-        (await migrationStatus({ pool })).find(
+        rollbackStatus.find(
           ({ name }) => name === "0067_m2b_hyperliquid_compositions"
         ).applied,
         false
       );
       assert.equal(
-        (await migrationStatus({ pool })).find(
+        rollbackStatus.find(
           ({ name }) => name === "0068_m2b_dual_risk_recovery"
         ).applied,
         false

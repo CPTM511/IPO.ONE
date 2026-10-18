@@ -44,7 +44,8 @@ export function readOwnCreditStateQueryHandler() {
         !payload ||
         typeof payload !== "object" ||
         Array.isArray(payload) ||
-        Object.keys(payload).length !== 0 ||
+        Object.keys(payload).some(key => key !== "includeRefreshMetadata") ||
+        (payload.includeRefreshMetadata !== undefined && typeof payload.includeRefreshMetadata !== "boolean") ||
         resource?.resourceType !== "subject" ||
         !(now instanceof Date) ||
         !Number.isFinite(now.getTime())
@@ -56,6 +57,8 @@ export function readOwnCreditStateQueryHandler() {
       // high-water mark alone cannot detect backdated terminal sources.
       const result = await client.query(
         `SELECT p.projection, transaction_timestamp() AS as_of,
+                s.credit_state_refreshed_at AS last_refresh_attempt_at,
+                s.credit_state_refresh_error AS refresh_error,
                 s.credit_state_refresh_error IS NULL AND p.projected_outcome_count = (
                   SELECT count(*) FROM credit_outcomes c
                    WHERE c.tenant_id = p.tenant_id AND c.subject_id = p.subject_id
@@ -79,7 +82,27 @@ export function readOwnCreditStateQueryHandler() {
           LIMIT 2`,
         [resource.resourceId]
       );
+      if (result.rowCount === 0) {
+        const pending = await client.query(
+          `SELECT s.credit_state_refresh_error AS refresh_error,
+                  EXISTS (SELECT 1 FROM credit_outcomes c
+                           WHERE c.tenant_id = s.tenant_id AND c.subject_id = s.id) OR
+                  EXISTS (SELECT 1 FROM obligations o JOIN risk_decisions d
+                            ON d.tenant_id = o.tenant_id AND d.id = o.risk_decision_id
+                           WHERE o.tenant_id = s.tenant_id AND o.subject_id = s.id
+                             AND ${TERMINAL_CREDIT_SOURCE_SQL}) AS awaiting_refresh
+             FROM subjects s WHERE s.id = $1`, [resource.resourceId]);
+        if (pending.rowCount !== 1) unavailable();
+        const reason = pending.rows[0].refresh_error === "credit_state_resource_limit"
+          ? "credit_state_resource_limit" : pending.rows[0].awaiting_refresh
+            ? "credit_state_projection_incomplete" : "credit_state_no_finalized_outcomes";
+        throw new DomainError(reason, reason === "credit_state_no_finalized_outcomes"
+          ? "This Subject has no finalized credit outcomes" : "Credit State is awaiting a complete history refresh");
+      }
       if (result.rowCount !== 1) unavailable();
+      if (result.rows[0].refresh_error === "credit_state_resource_limit") {
+        throw new DomainError("credit_state_resource_limit", "Complete Credit State history exceeds the refresh byte budget");
+      }
       if (result.rows[0].complete !== true) {
         throw new DomainError(
           "credit_state_projection_incomplete",
@@ -97,6 +120,10 @@ export function readOwnCreditStateQueryHandler() {
         // Use the database transaction boundary, not a wall clock sampled after
         // its repeatable-read snapshot. This is an as-of read, not a live feed.
         asOf: new Date(result.rows[0].as_of).toISOString(),
+        ...(payload.includeRefreshMetadata === true ? {
+          lastRefreshAttemptAt: result.rows[0].last_refresh_attempt_at
+            ? new Date(result.rows[0].last_refresh_attempt_at).toISOString() : null
+        } : {}),
         schemaVersion: "tenant_owned_credit_state_view.v1"
       };
     }

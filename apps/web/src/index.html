@@ -2364,6 +2364,19 @@
                 <div><p class="eyebrow">Read boundary</p><h3 id="privateCreditBoundaryTitle">One state machine, exact owner reads</h3></div>
                 <p id="privateCreditBoundary">Human Consent and Agent Mandate change entry presentation only. List references come from the bounded authenticated workspace and every value is reauthorized by exact Obligation ID.</p>
               </section>
+              <section class="panel" id="obligationHistoryBrowser" aria-labelledby="obligationHistoryTitle">
+                <div class="panel-heading"><div><p class="eyebrow">Authorized history</p><h3 id="obligationHistoryTitle">Browse your credit records</h3></div></div>
+                <p>Find older records for the current Subject without remembering an ID. Dates use UTC. Each record is reauthorized when opened; history pages do not calculate credit totals.</p>
+                <form class="obligation-history-filters">
+                  <label><span id="obligationHistoryStateLabel">Lifecycle state</span><select name="state" aria-labelledby="obligationHistoryStateLabel"><option value="">All states</option><option value="created">Created</option><option value="active">Active</option><option value="partially_repaid">Partially repaid</option><option value="fully_repaid">Fully repaid</option><option value="delinquent">Delinquent</option><option value="overdue">Overdue</option><option value="defaulted">Defaulted</option><option value="restructured">Restructured</option><option value="repurchased">Repurchased</option><option value="written_off">Written off</option><option value="closed">Closed</option></select></label>
+                  <label><span>Created from</span><input name="createdFrom" type="date" /></label>
+                  <label><span>Created through</span><input name="createdThrough" type="date" /></label>
+                  <button id="searchObligationHistoryBtn" type="submit" class="secondary">Search history</button>
+                </form>
+                <p data-history-status role="status" aria-live="polite">Browse authorized records for the current Subject. Every opened record is checked again.</p>
+                <div data-history-rows class="obligation-history-rows"></div>
+                <div class="button-row"><button id="previousObligationHistoryBtn" type="button" class="secondary" data-history-previous disabled>Previous page</button><button id="nextObligationHistoryBtn" type="button" class="secondary" data-history-next disabled>Next page</button></div>
+              </section>
               <details class="panel protocol-disclosure" id="ownedObligationRecoveryDetails">
                 <summary>Find an older record by ID</summary>
                 <form class="owned-obligation-restore" id="ownedObligationRestore">
@@ -2606,7 +2619,7 @@
                 </div>
                 <button class="primary" id="loadCreditTrackRecordBtn" type="button">Load verified record</button>
               </div>
-              <section class="panel v9-capability-state" aria-labelledby="creditTrackRecordStateTitle">
+              <section class="panel v9-capability-state" aria-labelledby="creditTrackRecordStateTitle" role="status" aria-live="polite">
                 <div><svg aria-hidden="true"><use href="/icons.svg#activity"></use></svg><span><p class="eyebrow">Current record</p><h3 id="creditTrackRecordStateTitle">No verified lifecycle loaded</h3></span></div>
                 <p id="creditTrackRecordStateCopy">Restore an owned Subject and load its outcome-derived Credit State. No positive history is inferred from an empty browser state.</p>
               </section>
@@ -2614,10 +2627,10 @@
                 <div class="panel-heading"><div><p class="eyebrow">Finalized outcomes only</p><h3 id="creditTrackRecordSummaryTitle">Durable Credit State</h3></div><span id="creditTrackRecordFinality" class="state-pill neutral">Not loaded</span></div>
                 <dl class="credit-passport-facts">
                   <div><dt>Decision Passport</dt><dd id="creditTrackRecordDecision">Not loaded</dd></div>
-                  <div><dt>Completed cycles</dt><dd id="creditTrackRecordCycleCount">0</dd></div>
+                  <div><dt>Completed cycles</dt><dd id="creditTrackRecordCycleCount">Not loaded</dd></div>
                   <div><dt>Latest terminal outcome</dt><dd id="creditTrackRecordLatestOutcome">Not loaded</dd></div>
                   <div><dt>Repayment reliability</dt><dd id="creditTrackRecordReliability">Not loaded</dd></div>
-                  <div><dt>Total loss</dt><dd id="creditTrackRecordLoss">$0.00</dd></div>
+                  <div><dt>Total loss</dt><dd id="creditTrackRecordLoss">Not loaded</dd></div>
                 </dl>
                 <div id="creditTrackRecordRows" class="credit-passport-disclosures" aria-label="Terminal credit outcome chronology"></div>
               </section>

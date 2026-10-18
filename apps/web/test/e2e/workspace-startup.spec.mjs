@@ -38,8 +38,11 @@ for (const [mode,port,heldResource] of [['public',4178,'**/workspace-experience.
 
 for (const theme of ['light', 'dark']) {
   test(`fast ${theme} entry reveals the current page without a loading interstitial`, async ({page}) => {
-    await page.clock.install();
-    await page.clock.pauseAt(new Date());
+    const startupClock = new Date('2026-10-12T00:00:00.000Z');
+    await page.clock.install({time: startupClock});
+    // Pause at a fixed future boundary before navigation. Sampling host time
+    // here can be behind the browser clock and fail under a slow cloud runtime.
+    await page.clock.pauseAt(new Date(startupClock.getTime() + 60_000));
     await page.addInitScript(value => localStorage.setItem('ipo-one-theme', value), theme);
     const release = await holdRequest(page, '**/workspace-experience.js');
     try {

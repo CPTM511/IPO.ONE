@@ -736,3 +736,49 @@ test("unexpected errors are redacted", () => {
   assert.equal(problem.detail.includes("secret"), false);
   assert.equal(problem.detail.includes("/private"), false);
 });
+
+test("existing workspace protocol carries closed scoped history requests and discovery-only pages", () => {
+  const base = fixtures.validRequests.find(item => item.operationId === "pilotReadWorkspaceResume") ??
+    { operationId: "pilotReadWorkspaceResume", requestId: "history-contract-request", correlationId: "history-contract-correlation", payload: {}, schemaVersion: "tenant_protocol_request.v1" };
+  const request = { ...base, payload: { obligationHistory: { subjectId: "subject_history_contract", limit: 25,
+    state: "fully_repaid", createdFrom: "2026-08-01T00:00:00.000Z", createdBefore: "2026-09-01T00:00:00.000Z" } } };
+  assert.equal(isTenantProtocolRequest(request), true);
+  for (const createdFrom of ["2026-08-01T00:00:00Z", "2026-08-01T01:00:00.000456+01:00"]) {
+    assert.equal(isTenantProtocolRequest({ ...request, payload: { obligationHistory: { ...request.payload.obligationHistory, createdFrom } } }), true);
+  }
+  assert.equal(isTenantProtocolRequest({ ...request, payload: { obligationHistory: {
+    ...request.payload.obligationHistory, createdFrom: "2026-08-01T00:00:00.0000001Z"
+  } } }), false);
+  for (const extra of [{ actorId: "another_actor" }, { limit: 51 }, { state: "unknown" }]) {
+    assert.equal(isTenantProtocolRequest({ ...request, payload: { obligationHistory: { ...request.payload.obligationHistory, ...extra } } }), false);
+  }
+  const result = { operationId: "pilotReadWorkspaceResume", replayed: false, schemaVersion: "tenant_protocol_result.v1",
+    response: { workspaceKind: "human_borrower", resources: [], hasMore: false, serverTruth: true,
+      schemaVersion: "tenant_workspace_resume_view.v2", obligationHistory: { subjectId: "subject_history_contract",
+        items: [{ obligationId: "obligation_history_contract", state: "fully_repaid", createdAt: "2026-08-23T00:00:00.000456Z" }],
+        hasMore: false, nextCursor: null, asOf: "2026-10-12T00:00:00.000Z", nonAuthorizing: true,
+        schemaVersion: "owned_obligation_history_page.v1" } } };
+  assert.equal(isTenantProtocolResult(result), true);
+  result.response.obligationHistory.metrics = { totalLossMinor: "0" };
+  assert.equal(isTenantProtocolResult(result), false);
+});
+
+test("Credit State protocol accepts complete histories beyond 512 records", () => {
+  const result = structuredClone(fixtures.validResults.find(item => item.operationId === "pilotReadOwnCreditState"));
+  assert.ok(result);
+  const p = result.response.creditState;
+  p.projectionVersion = 513;
+  p.metrics.completedCycleCount = 513;
+  p.trackRecord = Array.from({ length: 513 }, (_, i) => ({ ...p.trackRecord[0], creditOutcomeId: `credit_outcome_contract_${i}` }));
+  result.response.lastRefreshAttemptAt = result.response.asOf;
+  assert.equal(isTenantProtocolResult(result), true);
+  assert.equal(p.trackRecord.length, 513);
+});
+
+test("worker freshness metadata can be requested without caller identity or scope fields", () => {
+  const base = fixtures.validRequests.find(item => item.operationId === "pilotReadOwnCreditState");
+  assert.ok(base);
+  assert.equal(isTenantProtocolRequest({ ...base, payload: { includeRefreshMetadata: true } }), true);
+  assert.equal(isTenantProtocolRequest({ ...base, payload: { includeRefreshMetadata: "true" } }), false);
+  assert.equal(isTenantProtocolRequest({ ...base, payload: { includeRefreshMetadata: true, actorId: "actor_other" } }), false);
+});
