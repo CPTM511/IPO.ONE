@@ -15,7 +15,7 @@ test("public tail assets retire stale workers and declare crawler boundaries", a
   assert.doesNotMatch(retirementWorker, /addEventListener\(["']fetch["']/);
   assert.equal(
     robots,
-    "User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /auth/\nDisallow: /tenant/\nDisallow: /v1/\n"
+    "User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /auth/\nDisallow: /tenant/\nDisallow: /v1/\nSitemap: https://ipo.one/sitemap.xml\n"
   );
 });
 
