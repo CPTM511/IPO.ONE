@@ -71,3 +71,16 @@ second workflow or a new transport boundary.
 Credential resolution, verified Authentication Context injection, and any
 named deployable Host remain outside this adapter and require separate
 composition and approval.
+
+## P0 inventory checkpoint — 2026-10-26
+
+The existing Host exposes 15 main Agent tools. Other existing MCP adapter
+families are separate and are not activated by this inventory. Exact operation,
+schema, authorization and idempotency bindings are recorded in
+[AGENT_MCP_INVENTORY.md](AGENT_MCP_INVENTORY.md), with generated drift checks.
+
+Official SDK 2.4.0 adoption was evaluated locally and deferred. The default
+stdio framing failed four of five predeclared compatibility admission tests,
+and bundled fast-uri security findings remain unresolved. The current transport,
+2025-06-18 behavior, Host context, Agent client, Gateway commit authorization
+and economic kernel remain unchanged. No modern era or deployment is admitted.

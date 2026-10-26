@@ -17,7 +17,17 @@ The closed tool list is:
 - `ipo_one_accept_credit_offer`;
 - `ipo_one_execute_sandbox_obligation`;
 - `ipo_one_post_sandbox_repayment`;
-- `ipo_one_read_credit_registry_evidence`.
+- `ipo_one_read_credit_registry_evidence`;
+- `ipo_one_read_credit_state`;
+- `ipo_one_file_pilot_case`;
+- `ipo_one_list_pilot_cases`.
+
+These are the 15 main Agent tools. The complete existing families and exact
+schema/operation/authorization bindings are documented separately in
+[AGENT_MCP_INVENTORY.md](../../docs/architecture/AGENT_MCP_INVENTORY.md).
+The P0 SDK 2.4.0 experiment is deferred: its framing failed the existing
+per-line size and error/recovery contract, and its bundled URI dependency has
+unresolved advisories. The existing stdio implementation remains unchanged.
 
 The four credit-application tools retain their deterministic Offer workflow.
 The two IDENTITY-001 tools let the exact authenticated Agent submit a one-use
@@ -105,7 +115,7 @@ const receipt = await runAgentCreditOfferWorkflow({
 The same canonical implementation is exported for Agent integrations through
 `IpoOneAgentMcpClient` in `@ipo-one/sdk`. The MCP App wrapper preserves the
 existing Host API but no longer maintains a second workflow implementation;
-SDK and App conformance tests pin the same twelve tool/operation pairs while the
+SDK and App conformance tests pin the same fifteen tool/operation pairs while the
 Offer receipt continues to pin its four-step economic workflow.
 
 The helper derives `authorityId` from the handoff, uses stable retry IDs,
@@ -131,7 +141,7 @@ The command:
 
 - strictly parses at most 32 KiB and rejects duplicate or unknown fields;
 - requires a ready, non-authorizing, credential-free, local-stdio manifest;
-- checks the exact twelve tool/operation pairs against the MCP registry;
+- checks the exact fifteen tool/operation pairs against the MCP registry;
 - emits fresh request/correlation/JSON-RPC IDs and a first
   `ipo_one_read_self` call; and
 - does not echo hashes, capabilities, limits, credentials, or validator

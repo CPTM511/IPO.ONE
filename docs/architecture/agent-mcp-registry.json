@@ -1,0 +1,4033 @@
+[
+  {
+    "family": "agent",
+    "exposure": "existing_local_stdio_host",
+    "tools": [
+      {
+        "name": "ipo_one_read_self",
+        "operationId": "pilotReadAgentSelf",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/agent-mcp-adapter.js#ipo_one_read_self",
+          "sha256": "2d3a5e41cdd3c0bf94b563ad5b1fd6487d197255a6b4c8e3b602d1adeaf7a52d"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/77",
+          "sha256": "7fc0ecf3ffbde31bbfa8a6b06a030520e32d186614927484ae15c9ba12ec4895"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/95",
+          "sha256": "a67ee02046dd4186147932729f2a74db7454c1bc498940f882a5f4dee588cad0"
+        },
+        "operation": {
+          "operationId": "pilotReadAgentSelf",
+          "kind": "query",
+          "actorTypes": [
+            "agent"
+          ],
+          "resourceType": "subject",
+          "requiredCapability": "subject.read.self",
+          "idempotency": "prohibited",
+          "quotaClass": "read",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_agent_subject_view.v2",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "pilotReadAgentSelf",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "subject.read.self",
+          "resourceType": "subject",
+          "allowedActorTypes": [
+            "agent"
+          ],
+          "requiredCapability": "subject.read.self",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "optional",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_request_credit",
+        "operationId": "pilotRequestCredit",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/agent-mcp-adapter.js#ipo_one_request_credit",
+          "sha256": "0705f91cb080e3a5f3a3aa57b8031e240776670112b2e4f4210e81112c2eb32d"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/75",
+          "sha256": "374de7bde33463ddcb4da0e418893d14186f445c37bb07a71aed9e522e72ba70"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/73",
+          "sha256": "7f3bc87b96e8a0b00b65a2a9d69511e92ee58e8f58dcd25b3cc8887f78ba4b00"
+        },
+        "operation": {
+          "operationId": "pilotRequestCredit",
+          "kind": "command",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "subject",
+          "requiredCapability": "credit.request",
+          "idempotency": "required",
+          "quotaClass": "economic",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_credit_intent_created.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "pilotRequestCredit",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "credit.request",
+          "resourceType": "subject",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "credit.request",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "credit_authority",
+            "risk",
+            "cap",
+            "freeze"
+          ],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_read_credit_application",
+        "operationId": "pilotReadCreditApplication",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/agent-mcp-adapter.js#ipo_one_read_credit_application",
+          "sha256": "7f347922a4d089995de48593c1a0b0e634cc95a7f99aa8cf7a79561c02d70bc0"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/78",
+          "sha256": "0f42ae134aa8e7b276f8b34c75789a341ad455fb25111911cd27344d17cf950e"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/74",
+          "sha256": "89c3ff81f7109acc3c5f18d6f0a72963407152c370deaba04d31a2543634e6d6"
+        },
+        "operation": {
+          "operationId": "pilotReadCreditApplication",
+          "kind": "query",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "credit_intent",
+          "requiredCapability": "credit.read.self",
+          "idempotency": "prohibited",
+          "quotaClass": "read",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_credit_application_view.v2",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "pilotReadCreditApplication",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "credit.read.self",
+          "resourceType": "credit_intent",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "credit.read.self",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "optional",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_evaluate_credit_application",
+        "operationId": "pilotEvaluateCreditApplication",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/agent-mcp-adapter.js#ipo_one_evaluate_credit_application",
+          "sha256": "686861ccd505c461ab55099964e46beb49aacfcbbc16506fc8c1dabd056edcc2"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/72",
+          "sha256": "6e429a7dda93815d90aba00c7ec9a2264955eb8a09b5cb328ebda40d1221a32a"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/71",
+          "sha256": "8839ef293c8828646daf7588e3f0b17eff975a252c47c0ad8a299c1226980786"
+        },
+        "operation": {
+          "operationId": "pilotEvaluateCreditApplication",
+          "kind": "command",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "credit_intent",
+          "requiredCapability": "credit.evaluate.self",
+          "idempotency": "required",
+          "quotaClass": "economic",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_credit_application_evaluated.v2",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "pilotEvaluateCreditApplication",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "credit.evaluate.self",
+          "resourceType": "credit_intent",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "credit.evaluate.self",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "credit_intent_state"
+          ],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_submit_account_proof",
+        "operationId": "pilotSubmitAgentAccountProof",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/agent-mcp-adapter.js#ipo_one_submit_account_proof",
+          "sha256": "623eefd068c2680efff246999885099f71bc307cd0cc0772f77abb3be100869c"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/112",
+          "sha256": "938c9ae20d8f783e850f030a1574ca68d5e8b4756aed0b8bde822b93c7d758d5"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/117",
+          "sha256": "2c3c7be0d19f314e06edf87910d92da198777bfb85cfb966845757384f65cdd4"
+        },
+        "operation": {
+          "operationId": "pilotSubmitAgentAccountProof",
+          "kind": "command",
+          "actorTypes": [
+            "agent"
+          ],
+          "resourceType": "subject",
+          "requiredCapability": "agent_account.proof.submit.self",
+          "idempotency": "required",
+          "quotaClass": "credential",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_agent_account_proof_verified.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "pilotSubmitAgentAccountProof",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "agent_account.proof.submit.self",
+          "resourceType": "subject",
+          "allowedActorTypes": [
+            "agent"
+          ],
+          "requiredCapability": "agent_account.proof.submit.self",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_read_account_binding",
+        "operationId": "pilotReadAgentAccountBinding",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/agent-mcp-adapter.js#ipo_one_read_account_binding",
+          "sha256": "2d3a5e41cdd3c0bf94b563ad5b1fd6487d197255a6b4c8e3b602d1adeaf7a52d"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/76",
+          "sha256": "02e6c101582f5ed4e657157f0b42f608d4914f4766574f6789ac81cffbc705f7"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/96",
+          "sha256": "3b466bfd286a7e7f2a5448043c56f904734b97a2389724534f9299c51bd8e0d7"
+        },
+        "operation": {
+          "operationId": "pilotReadAgentAccountBinding",
+          "kind": "query",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "subject",
+          "requiredCapability": "agent_account.binding.read.self",
+          "idempotency": "prohibited",
+          "quotaClass": "read",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_agent_account_binding_view.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "pilotReadAgentAccountBinding",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "agent_account.binding.read.self",
+          "resourceType": "subject",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "agent_account.binding.read.self",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "optional",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_read_obligation",
+        "operationId": "pilotReadOwnObligation",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/agent-mcp-adapter.js#ipo_one_read_obligation",
+          "sha256": "5b56c70e895a6da90ca686cedadf914e41f59ae386e428d492729666e2ac3423"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/106",
+          "sha256": "b9865e5893a6d69f4597b2484b0ef4d581a8d604968dbd8fa05920541cb55ad0"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/113",
+          "sha256": "2311f54c1237c69919e12476b50555d516f288a01abdc715472128ebef375b83"
+        },
+        "operation": {
+          "operationId": "pilotReadOwnObligation",
+          "kind": "query",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "obligation",
+          "requiredCapability": "obligation.read.owned",
+          "idempotency": "prohibited",
+          "quotaClass": "read",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_owned_obligation_view.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "pilotReadOwnObligation",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "obligation.read.owned",
+          "resourceType": "obligation",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "obligation.read.owned",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "optional",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_read_obligation_evidence",
+        "operationId": "pilotReadOwnObligationEvidence",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/agent-mcp-adapter.js#ipo_one_read_obligation_evidence",
+          "sha256": "fbb38913224d13699a165676ad2d11472365b180a23c51b2cdac795500f4fb2d"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/109",
+          "sha256": "387f384ba19ac05aa0486951a0279d3a431fb39fed250d0e5ab6fbf84e54b81d"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/115",
+          "sha256": "81ab440abf4bf2169dc4a5fbca16b6a72b8780a8d3cbaf560c0c76b2dd685c59"
+        },
+        "operation": {
+          "operationId": "pilotReadOwnObligationEvidence",
+          "kind": "query",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "evidence",
+          "requiredCapability": "evidence.read.owned",
+          "idempotency": "prohibited",
+          "quotaClass": "read",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_owned_obligation_evidence_view.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "pilotReadOwnObligationEvidence",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "evidence.read.owned",
+          "resourceType": "evidence",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "evidence.read.owned",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "optional",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_accept_credit_offer",
+        "operationId": "pilotAcceptCreditOffer",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/agent-mcp-adapter.js#ipo_one_accept_credit_offer",
+          "sha256": "61d6cf3092ca8eb2f5b626de835db9675043e609e45f08120827bb54537bb3fc"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/59",
+          "sha256": "d985e623592c4103f24b22d74e1e391a0b988d0fc904fe1b99d0994ded353713"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/62",
+          "sha256": "e8d6a81727162f04f41c87f8ed23d98edd262cd5bc9c3d95bf7a542391530f8c"
+        },
+        "operation": {
+          "operationId": "pilotAcceptCreditOffer",
+          "kind": "command",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "credit_offer",
+          "requiredCapability": "credit.offer.accept.self",
+          "idempotency": "required",
+          "quotaClass": "economic",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_credit_offer_accepted.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "pilotAcceptCreditOffer",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "credit.offer.accept.self",
+          "resourceType": "credit_offer",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "credit.offer.accept.self",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "credit_offer_state"
+          ],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_execute_sandbox_obligation",
+        "operationId": "pilotExecuteSandboxObligation",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/agent-mcp-adapter.js#ipo_one_execute_sandbox_obligation",
+          "sha256": "bf524ca3c550011aab490d4400d8972a07cb1b15b4b2c14e3cfd8ca31cb902d1"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/60",
+          "sha256": "f926530a43c9e566964a79d339817eece4517df75d1a2f4cc3280d6229e49dce"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/63",
+          "sha256": "98494a76c8c67992fb326eb621d3d1cd5d0398a82008bd3f656844d243030401"
+        },
+        "operation": {
+          "operationId": "pilotExecuteSandboxObligation",
+          "kind": "command",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "obligation",
+          "requiredCapability": "credit.execute.sandbox.self",
+          "idempotency": "required",
+          "quotaClass": "economic",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_sandbox_obligation_executed.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "pilotExecuteSandboxObligation",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "credit.execute.sandbox.self",
+          "resourceType": "obligation",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "credit.execute.sandbox.self",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "obligation_execution_state"
+          ],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_post_sandbox_repayment",
+        "operationId": "pilotPostSandboxRepayment",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/agent-mcp-adapter.js#ipo_one_post_sandbox_repayment",
+          "sha256": "cc5d108ce25be4c2c29ee00528c7ff184caba1ed2bb90b05db84c62652e14bc0"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/61",
+          "sha256": "5930d5068896c8a6b82034e1690f08a9f9148fe7e0f9807b49a2177135df0d01"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/64",
+          "sha256": "7fa47c604192b5e4253f5c871a1e707193bf82f4bbfc6d1cabaa3dca7330a261"
+        },
+        "operation": {
+          "operationId": "pilotPostSandboxRepayment",
+          "kind": "command",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "obligation",
+          "requiredCapability": "repayment.post.sandbox.self",
+          "idempotency": "required",
+          "quotaClass": "economic",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_sandbox_repayment_posted.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "pilotPostSandboxRepayment",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "repayment.post.sandbox.self",
+          "resourceType": "obligation",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "repayment.post.sandbox.self",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "obligation_repayment_state"
+          ],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_read_credit_registry_evidence",
+        "operationId": "pilotReadCreditRegistryEvidence",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/agent-mcp-adapter.js#ipo_one_read_credit_registry_evidence",
+          "sha256": "f9fe05eed369ec4acfd9626230b56cb10afcb2f9bb541c3b86a86f77f0f4deb8"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/108",
+          "sha256": "87302756c7b4c969e44f6246ce8bd4e6643bd09daf587525fcf37895458138d4"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/33",
+          "sha256": "e1b5513d97db072019c8acc00628a7b054c5f9d404542167852d56446eef2bea"
+        },
+        "operation": {
+          "operationId": "pilotReadCreditRegistryEvidence",
+          "kind": "query",
+          "actorTypes": [
+            "human",
+            "agent",
+            "risk_operator",
+            "operations_operator",
+            "auditor"
+          ],
+          "resourceType": "credit_registry_evidence",
+          "requiredCapability": "credit_registry.evidence.read.tenant",
+          "idempotency": "prohibited",
+          "quotaClass": "read",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_credit_registry_evidence_view.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "pilotReadCreditRegistryEvidence",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "credit_registry.evidence.read.tenant",
+          "resourceType": "credit_registry_evidence",
+          "allowedActorTypes": [
+            "human",
+            "agent",
+            "risk_operator",
+            "operations_operator",
+            "auditor"
+          ],
+          "requiredCapability": "credit_registry.evidence.read.tenant",
+          "ownershipRule": "tenant",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "prohibited",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [
+            "risk_operator",
+            "operations_operator",
+            "auditor"
+          ],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_read_credit_state",
+        "operationId": "pilotReadOwnCreditState",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/agent-mcp-adapter.js#ipo_one_read_credit_state",
+          "sha256": "2d3a5e41cdd3c0bf94b563ad5b1fd6487d197255a6b4c8e3b602d1adeaf7a52d"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/107",
+          "sha256": "dab029afcc4005ae5113a917dde6e42b2448096b359a7e1bbf8f10fca6f17244"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/114",
+          "sha256": "8fb7fef8e3d5e6d5e9d26b23c87a6e99cc3e9ef377a4551f26976476efcd8988"
+        },
+        "operation": {
+          "operationId": "pilotReadOwnCreditState",
+          "kind": "query",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "subject",
+          "requiredCapability": "credit_passport.read.self",
+          "idempotency": "prohibited",
+          "quotaClass": "read",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_owned_credit_state_view.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "pilotReadOwnCreditState",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "credit.read.self",
+          "resourceType": "subject",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "credit_passport.read.self",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "optional",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_file_pilot_case",
+        "operationId": "pilotFileCase",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/agent-mcp-adapter.js#ipo_one_file_pilot_case",
+          "sha256": "89501a90b21db00810e143cce95ada60bd5e06a02171b84c02bf923ce9d49a3d"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/118",
+          "sha256": "5f09c5ad9594cff2d400cf3f2600b08c571531226d17b8da508c2c3cf818827c"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/107",
+          "sha256": "bfaa2cef8c58623e56dbb472051afea59a7374b61753bf3a0f1a73c10679e384"
+        },
+        "operation": {
+          "operationId": "pilotFileCase",
+          "kind": "command",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "subject",
+          "requiredCapability": "pilot.case.file.self",
+          "idempotency": "required",
+          "quotaClass": "mutation",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_pilot_case_filed.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "pilotFileCase",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "pilot.case.file.self",
+          "resourceType": "subject",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "pilot.case.file.self",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_list_pilot_cases",
+        "operationId": "pilotListOwnCases",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/agent-mcp-adapter.js#ipo_one_list_pilot_cases",
+          "sha256": "2d3a5e41cdd3c0bf94b563ad5b1fd6487d197255a6b4c8e3b602d1adeaf7a52d"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/119",
+          "sha256": "1ef491939cbf6e85f5000e2fe22a40ad1eca4e73b783f80c63bcda87a6555107"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/108",
+          "sha256": "e817c615f129bc43179ff85914188a2d6a83ece6b00c92e758943800b9c28e01"
+        },
+        "operation": {
+          "operationId": "pilotListOwnCases",
+          "kind": "query",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "subject",
+          "requiredCapability": "pilot.case.read.self",
+          "idempotency": "prohibited",
+          "quotaClass": "read",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_pilot_case_list.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "pilotListOwnCases",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "pilot.case.read.self",
+          "resourceType": "subject",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "pilot.case.read.self",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "prohibited",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      }
+    ]
+  },
+  {
+    "family": "wallet-execution",
+    "exposure": "separate_adapter_not_mounted_by_main_host",
+    "tools": [
+      {
+        "name": "ipo_one_wallet_prepare_account_binding",
+        "operationId": "walletPrepareAccountBinding",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/wallet-execution-mcp-adapter.js#ipo_one_wallet_prepare_account_binding",
+          "sha256": "7d4be11618664e1609a50f95886ead32960579965c50b9392b2f7e4e0cd557f6"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/10",
+          "sha256": "2a7001c8e087c29701d0c1197d9cf040bb93a136a854c3620ac1a74e811849a2"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/10",
+          "sha256": "8988e2646ff5c9ab396aa1b7d17091faf36c46891b991f5277b1e3df4dec6355"
+        },
+        "operation": {
+          "operationId": "walletPrepareAccountBinding",
+          "kind": "command",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "subject",
+          "requiredCapability": "wallet.account_binding.prepare.owned",
+          "idempotency": "required",
+          "quotaClass": "credential",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_execution_account_binding_challenge_created.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "walletPrepareAccountBinding",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "wallet.account_binding.prepare.owned",
+          "resourceType": "subject",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "wallet.account_binding.prepare.owned",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "subject_state",
+            "chain_policy"
+          ],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_wallet_submit_account_binding",
+        "operationId": "walletSubmitAccountBinding",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/wallet-execution-mcp-adapter.js#ipo_one_wallet_submit_account_binding",
+          "sha256": "b2a916d58557dacbe81d3205275e887a51c3bc4a9e74720c21224f1289009b9a"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/11",
+          "sha256": "6f1b25a4cef870dc87d4a3a7be1592f661605efe3b6f378e880e218fbc0b27ff"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/11",
+          "sha256": "964336a834f6c57928655e93a8aefeb9555a632c3e1da27acf8d527dba82fa5d"
+        },
+        "operation": {
+          "operationId": "walletSubmitAccountBinding",
+          "kind": "command",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "subject",
+          "requiredCapability": "wallet.account_binding.submit.owned",
+          "idempotency": "required",
+          "quotaClass": "credential",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_execution_account_binding_verified.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "walletSubmitAccountBinding",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "wallet.account_binding.submit.owned",
+          "resourceType": "subject",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "wallet.account_binding.submit.owned",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "subject_state",
+            "chain_policy"
+          ],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_wallet_read_account_bindings",
+        "operationId": "walletReadAccountBindings",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/wallet-execution-mcp-adapter.js#ipo_one_wallet_read_account_bindings",
+          "sha256": "2c8d26433aea8a8ede4bf75344e8f2c20f39f1fbeab8491cc2813b2b3cbbb435"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/12",
+          "sha256": "b3c59f6f8970d02fa1fc68fccc2e452fd477d141e8519a9e0115e6a3eb4daa4c"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/12",
+          "sha256": "9f896f5cd3d580da51df9e6e78e6b9ea18d73ed083f059e1709331df2c1c53da"
+        },
+        "operation": {
+          "operationId": "walletReadAccountBindings",
+          "kind": "query",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "subject",
+          "requiredCapability": "wallet.account_binding.read.owned",
+          "idempotency": "prohibited",
+          "quotaClass": "read",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_execution_account_bindings_view.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "walletReadAccountBindings",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "wallet.account_binding.read.owned",
+          "resourceType": "subject",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "wallet.account_binding.read.owned",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "prohibited",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "subject_state"
+          ],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_wallet_revoke_account_binding",
+        "operationId": "walletRevokeAccountBinding",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/wallet-execution-mcp-adapter.js#ipo_one_wallet_revoke_account_binding",
+          "sha256": "84f7e0f84187358f0745d1fb3b1d47b6cb2c947e03f2e57eceef934b04741581"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/13",
+          "sha256": "e9505cf3887d01c86383791570739b3a3ce1f7400e45953a3d43dda8eb812921"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/13",
+          "sha256": "14a643c7644f6fbe277eb7f158aea7b9f1ecb8a7e6324544f61d555b56333546"
+        },
+        "operation": {
+          "operationId": "walletRevokeAccountBinding",
+          "kind": "command",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "subject",
+          "requiredCapability": "wallet.account_binding.revoke.owned",
+          "idempotency": "required",
+          "quotaClass": "credential",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_execution_account_binding_revoked.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "walletRevokeAccountBinding",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "wallet.account_binding.revoke.owned",
+          "resourceType": "subject",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "wallet.account_binding.revoke.owned",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "subject_state",
+            "account_binding"
+          ],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_wallet_discover_capabilities",
+        "operationId": "walletDiscoverCapabilities",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/wallet-execution-mcp-adapter.js#ipo_one_wallet_discover_capabilities",
+          "sha256": "3f26709af0a7b355520eae7b80278d788ad63ee2144901e17ac69009f21e273c"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/14",
+          "sha256": "368c7f3d097335977232dee0d052d1b767d61a4f8bca20f03da287ddd11fe79d"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/14",
+          "sha256": "36b867eb84441fbd752ad9af7c56f011ca0e1c7636f7db1121a218605dc8425d"
+        },
+        "operation": {
+          "operationId": "walletDiscoverCapabilities",
+          "kind": "query",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "wallet_adapter",
+          "requiredCapability": "wallet.capabilities.discover",
+          "idempotency": "prohibited",
+          "quotaClass": "read",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "wallet_capability_descriptor_list.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "walletDiscoverCapabilities",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "wallet.capabilities.discover",
+          "resourceType": "wallet_adapter",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "wallet.capabilities.discover",
+          "ownershipRule": "tenant",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "prohibited",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "adapter_state",
+            "chain_policy"
+          ],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_wallet_prepare_grant",
+        "operationId": "walletPrepareGrant",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/wallet-execution-mcp-adapter.js#ipo_one_wallet_prepare_grant",
+          "sha256": "79ed3a4817aff604315c7a30c1a004162248455389014cda9e754ce4d1e94a5e"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/15",
+          "sha256": "ee06a37ce32330b3e13d29d65e80b2ef6ba8a26fd3fd18aa0516b3ef66e4136a"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/15",
+          "sha256": "29ebf8eb925ed91df3bf370d764a83e7b6ba36f389dc1f2c0a39ce9775b60a62"
+        },
+        "operation": {
+          "operationId": "walletPrepareGrant",
+          "kind": "command",
+          "actorTypes": [
+            "human"
+          ],
+          "resourceType": "subject",
+          "requiredCapability": "wallet.grant.prepare.owned",
+          "idempotency": "required",
+          "quotaClass": "privileged",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_wallet_grant_prepared.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "walletPrepareGrant",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "wallet.grant.prepare.owned",
+          "resourceType": "subject",
+          "allowedActorTypes": [
+            "human"
+          ],
+          "requiredCapability": "wallet.grant.prepare.owned",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "subject_state",
+            "mandate",
+            "spend_policy",
+            "credit_line",
+            "obligation",
+            "account_binding",
+            "chain_policy"
+          ],
+          "requiresRecentMfaActorTypes": [
+            "human"
+          ],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_wallet_activate_grant",
+        "operationId": "walletActivateGrant",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/wallet-execution-mcp-adapter.js#ipo_one_wallet_activate_grant",
+          "sha256": "640d294b6e51e397a8757502ce400b31edbd1a9cccfc5e51f17ca9e30f29efab"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/16",
+          "sha256": "095b63ccabeba5605ee8f5854c21cfd035cfbf74a819116ddd21d4fa62276bb6"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/16",
+          "sha256": "28becb0ca7131b0c4ee4b33fd10bb27e07d57767757ba897f186359c8cf29936"
+        },
+        "operation": {
+          "operationId": "walletActivateGrant",
+          "kind": "command",
+          "actorTypes": [
+            "human"
+          ],
+          "resourceType": "delegated_wallet_grant",
+          "requiredCapability": "wallet.grant.activate.owned",
+          "idempotency": "required",
+          "quotaClass": "privileged",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_wallet_grant_activated.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "walletActivateGrant",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "wallet.grant.activate.owned",
+          "resourceType": "delegated_wallet_grant",
+          "allowedActorTypes": [
+            "human"
+          ],
+          "requiredCapability": "wallet.grant.activate.owned",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "grant_state",
+            "mandate",
+            "spend_policy",
+            "credit_line",
+            "obligation",
+            "account_binding",
+            "chain_policy",
+            "freeze"
+          ],
+          "requiresRecentMfaActorTypes": [
+            "human"
+          ],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_wallet_read_grant",
+        "operationId": "walletReadGrant",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/wallet-execution-mcp-adapter.js#ipo_one_wallet_read_grant",
+          "sha256": "7a39f6c7bd23808694308ba4d346654e89714e1e11bd9e97b25a22b9cbf8b4f6"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/17",
+          "sha256": "8bf28eef90ee297c21725722eb06d475bfe8f1c35e7497149d220cc9d4306c71"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/17",
+          "sha256": "6c6d15c46f7bfba3c416f0cbabc5f7b45d9e46b7e72c70e59243f1725c7f7bde"
+        },
+        "operation": {
+          "operationId": "walletReadGrant",
+          "kind": "query",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "delegated_wallet_grant",
+          "requiredCapability": "wallet.grant.read.owned",
+          "idempotency": "prohibited",
+          "quotaClass": "read",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_wallet_grant_view.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "walletReadGrant",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "wallet.grant.read.owned",
+          "resourceType": "delegated_wallet_grant",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "wallet.grant.read.owned",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "prohibited",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "grant_state"
+          ],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_wallet_revoke_grant",
+        "operationId": "walletRevokeGrant",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/wallet-execution-mcp-adapter.js#ipo_one_wallet_revoke_grant",
+          "sha256": "430d7d6daeef98177347ce4d949fe6919e5b22170262cdf545791805c55955ef"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/18",
+          "sha256": "955cee1d21d3d66d8c6ce43c1d9a24fc124eaa3e499920d18c3c08c9b721c025"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/18",
+          "sha256": "fb1448342bd834f2c4e8810ff47322d57baf09bb0a7bcf5444640e3580828c6d"
+        },
+        "operation": {
+          "operationId": "walletRevokeGrant",
+          "kind": "command",
+          "actorTypes": [
+            "human"
+          ],
+          "resourceType": "delegated_wallet_grant",
+          "requiredCapability": "wallet.grant.revoke.owned",
+          "idempotency": "required",
+          "quotaClass": "privileged",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_wallet_grant_revoked.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "walletRevokeGrant",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "wallet.grant.revoke.owned",
+          "resourceType": "delegated_wallet_grant",
+          "allowedActorTypes": [
+            "human"
+          ],
+          "requiredCapability": "wallet.grant.revoke.owned",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": true,
+            "allowedCodes": [
+              "credential_compromise",
+              "operator_request",
+              "security_incident"
+            ]
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "grant_state"
+          ],
+          "requiresRecentMfaActorTypes": [
+            "human"
+          ],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_wallet_prepare_execution",
+        "operationId": "walletPrepareExecution",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/wallet-execution-mcp-adapter.js#ipo_one_wallet_prepare_execution",
+          "sha256": "2d9b1780c57caf8b766b70aee39c8a06697289e31d62d332ffc78d340be42a2d"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/19",
+          "sha256": "2787990946a7a5bde1d0175ef40f585f21d3eb7f9480beb493eb668c5266263c"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/19",
+          "sha256": "797aef7898c10eb45e8be4868853d4b8519e93b0f49ef6c7e43d138cad5151a2"
+        },
+        "operation": {
+          "operationId": "walletPrepareExecution",
+          "kind": "command",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "delegated_wallet_grant",
+          "requiredCapability": "wallet.execution.prepare.owned",
+          "idempotency": "required",
+          "quotaClass": "economic",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_wallet_execution_prepared.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "walletPrepareExecution",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "wallet.execution.prepare.owned",
+          "resourceType": "delegated_wallet_grant",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "wallet.execution.prepare.owned",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "grant_state",
+            "mandate",
+            "spend_policy",
+            "credit_line",
+            "obligation",
+            "account_binding",
+            "adapter_state",
+            "chain_policy",
+            "freeze"
+          ],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_wallet_approve_execution",
+        "operationId": "walletApproveExecution",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/wallet-execution-mcp-adapter.js#ipo_one_wallet_approve_execution",
+          "sha256": "0ef6072775b48c0ccdcef6302a18a733ecfe53b5f989d485b277680aac2663dd"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/20",
+          "sha256": "cc8bf87a773e53563b776ed1f2020cd96a67387c408bb0edaf1139a3f846cda7"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/20",
+          "sha256": "0aa4518bba02dade799035214e116eb35ef323bdc4ca54b3c8f625189a3782dd"
+        },
+        "operation": {
+          "operationId": "walletApproveExecution",
+          "kind": "command",
+          "actorTypes": [
+            "human"
+          ],
+          "resourceType": "wallet_execution",
+          "requiredCapability": "wallet.execution.approve.owned",
+          "idempotency": "required",
+          "quotaClass": "privileged",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_wallet_execution_approved.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "walletApproveExecution",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "wallet.execution.approve.owned",
+          "resourceType": "wallet_execution",
+          "allowedActorTypes": [
+            "human"
+          ],
+          "requiredCapability": "wallet.execution.approve.owned",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "execution_state",
+            "grant_state",
+            "freeze"
+          ],
+          "requiresRecentMfaActorTypes": [
+            "human"
+          ],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_wallet_submit_execution",
+        "operationId": "walletSubmitExecution",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/wallet-execution-mcp-adapter.js#ipo_one_wallet_submit_execution",
+          "sha256": "5078e5e56c92356caf88dc3c2d4d9aa660bca7bca0978880d9846c055e5318c6"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/21",
+          "sha256": "735b2d1d3303aa4d2334c05385f371ea4ae7a6af4068e8f34312e306285e37ad"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/21",
+          "sha256": "b2564a0a2744d28caa58b839df39c50cc7a896d1436c7fa7ce30edc77e9d9385"
+        },
+        "operation": {
+          "operationId": "walletSubmitExecution",
+          "kind": "command",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "wallet_execution",
+          "requiredCapability": "wallet.execution.submit.owned",
+          "idempotency": "required",
+          "quotaClass": "economic",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_wallet_execution_submission_blocked.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "walletSubmitExecution",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "wallet.execution.submit.owned",
+          "resourceType": "wallet_execution",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "wallet.execution.submit.owned",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "execution_state",
+            "grant_state",
+            "mandate",
+            "spend_policy",
+            "credit_line",
+            "obligation",
+            "account_binding",
+            "adapter_state",
+            "chain_policy",
+            "freeze"
+          ],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_wallet_read_execution",
+        "operationId": "walletReadExecution",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/wallet-execution-mcp-adapter.js#ipo_one_wallet_read_execution",
+          "sha256": "40ea0bd1539a95cc3cd9ec1db192e8709d9f112a0542382058629896896cf4e6"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/22",
+          "sha256": "52745e3a4b401fa906a781a26e3cee949af11aac1560332a3d641d3162c1085b"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/22",
+          "sha256": "410f09651d27704878cebfc6ff08e258d3760f0a744e3188811b706440e33c7e"
+        },
+        "operation": {
+          "operationId": "walletReadExecution",
+          "kind": "query",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "wallet_execution",
+          "requiredCapability": "wallet.execution.read.owned",
+          "idempotency": "prohibited",
+          "quotaClass": "read",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_wallet_execution_view.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "walletReadExecution",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "wallet.execution.read.owned",
+          "resourceType": "wallet_execution",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "wallet.execution.read.owned",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "prohibited",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "execution_state"
+          ],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      }
+    ]
+  },
+  {
+    "family": "venue-execution",
+    "exposure": "separate_adapter_not_mounted_by_main_host",
+    "tools": [
+      {
+        "name": "ipo_one_venue_discover_capabilities",
+        "operationId": "venueDiscoverCapabilities",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/venue-execution-mcp-adapter.js#ipo_one_venue_discover_capabilities",
+          "sha256": "3f26709af0a7b355520eae7b80278d788ad63ee2144901e17ac69009f21e273c"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/23",
+          "sha256": "71ba02b3b143ab0409f310acb492be310563b9d65cd28d1865928db312d8afde"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/23",
+          "sha256": "ba0f776f8c9585f932f4be1c66d4ba82d36752a04cd2d88dafa60a672ba86816"
+        },
+        "operation": {
+          "operationId": "venueDiscoverCapabilities",
+          "kind": "query",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "venue_adapter",
+          "requiredCapability": "venue.capabilities.discover",
+          "idempotency": "prohibited",
+          "quotaClass": "read",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "venue_capability_descriptor_list.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "venueDiscoverCapabilities",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "venue.capabilities.discover",
+          "resourceType": "venue_adapter",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "venue.capabilities.discover",
+          "ownershipRule": "tenant",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "prohibited",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "adapter_state",
+            "venue_policy"
+          ],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_venue_read_binding",
+        "operationId": "venueReadBinding",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/venue-execution-mcp-adapter.js#ipo_one_venue_read_binding",
+          "sha256": "37c1410da20758744db1e68e2d0f3bb24fdf5376bd34089daabde63d36d068ff"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/24",
+          "sha256": "cb733d9ffc206b91912f880ff04f3d292b4aa71fb247a698f232582ff99ba027"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/24",
+          "sha256": "d292a8436bafb4661beeca6950cc0c1e962cfae93ddba335925864c8d7963efb"
+        },
+        "operation": {
+          "operationId": "venueReadBinding",
+          "kind": "query",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "venue_binding",
+          "requiredCapability": "venue.binding.read.owned",
+          "idempotency": "prohibited",
+          "quotaClass": "read",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_venue_binding_view.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "venueReadBinding",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "venue.binding.read.owned",
+          "resourceType": "venue_binding",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "venue.binding.read.owned",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "prohibited",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "binding_state"
+          ],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_venue_prepare_delegate",
+        "operationId": "venuePrepareDelegate",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/venue-execution-mcp-adapter.js#ipo_one_venue_prepare_delegate",
+          "sha256": "6a8c7fc237579aa92d589b4fc9318bab2a8121564395056a0ffd92d9b543387f"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/25",
+          "sha256": "6d53e80619b3827ae55055d867e64d731c2ce5e64392d09f79e5940dad7f3000"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/25",
+          "sha256": "1da9f68ae4f327c6adad92d7832c31ad21c44ec237429bda991d015ad835ca5e"
+        },
+        "operation": {
+          "operationId": "venuePrepareDelegate",
+          "kind": "command",
+          "actorTypes": [
+            "human"
+          ],
+          "resourceType": "venue_binding",
+          "requiredCapability": "venue.delegate.prepare.owned",
+          "idempotency": "required",
+          "quotaClass": "privileged",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_venue_delegate_prepared.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "venuePrepareDelegate",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "venue.delegate.prepare.owned",
+          "resourceType": "venue_binding",
+          "allowedActorTypes": [
+            "human"
+          ],
+          "requiredCapability": "venue.delegate.prepare.owned",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "binding_state",
+            "mandate",
+            "facility",
+            "venue_policy",
+            "freeze"
+          ],
+          "requiresRecentMfaActorTypes": [
+            "human"
+          ],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_venue_activate_delegate",
+        "operationId": "venueActivateDelegate",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/venue-execution-mcp-adapter.js#ipo_one_venue_activate_delegate",
+          "sha256": "5fff6624032f398f300387ca71769401aa7697881b0849f0be2060da5f0fee01"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/26",
+          "sha256": "4178d0f1d83afad1b77ab21262c9c514c850c0d789b9cfd7a277781d01107822"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/26",
+          "sha256": "ba6f8713fe6307dd729b9ee12b8adb1b96c9a9cc7efed00de9d92938d327b37b"
+        },
+        "operation": {
+          "operationId": "venueActivateDelegate",
+          "kind": "command",
+          "actorTypes": [
+            "human"
+          ],
+          "resourceType": "venue_delegate",
+          "requiredCapability": "venue.delegate.activate.owned",
+          "idempotency": "required",
+          "quotaClass": "privileged",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_venue_delegate_activation_blocked.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "venueActivateDelegate",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "venue.delegate.activate.owned",
+          "resourceType": "venue_delegate",
+          "allowedActorTypes": [
+            "human"
+          ],
+          "requiredCapability": "venue.delegate.activate.owned",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "delegate_state",
+            "binding_state",
+            "mandate",
+            "facility",
+            "venue_policy",
+            "freeze"
+          ],
+          "requiresRecentMfaActorTypes": [
+            "human"
+          ],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_venue_revoke_delegate",
+        "operationId": "venueRevokeDelegate",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/venue-execution-mcp-adapter.js#ipo_one_venue_revoke_delegate",
+          "sha256": "e68e23adfc606255f10b5d9cc07b11bceecf32f229348aeb2d90570a8afd84d4"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/27",
+          "sha256": "ec8684825a9ba5159e329915b700b47096819d963445d0f55ebe51630a59fdf2"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/27",
+          "sha256": "a3e5100216369cc7da5f672b0090e8dd8fb6622458078f414bf3e70c8e78f4bd"
+        },
+        "operation": {
+          "operationId": "venueRevokeDelegate",
+          "kind": "command",
+          "actorTypes": [
+            "human"
+          ],
+          "resourceType": "venue_delegate",
+          "requiredCapability": "venue.delegate.revoke.owned",
+          "idempotency": "required",
+          "quotaClass": "privileged",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_venue_delegate_revocation_blocked.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "venueRevokeDelegate",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "venue.delegate.revoke.owned",
+          "resourceType": "venue_delegate",
+          "allowedActorTypes": [
+            "human"
+          ],
+          "requiredCapability": "venue.delegate.revoke.owned",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": true,
+            "allowedCodes": [
+              "credential_compromise",
+              "operator_request",
+              "security_incident",
+              "scheduled_rotation",
+              "delegate_expired"
+            ]
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "delegate_state",
+            "binding_state",
+            "freeze"
+          ],
+          "requiresRecentMfaActorTypes": [
+            "human"
+          ],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_venue_prepare_execution",
+        "operationId": "venuePrepareExecution",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/venue-execution-mcp-adapter.js#ipo_one_venue_prepare_execution",
+          "sha256": "9101f65ed050016dfa6ed58ea78adcf45206bdad70f793329eb8c533368667c0"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/28",
+          "sha256": "c8ae9132e15e140876cf8a147f9331a8c2c12d389c6c8a193183a04ffadf3788"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/28",
+          "sha256": "d58322e26b59d0d2690d6181efd77b708575b46c147841f69afd330d1c24a459"
+        },
+        "operation": {
+          "operationId": "venuePrepareExecution",
+          "kind": "command",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "venue_delegate",
+          "requiredCapability": "venue.execution.prepare.owned",
+          "idempotency": "required",
+          "quotaClass": "economic",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_venue_execution_prepared.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "venuePrepareExecution",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "venue.execution.prepare.owned",
+          "resourceType": "venue_delegate",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "venue.execution.prepare.owned",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "delegate_state",
+            "binding_state",
+            "mandate",
+            "facility",
+            "order_intent",
+            "venue_policy",
+            "freeze"
+          ],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_venue_submit_execution",
+        "operationId": "venueSubmitExecution",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/venue-execution-mcp-adapter.js#ipo_one_venue_submit_execution",
+          "sha256": "5586be6cd1d26eb8e845d431676024a9bf19a1f090aa07ea6aefa181575afa0c"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/29",
+          "sha256": "1ad139b62c67c01c10fdec01241a8e9d3bade86f76fe39c9c887fac59c0b4af5"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/29",
+          "sha256": "b817edbb30cff4ea7c382976ced2c8e5f3adb293945b46505385c3047a1b7611"
+        },
+        "operation": {
+          "operationId": "venueSubmitExecution",
+          "kind": "command",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "venue_execution",
+          "requiredCapability": "venue.execution.submit.owned",
+          "idempotency": "required",
+          "quotaClass": "economic",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_venue_execution_submission_blocked.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "venueSubmitExecution",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "venue.execution.submit.owned",
+          "resourceType": "venue_execution",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "venue.execution.submit.owned",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "execution_state",
+            "delegate_state",
+            "binding_state",
+            "mandate",
+            "facility",
+            "order_intent",
+            "venue_policy",
+            "freeze"
+          ],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_venue_read_execution",
+        "operationId": "venueReadExecution",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/venue-execution-mcp-adapter.js#ipo_one_venue_read_execution",
+          "sha256": "40ea0bd1539a95cc3cd9ec1db192e8709d9f112a0542382058629896896cf4e6"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/30",
+          "sha256": "a3cc986e1026a1fc6467dec95566171106920d8213cc7e78e9f3b4995b1fa6aa"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/30",
+          "sha256": "407dd7a5bb5382dcc00a1c8ca361d597d5572090f92fd9b46e51b8603d21343d"
+        },
+        "operation": {
+          "operationId": "venueReadExecution",
+          "kind": "query",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "venue_execution",
+          "requiredCapability": "venue.execution.read.owned",
+          "idempotency": "prohibited",
+          "quotaClass": "read",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_venue_execution_view.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "venueReadExecution",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "venue.execution.read.owned",
+          "resourceType": "venue_execution",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "venue.execution.read.owned",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "prohibited",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "execution_state"
+          ],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      }
+    ]
+  },
+  {
+    "family": "trading-capital",
+    "exposure": "separate_adapter_not_mounted_by_main_host",
+    "tools": [
+      {
+        "name": "ipo_one_trading_create_account_binding_challenge",
+        "operationId": "tradingCreateAccountBindingChallenge",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_trading_create_account_binding_challenge",
+          "sha256": "c92ff570957774055f72af30e0c69cd5997450f6fac2b6e845f987268318a159"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/49",
+          "sha256": "cff599bee040fbc9d4956959b67730a80d1178619b05c79738433c828c5951c4"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/52",
+          "sha256": "9d70666e279551e451856e60d77749d4f5988ed8be7c15daebfc33ba461823d2"
+        },
+        "operation": {
+          "operationId": "tradingCreateAccountBindingChallenge",
+          "kind": "command",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "subject",
+          "requiredCapability": "trading.account_challenge.create.self",
+          "idempotency": "required",
+          "quotaClass": "mutation",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_trading_account_binding_challenge_created.v2",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "tradingCreateAccountBindingChallenge",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "trading.account_challenge.create.self",
+          "resourceType": "subject",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "trading.account_challenge.create.self",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_trading_import_hyperliquid_history",
+        "operationId": "tradingImportHyperliquidHistory",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_trading_import_hyperliquid_history",
+          "sha256": "a686ab4cf0629ebae8743650ff2441c467aeef4a239fa5b90cff34d1f3afa5d6"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/50",
+          "sha256": "6185466f3f84db5de0bcc5ad8b3e4fe06eafafed9bb6d9b4bc728b353ccac2fd"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/53",
+          "sha256": "a6081551f8e3c1982e7ff8c432e2a9a4503bd493f61a64563455177ea5bf485d"
+        },
+        "operation": {
+          "operationId": "tradingImportHyperliquidHistory",
+          "kind": "command",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "trading_credit_profile",
+          "requiredCapability": "trading.history_import.self",
+          "idempotency": "required",
+          "quotaClass": "mutation",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_trading_history_imported.v2",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "tradingImportHyperliquidHistory",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "trading.history_import.self",
+          "resourceType": "trading_credit_profile",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "trading.history_import.self",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_trading_finalize_evidence_snapshot",
+        "operationId": "tradingFinalizeEvidenceSnapshot",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_trading_finalize_evidence_snapshot",
+          "sha256": "f74c27cc1ceb08077eaae80f3bf5d5b22a674b3b3655803589b680677e8419f0"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/51",
+          "sha256": "1239479f5e854807c7c5dbcf69e6b7a92a489a8570260d2d30977ef72abd1f0f"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/54",
+          "sha256": "755b53ec2eaa1b23a2847af29e092b781240507791e696af4dc09c3669f7d6f4"
+        },
+        "operation": {
+          "operationId": "tradingFinalizeEvidenceSnapshot",
+          "kind": "command",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "trading_credit_profile",
+          "requiredCapability": "trading.evidence_finalize.self",
+          "idempotency": "required",
+          "quotaClass": "mutation",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_trading_evidence_snapshot_finalized.v2",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "tradingFinalizeEvidenceSnapshot",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "trading.evidence_finalize.self",
+          "resourceType": "trading_credit_profile",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "trading.evidence_finalize.self",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_trading_read_credit_profile",
+        "operationId": "tradingReadCreditProfile",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_trading_read_credit_profile",
+          "sha256": "33fedb1a89f6c56b4c5002c9a433281e881e55eca9aa574c5cd14d8e5f087e3b"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/52",
+          "sha256": "59ddb09ee5430f5a6e6c9ce4270fd51ce0d3739fe5ccdc7c5f1211e207f529d1"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/55",
+          "sha256": "b155dbfc2caf768c760b21160e94a3badc03329ea511053345b01e3be84f0e16"
+        },
+        "operation": {
+          "operationId": "tradingReadCreditProfile",
+          "kind": "query",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "trading_credit_profile",
+          "requiredCapability": "trading.credit_profile.read.self",
+          "idempotency": "prohibited",
+          "quotaClass": "read",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_trading_credit_profile_view.v2",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "tradingReadCreditProfile",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "trading.credit_profile.read.self",
+          "resourceType": "trading_credit_profile",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "trading.credit_profile.read.self",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "prohibited",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_trading_create_capital_request",
+        "operationId": "tradingCreateCapitalRequest",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_trading_create_capital_request",
+          "sha256": "0776f70db3446c735a406b906f72e23e8527fb2cda5aae0a3c55c97bd312b643"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/53",
+          "sha256": "33e04eea41305e6bcaf7387beee6b3903be6b37fcfd4917e200e35d9aa18af66"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/56",
+          "sha256": "c771adcc8c1f26aabb5a73765a9219a48b0a9372ed658d09a32949c600e77baf"
+        },
+        "operation": {
+          "operationId": "tradingCreateCapitalRequest",
+          "kind": "command",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "trading_credit_profile",
+          "requiredCapability": "trading.capital_request.create.self",
+          "idempotency": "required",
+          "quotaClass": "mutation",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_trading_capital_request_created.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "tradingCreateCapitalRequest",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "trading.capital_request.create.self",
+          "resourceType": "trading_credit_profile",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "trading.capital_request.create.self",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_trading_create_provider_mandate",
+        "operationId": "tradingCreateProviderMandate",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_trading_create_provider_mandate",
+          "sha256": "86d684023db742563e9ad319d8b48ccbee3c83678897ca58174e5ba4e42d3c16"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/54",
+          "sha256": "bf33840d85bf3cfc59aff688fbdbf268c6ce9984b3c7967b10b846c560f722bd"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/57",
+          "sha256": "5870515109bce786cb5bd38f93deb3e838f6375fcb98229ca5355a59596745be"
+        },
+        "operation": {
+          "operationId": "tradingCreateProviderMandate",
+          "kind": "command",
+          "actorTypes": [
+            "provider"
+          ],
+          "resourceType": "provider",
+          "requiredCapability": "trading.provider_mandate.create.owned",
+          "idempotency": "required",
+          "quotaClass": "mutation",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_trading_provider_mandate_created.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "tradingCreateProviderMandate",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "trading.provider_mandate.create.owned",
+          "resourceType": "provider",
+          "allowedActorTypes": [
+            "provider"
+          ],
+          "requiredCapability": "trading.provider_mandate.create.owned",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_trading_list_compatible_mandates",
+        "operationId": "tradingListCompatibleMandates",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_trading_list_compatible_mandates",
+          "sha256": "33fedb1a89f6c56b4c5002c9a433281e881e55eca9aa574c5cd14d8e5f087e3b"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/55",
+          "sha256": "a97d5a3b1b7bcba9d4aa030ff12002b39b233e6190071639b00de7f71d500aa2"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/58",
+          "sha256": "1ae851fc778215b8e60f4ba0279ad9667abdce0184b2d48ae9f826f3fed82104"
+        },
+        "operation": {
+          "operationId": "tradingListCompatibleMandates",
+          "kind": "query",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "trading_capital_request",
+          "requiredCapability": "trading.compatible_mandate.list.self",
+          "idempotency": "prohibited",
+          "quotaClass": "read",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "trading_compatible_mandate_list.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "tradingListCompatibleMandates",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "trading.compatible_mandate.list.self",
+          "resourceType": "trading_capital_request",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "trading.compatible_mandate.list.self",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "prohibited",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_trading_create_match_proposal",
+        "operationId": "tradingCreateMatchProposal",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_trading_create_match_proposal",
+          "sha256": "3f9aee624e218eb7ac8edca73909b7f60b75b04b559dae4f5c72de5294e57e83"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/56",
+          "sha256": "18151516c94239e29455382d5d5e2b5737baa75ed980196405db366742de3b31"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/59",
+          "sha256": "3889ea4d2ca760131010b6d879c7ae106c088de1c1995f02bf4d101f2cb3d40e"
+        },
+        "operation": {
+          "operationId": "tradingCreateMatchProposal",
+          "kind": "command",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "trading_capital_request",
+          "requiredCapability": "trading.match_proposal.create.self",
+          "idempotency": "required",
+          "quotaClass": "mutation",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_trading_match_proposal_created.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "tradingCreateMatchProposal",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "trading.match_proposal.create.self",
+          "resourceType": "trading_capital_request",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "trading.match_proposal.create.self",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_trading_accept_match_as_provider",
+        "operationId": "tradingAcceptMatchAsProvider",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_trading_accept_match_as_provider",
+          "sha256": "ec573410e1959bfd81f346e2ee50e2cf232f40356d4d3810d6caaeb3d2ffa2e8"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/57",
+          "sha256": "618bc6e37a8559ab2f263822ec6c4eae6546dbc0150d5816eefa915f894ac9a1"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/60",
+          "sha256": "b0e502b09eded8da160b33a17b54f0829d7cc4843d41fa5a34d623932eb1316e"
+        },
+        "operation": {
+          "operationId": "tradingAcceptMatchAsProvider",
+          "kind": "command",
+          "actorTypes": [
+            "provider"
+          ],
+          "resourceType": "trading_match_proposal",
+          "requiredCapability": "trading.match.accept.provider",
+          "idempotency": "required",
+          "quotaClass": "mutation",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_trading_match_provider_accepted.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "tradingAcceptMatchAsProvider",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "trading.match.accept.provider",
+          "resourceType": "trading_match_proposal",
+          "allowedActorTypes": [
+            "provider"
+          ],
+          "requiredCapability": "trading.match.accept.provider",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_trading_accept_match_as_subject",
+        "operationId": "tradingAcceptMatchAsSubject",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_trading_accept_match_as_subject",
+          "sha256": "ec573410e1959bfd81f346e2ee50e2cf232f40356d4d3810d6caaeb3d2ffa2e8"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/58",
+          "sha256": "2b72b20fd35630f9a0cc8c7da28f75894b1087fb2920c3c14345ef317d8e5a21"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/61",
+          "sha256": "893b3ddcf530bd588ef7b55ad66f24b43013985a88ae735726d9e4d38b41fc46"
+        },
+        "operation": {
+          "operationId": "tradingAcceptMatchAsSubject",
+          "kind": "command",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "trading_match_proposal",
+          "requiredCapability": "trading.match.accept.subject",
+          "idempotency": "required",
+          "quotaClass": "mutation",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_trading_match_subject_accepted.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "tradingAcceptMatchAsSubject",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "trading.match.accept.subject",
+          "resourceType": "trading_match_proposal",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "trading.match.accept.subject",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_trading_create_facility",
+        "operationId": "tradingCreateFacility",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_trading_create_facility",
+          "sha256": "606ad96f9a10d422628263ac8f3f410c3cc0711890ab1cd3003a34856564b416"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/39",
+          "sha256": "86fa8e28b11d4558008bcd5e1caae78f7a238aade5bfc5513e1a4490c71e4bb0"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/42",
+          "sha256": "77d84342b65bcf2ea2ac5fc8d8adc8d04f18f4c6cda211ac692e8a34761863d4"
+        },
+        "operation": {
+          "operationId": "tradingCreateFacility",
+          "kind": "command",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "trading_match_proposal",
+          "requiredCapability": "trading.facility.create.self",
+          "idempotency": "required",
+          "quotaClass": "mutation",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_trading_facility_created.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "tradingCreateFacility",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "trading.facility.create.self",
+          "resourceType": "trading_match_proposal",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "trading.facility.create.self",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_trading_contribute_subject_collateral",
+        "operationId": "tradingContributeSubjectCollateral",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_trading_contribute_subject_collateral",
+          "sha256": "25e1bc6ea0e82f153cd1cf760c3495d2ad2cb03f1a0527b0ba190b8135dcc65f"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/40",
+          "sha256": "c32e81f1da5b3818300f90f6f9de96d499f69351e78adbad7fc2a669746525c1"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/43",
+          "sha256": "622c437927ff271dd497a93fa7f022c318f6b9c6eda3a6e11f95c275c2ae750c"
+        },
+        "operation": {
+          "operationId": "tradingContributeSubjectCollateral",
+          "kind": "command",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "trading_facility",
+          "requiredCapability": "trading.facility.collateral.record.self",
+          "idempotency": "required",
+          "quotaClass": "mutation",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_trading_subject_collateral_recorded.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "tradingContributeSubjectCollateral",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "trading.facility.collateral.record.self",
+          "resourceType": "trading_facility",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "trading.facility.collateral.record.self",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_trading_record_provider_funding",
+        "operationId": "tradingRecordProviderFunding",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_trading_record_provider_funding",
+          "sha256": "25e1bc6ea0e82f153cd1cf760c3495d2ad2cb03f1a0527b0ba190b8135dcc65f"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/41",
+          "sha256": "5566398340bed3394ee1f71425b47f90b9e2f6ef5ad7ba988cb2e2b137006677"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/44",
+          "sha256": "04559447564acc509a5306ddc6fcafae84ce2c5018a27536ab579e2b1dd10bad"
+        },
+        "operation": {
+          "operationId": "tradingRecordProviderFunding",
+          "kind": "command",
+          "actorTypes": [
+            "provider"
+          ],
+          "resourceType": "trading_facility",
+          "requiredCapability": "trading.facility.funding.record.provider",
+          "idempotency": "required",
+          "quotaClass": "mutation",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_trading_provider_funding_recorded.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "tradingRecordProviderFunding",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "trading.facility.funding.record.provider",
+          "resourceType": "trading_facility",
+          "allowedActorTypes": [
+            "provider"
+          ],
+          "requiredCapability": "trading.facility.funding.record.provider",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_trading_activate_facility",
+        "operationId": "tradingActivateFacility",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_trading_activate_facility",
+          "sha256": "51475c1743043409319040fc0bdc71dad9e6b4cbe295a5639a70c5e715d69628"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/42",
+          "sha256": "743e9b5fc8bb83c68f7cb404d53721f3aefb638a2c806d861d552977c0530918"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/45",
+          "sha256": "b4b23f3c27fc738754d20971d7714a7a4e9be5e9780b9c19b264bfd91e2c96a1"
+        },
+        "operation": {
+          "operationId": "tradingActivateFacility",
+          "kind": "command",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "trading_facility",
+          "requiredCapability": "trading.facility.activate.self",
+          "idempotency": "required",
+          "quotaClass": "mutation",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_trading_facility_activated.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "tradingActivateFacility",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "trading.facility.activate.self",
+          "resourceType": "trading_facility",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "trading.facility.activate.self",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_trading_submit_order_intent",
+        "operationId": "tradingSubmitOrderIntent",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_trading_submit_order_intent",
+          "sha256": "35dbd5faaa84b487d8c3304d84c836b3707cec728ee2a18b2dd4068859e59f0a"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/43",
+          "sha256": "feb1e685d1edbc08e59cb29e8acda829808d043e59f4c89efc665fc005525923"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/46",
+          "sha256": "7a90f3742691d806066850644b6ec67ab986092ec296f7d81c970a930437d50a"
+        },
+        "operation": {
+          "operationId": "tradingSubmitOrderIntent",
+          "kind": "command",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "trading_facility",
+          "requiredCapability": "trading.order_intent.submit.self",
+          "idempotency": "required",
+          "quotaClass": "mutation",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_trading_order_intent_submitted.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "tradingSubmitOrderIntent",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "trading.order_intent.submit.self",
+          "resourceType": "trading_facility",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "trading.order_intent.submit.self",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_trading_cancel_order_intent",
+        "operationId": "tradingCancelOrderIntent",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_trading_cancel_order_intent",
+          "sha256": "b5e1e103a97e682fec51212407a0cb8b3f3df7265cbd0eb521cd95f1a4b8b0a0"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/44",
+          "sha256": "3e3b86487f2a49b38fac6e312c2c8b5ba6dbfc8022fbdfd348c86d3b90dbdc05"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/47",
+          "sha256": "fa148870962c6d8ee2d912b73d56b6fb4f11051b918657d68c48b642fb2f2cfb"
+        },
+        "operation": {
+          "operationId": "tradingCancelOrderIntent",
+          "kind": "command",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "trading_order_intent",
+          "requiredCapability": "trading.order_intent.cancel.self",
+          "idempotency": "required",
+          "quotaClass": "mutation",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_trading_order_intent_canceled.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "tradingCancelOrderIntent",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "trading.order_intent.cancel.self",
+          "resourceType": "trading_order_intent",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "trading.order_intent.cancel.self",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_trading_read_facility_state",
+        "operationId": "tradingReadFacilityState",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_trading_read_facility_state",
+          "sha256": "33fedb1a89f6c56b4c5002c9a433281e881e55eca9aa574c5cd14d8e5f087e3b"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/45",
+          "sha256": "a76748bc4af8669c3ab0b333ce6383b813f08dbc904ee8bda38235c11f4be3e3"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/48",
+          "sha256": "90dbd6cc085a1035889dd8c64ecb2fcb5ee6eb3c6304eec7c68bca9dfc5a68d6"
+        },
+        "operation": {
+          "operationId": "tradingReadFacilityState",
+          "kind": "query",
+          "actorTypes": [
+            "human",
+            "agent",
+            "provider"
+          ],
+          "resourceType": "trading_facility",
+          "requiredCapability": "trading.facility.read.bound",
+          "idempotency": "prohibited",
+          "quotaClass": "read",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "trading_facility_state.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "tradingReadFacilityState",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "trading.facility.read.bound",
+          "resourceType": "trading_facility",
+          "allowedActorTypes": [
+            "human",
+            "agent",
+            "provider"
+          ],
+          "requiredCapability": "trading.facility.read.bound",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "prohibited",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_trading_evaluate_risk",
+        "operationId": "tradingEvaluateRisk",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_trading_evaluate_risk",
+          "sha256": "51475c1743043409319040fc0bdc71dad9e6b4cbe295a5639a70c5e715d69628"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/46",
+          "sha256": "76ef4ec4209616a644b9390bc43e631520489c4a723d5ab7af1b6b2d3732bbc5"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/49",
+          "sha256": "9109cc7a78c9d5c89f92fba7ea65d0d64451c606d3e8564a5b1cf437558cad6a"
+        },
+        "operation": {
+          "operationId": "tradingEvaluateRisk",
+          "kind": "command",
+          "actorTypes": [
+            "risk_operator",
+            "operations_operator"
+          ],
+          "resourceType": "trading_facility",
+          "requiredCapability": "trading.facility.risk.evaluate.tenant",
+          "idempotency": "required",
+          "quotaClass": "privileged",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_trading_facility_risk_evaluated.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "tradingEvaluateRisk",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "trading.facility.risk.evaluate.tenant",
+          "resourceType": "trading_facility",
+          "allowedActorTypes": [
+            "risk_operator",
+            "operations_operator"
+          ],
+          "requiredCapability": "trading.facility.risk.evaluate.tenant",
+          "ownershipRule": "tenant",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "risk",
+            "reconciliation"
+          ],
+          "requiresRecentMfaActorTypes": [
+            "risk_operator",
+            "operations_operator"
+          ],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_trading_pause_new_risk",
+        "operationId": "tradingPauseNewRisk",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_trading_pause_new_risk",
+          "sha256": "836d88725a1b0032b8f70c29ab8a72602c19989580896db4eff02449620834bb"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/47",
+          "sha256": "ce7b9865b948d5f80f442eef9de33242b0ec5e600d5b4e5c338057306c52edfe"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/50",
+          "sha256": "96f76a7ca46e1eb6369ffed19e845c5d503286a23c23f2f20f5d874caf60844d"
+        },
+        "operation": {
+          "operationId": "tradingPauseNewRisk",
+          "kind": "command",
+          "actorTypes": [
+            "risk_operator",
+            "operations_operator"
+          ],
+          "resourceType": "trading_facility",
+          "requiredCapability": "trading.facility.pause.tenant",
+          "idempotency": "required",
+          "quotaClass": "privileged",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_trading_facility_new_risk_paused.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "tradingPauseNewRisk",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "trading.facility.pause.tenant",
+          "resourceType": "trading_facility",
+          "allowedActorTypes": [
+            "risk_operator",
+            "operations_operator"
+          ],
+          "requiredCapability": "trading.facility.pause.tenant",
+          "ownershipRule": "tenant",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": true,
+            "allowedCodes": [
+              "credential_compromise",
+              "operator_request",
+              "provider_failure",
+              "reconciliation_failure",
+              "risk_limit_breach",
+              "security_incident",
+              "stop_loss_triggered"
+            ]
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "protective_single_actor",
+          "liveChecks": [
+            "risk",
+            "reconciliation"
+          ],
+          "requiresRecentMfaActorTypes": [
+            "risk_operator",
+            "operations_operator"
+          ],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_trading_flatten_facility",
+        "operationId": "tradingFlattenFacility",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_trading_flatten_facility",
+          "sha256": "836d88725a1b0032b8f70c29ab8a72602c19989580896db4eff02449620834bb"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/48",
+          "sha256": "399c766af3fde81abc117ca1bb1efa7781d4cd3ed5dcfaa0417e2141648d61ee"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/51",
+          "sha256": "b3511c3f1dcd50d3e991d292ee540c8432c4da29be787f73ea3cc68dd50d3c81"
+        },
+        "operation": {
+          "operationId": "tradingFlattenFacility",
+          "kind": "command",
+          "actorTypes": [
+            "risk_operator",
+            "operations_operator"
+          ],
+          "resourceType": "trading_facility",
+          "requiredCapability": "trading.facility.flatten.tenant",
+          "idempotency": "required",
+          "quotaClass": "privileged",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_trading_facility_flattened.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "tradingFlattenFacility",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "trading.facility.flatten.tenant",
+          "resourceType": "trading_facility",
+          "allowedActorTypes": [
+            "risk_operator",
+            "operations_operator"
+          ],
+          "requiredCapability": "trading.facility.flatten.tenant",
+          "ownershipRule": "tenant",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": true,
+            "allowedCodes": [
+              "credential_compromise",
+              "operator_request",
+              "provider_failure",
+              "reconciliation_failure",
+              "risk_limit_breach",
+              "security_incident",
+              "stop_loss_triggered"
+            ]
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "protective_single_actor",
+          "liveChecks": [
+            "risk",
+            "reconciliation"
+          ],
+          "requiresRecentMfaActorTypes": [
+            "risk_operator",
+            "operations_operator"
+          ],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_trading_request_close",
+        "operationId": "tradingRequestClose",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_trading_request_close",
+          "sha256": "51475c1743043409319040fc0bdc71dad9e6b4cbe295a5639a70c5e715d69628"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/31",
+          "sha256": "400fa15c84a1904c8149fed5336415be8708f0b8af1aef6187c823c4fa246047"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/34",
+          "sha256": "d25fa7b0ea950b6e8a96a3b6139444da903d08b83dce013b8bae716d087c063c"
+        },
+        "operation": {
+          "operationId": "tradingRequestClose",
+          "kind": "command",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "trading_facility",
+          "requiredCapability": "trading.facility.close_request.self",
+          "idempotency": "required",
+          "quotaClass": "mutation",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_trading_facility_close_requested.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "tradingRequestClose",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "trading.facility.close_request.self",
+          "resourceType": "trading_facility",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "trading.facility.close_request.self",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_trading_run_settlement",
+        "operationId": "tradingRunSettlement",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_trading_run_settlement",
+          "sha256": "d495048736ee817f87b8ce2053255368e8f908dbba84d25b3123735a3537bea3"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/32",
+          "sha256": "9387047b509602da29ec09e535932aff63596d06c59ac9eeffb952964a2af9e2"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/35",
+          "sha256": "8d87e4eef2045179e2340230268a94c1f9f9f243d42885b913527813cc7750d7"
+        },
+        "operation": {
+          "operationId": "tradingRunSettlement",
+          "kind": "command",
+          "actorTypes": [
+            "system_worker"
+          ],
+          "resourceType": "trading_facility_close_request",
+          "requiredCapability": "trading.settlement.run.worker",
+          "idempotency": "required",
+          "quotaClass": "worker",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_trading_settlement_finalized.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "tradingRunSettlement",
+          "surface": "tenant_worker",
+          "transport": {
+            "kind": "worker"
+          },
+          "action": "trading.settlement.run.worker",
+          "resourceType": "trading_facility_close_request",
+          "allowedActorTypes": [
+            "system_worker"
+          ],
+          "requiredCapability": "trading.settlement.run.worker",
+          "ownershipRule": "tenant",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "risk",
+            "reconciliation"
+          ],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_trading_read_settlement",
+        "operationId": "tradingReadSettlement",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_trading_read_settlement",
+          "sha256": "33fedb1a89f6c56b4c5002c9a433281e881e55eca9aa574c5cd14d8e5f087e3b"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/33",
+          "sha256": "507cb23692a4b1a8c593d0bf42e10ee630315b00e9a63e8bd17c390467a31d49"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/36",
+          "sha256": "3c5fcd3dc8051166b15872c80c67435ad0ac44816c99c6bc0d7fd40c7c46755b"
+        },
+        "operation": {
+          "operationId": "tradingReadSettlement",
+          "kind": "query",
+          "actorTypes": [
+            "human",
+            "agent",
+            "provider"
+          ],
+          "resourceType": "trading_settlement",
+          "requiredCapability": "trading.settlement.read.bound",
+          "idempotency": "prohibited",
+          "quotaClass": "read",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "trading_settlement_view.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "tradingReadSettlement",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "trading.settlement.read.bound",
+          "resourceType": "trading_settlement",
+          "allowedActorTypes": [
+            "human",
+            "agent",
+            "provider"
+          ],
+          "requiredCapability": "trading.settlement.read.bound",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "prohibited",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_trading_issue_performance_proof",
+        "operationId": "tradingIssuePerformanceProof",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_trading_issue_performance_proof",
+          "sha256": "97141f71b663f0781c64e4ca20833cfbd75df1d4f07a284012484a0529d5f4e6"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/34",
+          "sha256": "f59ac2f85415ec191d730fb652b59ecba3f807523c4335e5724ab18815c4319d"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/37",
+          "sha256": "a887d495915ae451fe8b9efc0db91b1b9de8961d1c8aed7673f40994c9e51b80"
+        },
+        "operation": {
+          "operationId": "tradingIssuePerformanceProof",
+          "kind": "command",
+          "actorTypes": [
+            "human",
+            "agent",
+            "provider"
+          ],
+          "resourceType": "trading_settlement",
+          "requiredCapability": "trading.performance_proof.issue.bound",
+          "idempotency": "required",
+          "quotaClass": "mutation",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_trading_performance_proof_issued.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "tradingIssuePerformanceProof",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "trading.performance_proof.issue.bound",
+          "resourceType": "trading_settlement",
+          "allowedActorTypes": [
+            "human",
+            "agent",
+            "provider"
+          ],
+          "requiredCapability": "trading.performance_proof.issue.bound",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_trading_read_facility_evidence",
+        "operationId": "tradingReadFacilityEvidence",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_trading_read_facility_evidence",
+          "sha256": "33fedb1a89f6c56b4c5002c9a433281e881e55eca9aa574c5cd14d8e5f087e3b"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/35",
+          "sha256": "beeaaae5fe90abd94e3a3b91f7da4b536af96fb4ac21cfc05f3ef289344226df"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/38",
+          "sha256": "0eaea3e2754daf03304b62f451efff8e82ad5e2a8ad6004da6b690e3735065b7"
+        },
+        "operation": {
+          "operationId": "tradingReadFacilityEvidence",
+          "kind": "query",
+          "actorTypes": [
+            "human",
+            "agent",
+            "provider"
+          ],
+          "resourceType": "trading_facility",
+          "requiredCapability": "trading.facility.evidence.read.bound",
+          "idempotency": "prohibited",
+          "quotaClass": "read",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "trading_facility_evidence.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "tradingReadFacilityEvidence",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "trading.facility.evidence.read.bound",
+          "resourceType": "trading_facility",
+          "allowedActorTypes": [
+            "human",
+            "agent",
+            "provider"
+          ],
+          "requiredCapability": "trading.facility.evidence.read.bound",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "prohibited",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_agent_create_secured_facility_authorization",
+        "operationId": "agentCreateSecuredFacilityAuthorization",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_agent_create_secured_facility_authorization",
+          "sha256": "f74c27cc1ceb08077eaae80f3bf5d5b22a674b3b3655803589b680677e8419f0"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/36",
+          "sha256": "0f679620d84351788c99aa12452083edbf84b1e4e406e58eaa1d6f01d8fa67d0"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/39",
+          "sha256": "0496b99574c783c3818f76536b2a9249b494be5c2c4776ebc65f5ee766e953e1"
+        },
+        "operation": {
+          "operationId": "agentCreateSecuredFacilityAuthorization",
+          "kind": "command",
+          "actorTypes": [
+            "human"
+          ],
+          "resourceType": "trading_facility",
+          "requiredCapability": "agent.facility_authorization.create.owned",
+          "idempotency": "required",
+          "quotaClass": "mutation",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_agent_secured_facility_authorization_created.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "agentCreateSecuredFacilityAuthorization",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "agent.facility_authorization.create.owned",
+          "resourceType": "trading_facility",
+          "allowedActorTypes": [
+            "human"
+          ],
+          "requiredCapability": "agent.facility_authorization.create.owned",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_agent_read_secured_facility_authorization",
+        "operationId": "agentReadSecuredFacilityAuthorization",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_agent_read_secured_facility_authorization",
+          "sha256": "33fedb1a89f6c56b4c5002c9a433281e881e55eca9aa574c5cd14d8e5f087e3b"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/37",
+          "sha256": "ab7dd3aa6276008cc161159116108c650be10f2a477934e258ff34309a12e9fb"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/40",
+          "sha256": "1125b9b077469cb3711cea936070f64321f406e07ebf95c5e6a7f6a79db8abff"
+        },
+        "operation": {
+          "operationId": "agentReadSecuredFacilityAuthorization",
+          "kind": "query",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "trading_facility",
+          "requiredCapability": "agent.facility_authorization.read.bound",
+          "idempotency": "prohibited",
+          "quotaClass": "read",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_agent_secured_facility_authorization_ready.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "agentReadSecuredFacilityAuthorization",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "agent.facility_authorization.read.bound",
+          "resourceType": "trading_facility",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "agent.facility_authorization.read.bound",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "prohibited",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_agent_revoke_secured_facility_authorization",
+        "operationId": "agentRevokeSecuredFacilityAuthorization",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/trading-capital-mcp-adapter.js#ipo_one_agent_revoke_secured_facility_authorization",
+          "sha256": "f57923d45b1abf10b862b2a286d5b0d7605e0393579b1eb6250a410624afb2dc"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/38",
+          "sha256": "3ee7a3240fa24bee74742195a361a23589f3b224b590a9d6be35986c701fefc0"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/41",
+          "sha256": "d43908fae1d78fe80fd5a7c6bc6a7b7aff05361337f642ecbeb2e6daf4ed68df"
+        },
+        "operation": {
+          "operationId": "agentRevokeSecuredFacilityAuthorization",
+          "kind": "command",
+          "actorTypes": [
+            "human"
+          ],
+          "resourceType": "trading_facility",
+          "requiredCapability": "agent.facility_authorization.revoke.owned",
+          "idempotency": "required",
+          "quotaClass": "mutation",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_agent_secured_facility_authorization_revoked.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "agentRevokeSecuredFacilityAuthorization",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "agent.facility_authorization.revoke.owned",
+          "resourceType": "trading_facility",
+          "allowedActorTypes": [
+            "human"
+          ],
+          "requiredCapability": "agent.facility_authorization.revoke.owned",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "required",
+          "approvalRequirement": "none",
+          "liveChecks": [],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      }
+    ]
+  },
+  {
+    "family": "secured-pool",
+    "exposure": "separate_adapter_not_mounted_by_main_host",
+    "tools": [
+      {
+        "name": "ipo_one_read_secured_pool",
+        "operationId": "pilotReadOwnSecuredPool",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/secured-pool-mcp-adapter.js#ipo_one_read_secured_pool",
+          "sha256": "33fedb1a89f6c56b4c5002c9a433281e881e55eca9aa574c5cd14d8e5f087e3b"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/7",
+          "sha256": "ad6241340dff8d04d68e56885db8ac3bd6f434ae305dfcb8dcf57e8bd26db789"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/7",
+          "sha256": "7468201f6702f5a681c4bf300533f0cdbb255b0c57d9ef6d5643810cce7388b5"
+        },
+        "operation": {
+          "operationId": "pilotReadOwnSecuredPool",
+          "kind": "query",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "subject",
+          "requiredCapability": "pool.read.self",
+          "idempotency": "prohibited",
+          "quotaClass": "read",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_secured_pool_workspace.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "pilotReadOwnSecuredPool",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "pool.read.self",
+          "resourceType": "subject",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "pool.read.self",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "prohibited",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "pool_binding",
+            "pool_reconciliation"
+          ],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      },
+      {
+        "name": "ipo_one_review_secured_pool_action",
+        "operationId": "pilotReviewSecuredPoolAction",
+        "inputSchema": {
+          "source": "apps/agent-mcp/src/secured-pool-mcp-adapter.js#ipo_one_review_secured_pool_action",
+          "sha256": "b89867d039b7c8f4d2d3d5a4c3f67f76e026dedcbbe6694ff9d6c52ff46f28ba"
+        },
+        "requestSchema": {
+          "source": "schemas/v2/tenant-protocol-request.schema.json#/oneOf/8",
+          "sha256": "85bfb4db1797f6d5e77f42d9f96dfff4012f7093f7b717176325230f200227ba"
+        },
+        "resultSchema": {
+          "source": "schemas/v2/tenant-protocol-result.schema.json#/oneOf/8",
+          "sha256": "178e26222d85356cbbcc90d761794a37e159afad5cfd73c2238d52c441e86e5c"
+        },
+        "operation": {
+          "operationId": "pilotReviewSecuredPoolAction",
+          "kind": "query",
+          "actorTypes": [
+            "human",
+            "agent"
+          ],
+          "resourceType": "subject",
+          "requiredCapability": "pool.action.review.self",
+          "idempotency": "prohibited",
+          "quotaClass": "read",
+          "requestSchemaVersion": "tenant_protocol_request.v1",
+          "responseSchemaVersion": "tenant_secured_pool_action_review.v1",
+          "public": false,
+          "fundsAuthority": false
+        },
+        "authorization": {
+          "operationId": "pilotReviewSecuredPoolAction",
+          "surface": "authenticated_tenant",
+          "transport": {
+            "kind": "command"
+          },
+          "action": "pool.action.review.self",
+          "resourceType": "subject",
+          "allowedActorTypes": [
+            "human",
+            "agent"
+          ],
+          "requiredCapability": "pool.action.review.self",
+          "ownershipRule": "actor",
+          "accessGrantCapability": null,
+          "purposePolicy": "none",
+          "reasonPolicy": {
+            "required": false,
+            "allowedCodes": []
+          },
+          "idempotencyRequirement": "prohibited",
+          "approvalRequirement": "none",
+          "liveChecks": [
+            "pool_binding",
+            "pool_oracle",
+            "pool_reconciliation",
+            "pool_risk_control"
+          ],
+          "requiresRecentMfaActorTypes": [],
+          "auditRequirement": "allow_and_deny"
+        }
+      }
+    ]
+  }
+]
