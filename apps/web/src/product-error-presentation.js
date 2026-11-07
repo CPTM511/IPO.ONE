@@ -3,6 +3,24 @@
 const AUTHENTICATION = new Set(["authentication_required", "authentication_session_expired", "authentication_session_rejected", "authenticated_session_ended", "invalid_session", "session_expired"]);
 const ACCESS = new Set(["authorization_denied", "tenant_resource_unavailable", "resource_not_found"]);
 const STALE = new Set(["credit_offer_expired", "credit_offer_terms_changed", "review_binding_invalid", "request_credit_review_stale", "aggregate_version_conflict", "idempotency_conflict"]);
+export function workspaceKindLabel(kind) {
+  // An accountable role must not share the monetary "Principal" label.
+  return { human_borrower: "Borrower", principal_controller: "Principal Controller" }[kind] ?? "another role";
+}
+export function workspaceSessionPresentation(expectedKind, receivedKind) {
+  const expected = workspaceKindLabel(expectedKind);
+  const received = workspaceKindLabel(receivedKind);
+  return {
+    requiredTitle: `${expected} session required`,
+    requiredMessage: `This page requires the ${expected} role. End the current ${received} session, then sign in again on this workspace.`,
+    switchMessage: `The browser is signed in as ${received}, while this page requires ${expected}. Switching signs out the current role and requires a fresh wallet signature.`,
+    switchAction: `Switch to ${expected} session`,
+    receivedWorkspaceMessage: `This ${expected} workspace received a ${received} session from another local port. Switch roles and sign in again; permissions will not be widened automatically.`,
+    detectedTitle: `${received} session detected`,
+    cookieMismatchMessage: `This page requires the ${expected} role, but the shared host cookie currently identifies a ${received} session. Switch sessions, then sign in again with your connected wallet.`,
+    receivedFromOtherPortMessage: `This page received a ${received} session from another local workspace. Switch roles and sign in again.`
+  };
+}
 export const PRODUCT_ERROR_COPY = Object.freeze({
   session: "Your secure session ended. Sign in again, then reload your record before retrying an action.",
   access: "This record is unavailable or you do not have permission to access it. Check the selected account and role.",

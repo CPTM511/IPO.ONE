@@ -1,5 +1,5 @@
 import { installProductLocalization } from "./product-localization.js";
-import { authenticationErrorCopy, productErrorCopy } from "./product-error-presentation.js";
+import { authenticationErrorCopy, productErrorCopy, workspaceKindLabel, workspaceSessionPresentation } from "./product-error-presentation.js";
 import { PRODUCT_LANGUAGES, formatMinorAmount, formatProductDate } from "./product-i18n.js";
 import { createObligationHistoryBrowser } from "./obligation-history-browser.js";
 import { createCreditSnapshotLoader, creditSnapshotPresentation } from "./credit-snapshot-browser.js";
@@ -1052,7 +1052,7 @@ function renderAccess() {
   el("accessCopy").textContent = localSessionEnded
     ? "The local host session ended and authenticated product operations are blocked. Start a fresh local no-funds session only when you are ready to continue."
     : workspaceRoleMismatch
-      ? `This page requires the ${expectedWorkspaceLabel()} role. End the current ${workspaceKindLabel(tenantPilot.workspaceKind)} session, then sign in again on this workspace.`
+      ? currentWorkspaceSessionPresentation().requiredMessage
     : authenticated
       ? "Your server session is separate from wallet connection, credit authority, and funds authority. Continue to the workspace or sign out explicitly."
       : "IPO.ONE shows only sign-in methods verified for this host and this browser. Authentication proves identity; Principal and Mandate rules still decide what you can do.";
@@ -1068,7 +1068,7 @@ function renderAccess() {
   el("accessSessionCopy").textContent = localSessionEnded
     ? "No authenticated operation is available in this page. Reloading explicitly provisions a fresh synthetic local session; it does not restore funds or credit authority."
     : workspaceRoleMismatch
-      ? `The browser is signed in as ${workspaceKindLabel(tenantPilot.workspaceKind)}, while this page requires ${expectedWorkspaceLabel()}. Switching signs out the current role and requires a fresh wallet signature.`
+      ? currentWorkspaceSessionPresentation().switchMessage
     : accessState.pendingWorkspaceBootstrap
       ? "Wallet authentication succeeded. Continue once to reload the protected shell and bind its CSRF-protected workspace session."
       : workspaceVerified
@@ -1077,7 +1077,7 @@ function renderAccess() {
   el("continueAuthenticatedSessionBtn").textContent = localSessionEnded
     ? "Start fresh local session"
     : workspaceRoleMismatch
-      ? `Switch to ${expectedWorkspaceLabel()} session`
+      ? currentWorkspaceSessionPresentation().switchAction
     : accessState.pendingWorkspaceBootstrap
       ? "Finish sign-in"
       : "Continue to workspace";
@@ -1857,7 +1857,7 @@ function renderRuntimeGate() {
   const workspaceRoleMismatch = hasWorkspaceSessionRoleMismatch();
   gate.hidden = !workspaceRoleMismatch && (!authenticated || connected);
   el("authenticatedRuntimeGateStatus").textContent = workspaceRoleMismatch
-    ? `${expectedWorkspaceLabel()} session required`
+    ? currentWorkspaceSessionPresentation().requiredTitle
     : connected
     ? "Authenticated workspace"
     : authenticated
@@ -1866,7 +1866,7 @@ function renderRuntimeGate() {
       ? tenantPilot.connectionLabel
       : "Verifying secure session";
   el("authenticatedRuntimeGateCopy").textContent = workspaceRoleMismatch
-    ? `This ${currentWorkspaceName() === "controller" ? "Principal" : "Borrower"} workspace received a ${workspaceKindLabel(tenantPilot.workspaceKind)} session from another local port. Switch roles and sign in again; permissions will not be widened automatically.`
+    ? currentWorkspaceSessionPresentation().receivedWorkspaceMessage
     : connected
     ? "Tenant identity, role, policy, and CSRF bindings were verified. All product state below comes from the authenticated protocol."
     : authenticated
@@ -1876,7 +1876,7 @@ function renderRuntimeGate() {
       : "Checking the authenticated Tenant catalog and browser session. No product operation is available until verification completes.";
   el("authenticatedRuntimeGateAction").hidden = !workspaceRoleMismatch;
   el("authenticatedRuntimeGateAction").textContent =
-    `Switch to ${expectedWorkspaceLabel()} session`;
+    currentWorkspaceSessionPresentation().switchAction;
   gate.classList.toggle("connected", connected);
   gate.classList.toggle("blocked", tenantPilot.checked && !connected);
 }
@@ -2213,11 +2213,8 @@ function expectedWorkspaceKind() {
   }[currentWorkspaceName()] ?? null;
 }
 
-function workspaceKindLabel(kind) {
-  return {
-    human_borrower: "Borrower",
-    principal_controller: "Principal"
-  }[kind] ?? "another role";
+function currentWorkspaceSessionPresentation() {
+  return workspaceSessionPresentation(expectedWorkspaceKind(), tenantPilot.workspaceKind);
 }
 
 function expectedWorkspaceLabel() {
@@ -4450,12 +4447,12 @@ function renderAgentAuthorityPilot() {
   if (!principalWorkspace) {
     const borrowerWorkspace = currentWorkspaceName() === "borrower";
     el("agentAuthorityAccessTitle").textContent = workspaceRoleMismatch
-      ? `${workspaceKindLabel(tenantPilot.workspaceKind)} session detected`
+      ? currentWorkspaceSessionPresentation().detectedTitle
       : borrowerWorkspace
       ? "Continue in the Principal workspace"
       : "Principal workspace required";
     el("agentAuthorityAccessCopy").textContent = workspaceRoleMismatch
-      ? `This page requires the ${expectedWorkspaceLabel()} role, but the shared host cookie currently identifies a ${workspaceKindLabel(tenantPilot.workspaceKind)} session. Switch sessions, then sign in again with your connected wallet.`
+      ? currentWorkspaceSessionPresentation().cookieMismatchMessage
       : borrowerWorkspace
       ? "This Borrower workspace can request and repay credit, but it cannot create authority for an Agent. Open the separate Principal workspace and sign in with your connected wallet; no Borrower permission will be widened."
       : "Only an authenticated Principal Controller can create an Agent Subject, issue an account-proof request, or activate a Mandate.";
@@ -9444,9 +9441,9 @@ async function recoverAuthenticatedWorkspace({
   const expectedKind = expectedWorkspaceKind();
   if (expectedKind !== null && recovery.workspaceKind !== expectedKind) {
     tenantPilot.connected = false;
-    tenantPilot.connectionLabel = `${expectedWorkspaceLabel()} session required`;
+    tenantPilot.connectionLabel = currentWorkspaceSessionPresentation().requiredTitle;
     tenantPilot.helper =
-      `This page received a ${workspaceKindLabel(recovery.workspaceKind)} session from another local workspace. Switch roles and sign in again.`;
+      currentWorkspaceSessionPresentation().receivedFromOtherPortMessage;
     agentAuthorityPilot.helper = tenantPilot.helper;
     tenantPilot.workspaceObligations = [];
     tenantPilot.workspacePositionViews.clear();

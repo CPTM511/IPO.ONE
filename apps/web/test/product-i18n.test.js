@@ -3,9 +3,21 @@ import assert from "node:assert/strict";
 import { PRODUCT_COPY } from "../src/product-copy.js";
 import { PRODUCT_LANGUAGES, LANGUAGE_STORAGE_KEY, resolveLanguage, supportedLanguage,
   translateCopy, validateProductCopy, formatMinorAmount, formatProductDate } from "../src/product-i18n.js";
-import { AUTHENTICATION_ERROR_COPY, authenticationErrorCopy, PRODUCT_ERROR_COPY, productErrorCopy } from "../src/product-error-presentation.js";
+import { AUTHENTICATION_ERROR_COPY, authenticationErrorCopy, PRODUCT_ERROR_COPY, productErrorCopy, workspaceKindLabel, workspaceSessionPresentation } from "../src/product-error-presentation.js";
 import { walletSignInErrorMessage } from "../src/wallet-sign-in-attempt.js";
 import { ownedCopyCandidate } from "../src/product-localization.js";
+
+test("role mismatch recovery localizes both roles without confusing accountable Principal with money", () => {
+  assert.equal(workspaceKindLabel("principal_controller"), "Principal Controller");
+  assert.equal(workspaceKindLabel("untrusted_role"), "another role");
+  assert.equal(translateCopy("Principal", "zh").text, "本金");
+  for (const expected of ["human_borrower", "principal_controller", undefined])
+    for (const received of ["human_borrower", "principal_controller", undefined])
+      for (const message of Object.values(workspaceSessionPresentation(expected, received))) {
+        for (const { code } of PRODUCT_LANGUAGES) assert.equal(translateCopy(message, code).translated, true, `${code}: ${message}`);
+        assert.equal(translateCopy(message, "zh").text.includes("本金"), false);
+      }
+});
 
 test("six complete dictionaries reject missing keys, duplicate copy and changed bound values", () => {
   assert.deepEqual(PRODUCT_LANGUAGES.map(item => item.code), ["en", "zh", "es", "fr", "ru", "vi"]);

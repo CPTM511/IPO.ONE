@@ -75,3 +75,14 @@ review has no named language reviewers or sign-off yet, and this B1 candidate
 has not been published or verified on deployed durable services. B2–B5, Agent
 operator translation, the full Jarvis version and partner acceptance remain
 separate work. This record does not grant deployment or financial permission.
+
+
+## 2026-11-08 continuation
+
+Founder instructed continuation of the plan and confirmed: “已经请专业人员审核完毕，放行”. Record this as Founder-attested completion/clearance of the professional copy review for the B1 candidate; no reviewer identity, document or independent verification is invented. The underlying Jarvis v1.1 source requires professional review for contract/regulatory text, a uniform financial glossary and manual sampling for general copy. It does not require professional certification of every button.
+
+Continue the bounded B1 no-real-funds release preparation/verification within the existing hosting and security boundaries. No fees, wallets/networks, funds, legal-market permission or privileged role activation is included. A later deployed verdict still requires exact deployment and durable-service browser evidence.
+
+Semantic review found role-mismatch messages missing from localization and an ambiguous standalone Principal role label. Fix only presentation: explicit Principal Controller role names, localized recovery messages and the visible authenticated-runtime gate; preserve all role checks, logout requirements and financial values. Add regression coverage for both roles, unknown roles and all six languages. Prior 2026-11-07 evidence remains historical at its original SHA.
+
+The local semantic fix also inventories gateway-denial labels and clarifies the existing Spanish/Russian early-repayment copy to preserve partial/full repayment and principal allocation. No economic policy or amount changes.

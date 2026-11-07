@@ -7,7 +7,7 @@ import {
 // and explicit templates can match. No innerHTML, input values, attributes that
 // carry protocol values, private API calls or remote translation services.
 const CORE = [".topbar", "#sidebar", ".skip-link", ".safety-banner", "#accessLayer", "#web009PublicReview .web009-nav", "#web009PublicReview .web009-hero",
-  "#economicActionLayer", "#humanActivationDialog", "#toast", "#operationStatus", "#appStartup",
+  "#economicActionLayer", "#humanActivationDialog", "#authenticatedRuntimeGate", "#toast", "#operationStatus", "#appStartup",
   ...["request-credit", "obligations", "repay-settle", "activity-proofs", "credit-track-record", "overview"]
     .map(view => `.view[data-view-panel="${view}"]`)].join(",");
 const EXCLUDED = "script,style,code,pre,textarea,input,[translate=no],[data-i18n-raw],.b-hero-stage,#publicProductPage,#auditorEvidenceConsole,#agentAuthority";

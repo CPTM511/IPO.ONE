@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { AUTHENTICATION_ERROR_COPY, PRODUCT_ERROR_COPY } from "../apps/web/src/product-error-presentation.js";
+import { AUTHENTICATION_ERROR_COPY, PRODUCT_ERROR_COPY, workspaceSessionPresentation } from "../apps/web/src/product-error-presentation.js";
 import { walletSignInErrorMessage } from "../apps/web/src/wallet-sign-in-attempt.js";
 import { creditSnapshotPresentation } from "../apps/web/src/credit-snapshot-browser.js";
 import { createAuthenticationAvailabilityPresentation, createManagementAccessPresentation, createSandboxProfileActivationPresentation } from "../apps/web/src/authentication-availability-presentation.js";
@@ -10,7 +10,7 @@ import { PRODUCT_LANGUAGES, normalizeCopy, translateCopy, validateProductCopy } 
 // owned labels/copy enter the catalog; input values and protocol/code are raw.
 const html = await readFile(new URL("../apps/web/src/index.html", import.meta.url), "utf8");
 const views = new Set(["overview", "obligations", "repay-settle", "activity-proofs", "credit-track-record"]);
-const ids = new Set(["sidebar", "accessLayer", "economicActionLayer", "humanActivationDialog", "appStartup"]);
+const ids = new Set(["sidebar", "accessLayer", "economicActionLayer", "humanActivationDialog", "authenticatedRuntimeGate", "appStartup"]);
 const classes = new Set(["topbar", "safety-banner", "request-credit-human", "web009-nav", "web009-hero"]);
 const voidTags = new Set(["input", "meta", "link", "img", "br", "hr", "source", "wbr", "area", "base", "embed", "param", "track", "col"]);
 const excluded = new Set(["script", "style", "code", "pre", "textarea"]);
@@ -20,6 +20,19 @@ const decode = value => value.replace(/&(?:amp|lt|gt|quot|apos|nbsp);|&#(?:x[\da
   return String.fromCodePoint(entity[2].toLowerCase() === "x" ? parseInt(entity.slice(3, -1), 16) : Number(entity.slice(2, -1)));
 });
 const copy = new Set(Object.values(PRODUCT_ERROR_COPY));
+// Inventory the existing gateway status labels, including ternary branches.
+// Only quoted assignment results enter the copy gate; protocol comparisons do not.
+const appSource = await readFile(new URL("../apps/web/src/app.js", import.meta.url), "utf8");
+for (const match of appSource.matchAll(/connectionLabel\s*:\s*("(?:[^"\\]|\\.)*")/g)) copy.add(JSON.parse(match[1]));
+for (const match of appSource.matchAll(/connectionLabel\s*=\s*([^;]+);/g)) {
+  const expression = match[1];
+  const direct = expression.match(/^("(?:[^"\\]|\\.)*")/);
+  if (direct) copy.add(JSON.parse(direct[1]));
+  for (const branch of expression.matchAll(/[?:]\s*("(?:[^"\\]|\\.)*")/g)) copy.add(JSON.parse(branch[1]));
+}
+for (const expected of ["human_borrower", "principal_controller", undefined])
+  for (const received of ["human_borrower", "principal_controller", undefined])
+    for (const message of Object.values(workspaceSessionPresentation(expected, received))) copy.add(message);
 for (const value of Object.values(AUTHENTICATION_ERROR_COPY)) copy.add(value);
 copy.add(walletSignInErrorMessage({ userMessage: AUTHENTICATION_ERROR_COPY.other, serviceDiagnostic: "Original provider notice" }));
 for (const code of [4001, -32002, 4900, 4901, 4100, 4200]) copy.add(walletSignInErrorMessage({ code }));
