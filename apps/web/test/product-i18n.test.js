@@ -50,6 +50,11 @@ test("presentation templates preserve exact IDs, dates and currency amounts; unk
   assert.equal(ownedCopyCandidate("02:00 15 thg 7"), false);
   assert.equal(ownedCopyCandidate("12:01 16 thg 7, 2026"), false);
   assert.equal(ownedCopyCandidate("An unknown blocking message"), true);
+  const snapshot = "Snapshot as of 16 авг. 2026 г., 12:00:00 UTC. On Time Repaid is the latest terminal Credit Outcome in this snapshot. Last successful worker attempt: 16 авг. 2026 г., 11:45:00 UTC. The hosted materializer runs every 15 minutes; backlogs or failures can delay updates. Reload the verified record to check for newer outcomes; this view does not update automatically. It does not authorize funds or an automatic limit change.";
+  const localizedSnapshot = translateCopy(snapshot, "ru");
+  assert.equal(localizedSnapshot.translated, true);
+  assert.ok(localizedSnapshot.text.includes("16 авг. 2026 г., 12:00:00 UTC"));
+  assert.ok(localizedSnapshot.text.includes("16 авг. 2026 г., 11:45:00 UTC"));
 });
 
 test("minor-unit formatting never rounds through floating point", () => {

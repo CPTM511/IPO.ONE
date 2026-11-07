@@ -63,7 +63,9 @@ const templates = PRODUCT_COPY.filter(row => /\{\w+\}/.test(row[0])).map(row => 
     if (/^\{\w+\}$/.test(part)) {
       const name = part.slice(1, -1);
       names.push(name);
-      return numericPlaceholders.has(name) ? "([0-9]+)" : "([\\s\\S]+?)";
+      // Localized dates may contain sentence-like punctuation (e.g. Russian
+      // "16 авг. 2026 г."). Keep the full date before the next fixed clause.
+      return numericPlaceholders.has(name) ? "([0-9]+)" : datePlaceholders.has(name) ? "([\\s\\S]+)" : "([\\s\\S]+?)";
     }
     return escapePattern(part);
   });
