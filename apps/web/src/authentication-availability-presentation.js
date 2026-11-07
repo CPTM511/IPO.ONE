@@ -11,6 +11,14 @@ const WALLET_AUTHORITY_STATES = new Set([
 ]);
 const PROVIDER_ID = /^[A-Za-z0-9][A-Za-z0-9._:@/-]{1,255}$/;
 
+export function walletProviderDiscoveryCopy({ providerState, providerCount, selectedProvider } = {}) {
+  const count = Number.isSafeInteger(providerCount) && providerCount > 0 ? providerCount : 0;
+  if (providerState === "discovering") return "Discovering browser wallets…";
+  if (count === 0) return "No compatible browser wallet announced itself.";
+  if (selectedProvider) return "One wallet is explicitly selected for this page session.";
+  return `${count} wallet${count === 1 ? "" : "s"} found. Select one before connecting.`;
+}
+
 export function createManagementAccessPresentation({ optionsState, authenticationProfile, riskPasskey } = {}) {
   const ready = optionsState === "ready";
   // This describes installed authentication, never grants a role or approval.

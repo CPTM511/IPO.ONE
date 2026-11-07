@@ -2,7 +2,8 @@ import { readFile } from "node:fs/promises";
 import { AUTHENTICATION_ERROR_COPY, PRODUCT_ERROR_COPY, workspaceSessionPresentation } from "../apps/web/src/product-error-presentation.js";
 import { walletSignInErrorMessage } from "../apps/web/src/wallet-sign-in-attempt.js";
 import { creditSnapshotPresentation } from "../apps/web/src/credit-snapshot-browser.js";
-import { createAuthenticationAvailabilityPresentation, createManagementAccessPresentation, createSandboxProfileActivationPresentation } from "../apps/web/src/authentication-availability-presentation.js";
+import { createAuthenticationAvailabilityPresentation, createManagementAccessPresentation, createSandboxProfileActivationPresentation, walletProviderDiscoveryCopy } from "../apps/web/src/authentication-availability-presentation.js";
+import { mobileWalletAvailability } from "../apps/web/src/mobile-wallet-access.js";
 import { ownedCopyCandidate } from "../apps/web/src/product-localization.js";
 import { PRODUCT_LANGUAGES, normalizeCopy, translateCopy, validateProductCopy } from "../apps/web/src/product-i18n.js";
 
@@ -20,6 +21,11 @@ const decode = value => value.replace(/&(?:amp|lt|gt|quot|apos|nbsp);|&#(?:x[\da
   return String.fromCodePoint(entity[2].toLowerCase() === "x" ? parseInt(entity.slice(3, -1), 16) : Number(entity.slice(2, -1)));
 });
 const copy = new Set(Object.values(PRODUCT_ERROR_COPY));
+copy.add("Secure session ended. Private browser state was cleared.");
+for (const providerState of ["discovering", "ready"]) for (const providerCount of [0, 1, 2, 3, 16]) for (const selectedProvider of [false, true])
+  copy.add(walletProviderDiscoveryCopy({ providerState, providerCount, selectedProvider }));
+for (const origin of ["http://127.0.0.1:4332", "https://ipo.one"]) for (const projectId of ["", "1".repeat(32)]) for (const time of ["2026-09-21T00:00:00Z", "2026-11-08T00:00:00Z"])
+  copy.add(mobileWalletAvailability({ origin, projectId, now: new Date(time) }).reason);
 // Inventory the existing gateway status labels, including ternary branches.
 // Only quoted assignment results enter the copy gate; protocol comparisons do not.
 const appSource = await readFile(new URL("../apps/web/src/app.js", import.meta.url), "utf8");

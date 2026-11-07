@@ -23,7 +23,8 @@ import {
   createAccessSupportDiagnostic,
   createAuthenticationAvailabilityPresentation,
   createManagementAccessPresentation,
-  createSandboxProfileActivationPresentation
+  createSandboxProfileActivationPresentation,
+  walletProviderDiscoveryCopy
 } from "./authentication-availability-presentation.js";
 import { createCapitalNetworkPresentation } from "./capital-network-presentation.js";
 import { createCapitalPartnerPresentation } from "./capital-partner-presentation.js";
@@ -856,13 +857,11 @@ function renderWalletProviders() {
       return button;
     })
   );
-  el("walletProviderStatus").textContent = accessState.walletProviderStatus === "discovering"
-    ? "Discovering browser wallets…"
-    : accessState.walletProviders.length === 0
-      ? "No compatible browser wallet announced itself."
-      : selectedProviderId
-        ? "One wallet is explicitly selected for this page session."
-        : `${accessState.walletProviders.length} wallet${accessState.walletProviders.length === 1 ? "" : "s"} found. Select one before connecting.`;
+  el("walletProviderStatus").textContent = walletProviderDiscoveryCopy({
+    providerState: accessState.walletProviderStatus,
+    providerCount: accessState.walletProviders.length,
+    selectedProvider: Boolean(selectedProviderId)
+  });
 }
 
 function renderOidcProviders(providers) {

@@ -6,6 +6,20 @@ import { PRODUCT_LANGUAGES, LANGUAGE_STORAGE_KEY, resolveLanguage, supportedLang
 import { AUTHENTICATION_ERROR_COPY, authenticationErrorCopy, PRODUCT_ERROR_COPY, productErrorCopy, workspaceKindLabel, workspaceSessionPresentation } from "../src/product-error-presentation.js";
 import { walletSignInErrorMessage } from "../src/wallet-sign-in-attempt.js";
 import { ownedCopyCandidate } from "../src/product-localization.js";
+import { walletProviderDiscoveryCopy } from "../src/authentication-availability-presentation.js";
+import { mobileWalletAvailability } from "../src/mobile-wallet-access.js";
+
+test("live login configuration, provider counts and session loss have all six translations without enabling phone pairing", () => {
+  const copy = ["Secure session ended. Private browser state was cleared."];
+  for (const providerState of ["discovering", "ready"]) for (const providerCount of [0, 1, 2, 3, 16]) for (const selectedProvider of [false, true])
+    copy.push(walletProviderDiscoveryCopy({ providerState, providerCount, selectedProvider }));
+  for (const origin of ["http://127.0.0.1:4332", "https://ipo.one"]) for (const projectId of ["", "1".repeat(32)]) {
+    const p = mobileWalletAvailability({ origin, projectId, now: new Date("2026-11-08T00:00:00Z") });
+    assert.equal(p.available, false);
+    copy.push(p.reason);
+  }
+  for (const source of copy) for (const { code } of PRODUCT_LANGUAGES) assert.equal(translateCopy(source, code).translated, true, `${code}: ${source}`);
+});
 
 test("role mismatch recovery localizes both roles without confusing accountable Principal with money", () => {
   assert.equal(workspaceKindLabel("principal_controller"), "Principal Controller");
