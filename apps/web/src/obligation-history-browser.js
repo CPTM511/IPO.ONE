@@ -14,7 +14,7 @@ export function acceptObligationHistoryPage(page, subjectId) {
   return page;
 }
 
-export function createObligationHistoryBrowser({ root, searchButton, previousButton, nextButton, getContext, readPage, openRecord, formatState }) {
+export function createObligationHistoryBrowser({ root, searchButton, previousButton, nextButton, getContext, readPage, openRecord, formatState, getLocale = () => "en-US" }) {
   const form = root.querySelector("form");
   const rows = root.querySelector("[data-history-rows]");
   const status = root.querySelector("[data-history-status]");
@@ -26,7 +26,16 @@ export function createObligationHistoryBrowser({ root, searchButton, previousBut
   let cursors = [undefined];
   let index = 0;
   let filters = {};
+  let presentationRows = [];
+  function refreshPresentation() {
+    if (JSON.stringify(getContext()) !== scope) return;
+    for (const { button, item, number } of presentationRows) {
+      const created = new Intl.DateTimeFormat(getLocale(), { dateStyle: "medium", timeZone: "UTC" }).format(new Date(item.createdAt));
+      button.textContent = `Open record ${number} · ${formatState(item.state)} · ${created}`;
+    }
+  }
   function clear() {
+    presentationRows = [];
     owner = null; page = null; cursors = [undefined]; index = 0; filters = {};
     root.removeAttribute("aria-busy");
     form.reset(); rows.replaceChildren();
@@ -49,7 +58,7 @@ export function createObligationHistoryBrowser({ root, searchButton, previousBut
     const token = {}; owner = token;
     const requestScope = scope;
     const current = () => owner === token && JSON.stringify(getContext()) === requestScope;
-    rows.replaceChildren(); page = null;
+    rows.replaceChildren(); page = null; presentationRows = [];
     previous.disabled = true; next.disabled = true; searchButton.disabled = true;
     status.textContent = "Loading authorized history…";
     root.setAttribute("aria-busy", "true");
@@ -67,14 +76,14 @@ export function createObligationHistoryBrowser({ root, searchButton, previousBut
       for (const [position, item] of result.items.entries()) {
         const row = document.createElement("div"); row.className = "obligation-history-row";
         const button = document.createElement("button"); button.type = "button"; button.className = "secondary";
-        const created = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(item.createdAt));
-        button.textContent = `Open record ${index * 25 + position + 1} · ${formatState(item.state)} · ${created}`;
+        presentationRows.push({ button, item, number: index * 25 + position + 1 });
         button.addEventListener("click", () => { if (JSON.stringify(getContext()) === requestScope) void openRecord(item.obligationId); });
         const technical = document.createElement("details");
         const summary = document.createElement("summary"); summary.textContent = "Record reference";
         const code = document.createElement("code"); code.textContent = item.obligationId;
         technical.append(summary, code); row.append(button, technical); rows.append(row);
       }
+      refreshPresentation();
     } catch {
       if (current()) status.textContent = "History could not be read for this workspace. Check the filters and retry the search; no previous results are shown.";
     } finally {
@@ -101,11 +110,11 @@ export function createObligationHistoryBrowser({ root, searchButton, previousBut
   });
   form.addEventListener("input", () => {
     // A response for previous filters cannot replace the edited search.
-    owner = null; page = null; rows.replaceChildren(); root.removeAttribute("aria-busy");
+    owner = null; page = null; presentationRows = []; rows.replaceChildren(); root.removeAttribute("aria-busy");
     previous.disabled = true; next.disabled = true; searchButton.disabled = !getContext();
     status.textContent = "Filters changed. Search history to load matching records.";
   });
   previous.addEventListener("click", () => void load(index - 1));
   next.addEventListener("click", () => void load(index + 1));
-  return { synchronize, clear };
+  return { synchronize, clear, refreshPresentation };
 }

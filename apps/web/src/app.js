@@ -1,3 +1,6 @@
+import { installProductLocalization } from "./product-localization.js";
+import { authenticationErrorCopy, productErrorCopy } from "./product-error-presentation.js";
+import { PRODUCT_LANGUAGES, formatMinorAmount, formatProductDate } from "./product-i18n.js";
 import { createObligationHistoryBrowser } from "./obligation-history-browser.js";
 import { createCreditSnapshotLoader, creditSnapshotPresentation } from "./credit-snapshot-browser.js";
 import { WALLET_NETWORK_PROFILES, WALLET_NETWORK_IDS } from "./wallet-networks.js";
@@ -105,8 +108,9 @@ import {
   verifyOfficialReportRetrieval
 } from "./official-report-download.js";
 
-const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
-const percent = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
+const productLocale = () => PRODUCT_LANGUAGES.find(item => item.code === document.documentElement.lang)?.locale ?? "en-US";
+const productDateTimeFormat = options => ({ format: value => formatProductDate(value, document.documentElement.lang, options) });
+const percent = { format: value => new Intl.NumberFormat(productLocale(), { maximumFractionDigits: 1 }).format(value) };
 
 const VIEW_DEFINITIONS = workspaceViewCatalog();
 const VIEW_META = Object.fromEntries(
@@ -780,7 +784,7 @@ function consumePostLoginViewIntent() {
 
 const el = (id) => document.getElementById(id);
 const obligationHistoryBrowser = createObligationHistoryBrowser({
-  root: el("obligationHistoryBrowser"), getContext: ownedHistoryContext, formatState: titleize,
+  root: el("obligationHistoryBrowser"), getContext: ownedHistoryContext, formatState: titleize, getLocale: productLocale,
   searchButton: el("searchObligationHistoryBtn"), previousButton: el("previousObligationHistoryBtn"),
   nextButton: el("nextObligationHistoryBtn"),
   readPage: async (context, history) => (await tenantApi("pilotReadWorkspaceResume", {
@@ -836,6 +840,8 @@ function renderWalletProviders() {
         button.append(fallback);
       }
       name.textContent = provider.name;
+      // Wallet-advertised names are external identity, not owned UI copy.
+      name.setAttribute("translate", "no");
       detail.textContent = provider.source === "legacy_eip1193"
         ? "Legacy EIP-1193 fallback"
         : provider.source === "mobile_walletconnect"
@@ -843,6 +849,7 @@ function renderWalletProviders() {
           : provider.source === "binance_injected"
             ? "Binance Wallet connection"
             : provider.rdns ?? "EIP-6963 wallet";
+      if (provider.rdns && provider.source === "eip6963") detail.setAttribute("translate", "no");
       state.textContent = provider.providerId === selectedProviderId ? "Selected" : "Select";
       identity.append(name, detail);
       button.append(identity, state);
@@ -1241,7 +1248,10 @@ async function authJson(path, { method = "GET", body, headers = {}, signal } = {
     payload = undefined;
   }
   if (!response.ok) {
-    const error = new Error(payload?.detail ?? "The sign-in service is unavailable.");
+    const summary = authenticationErrorCopy({ code: payload?.code, status: response.status });
+    const error = new Error(payload?.detail ?? summary);
+    error.userMessage = summary;
+    error.serviceDiagnostic = payload?.detail;
     error.status = response.status;
     error.code = payload?.code ?? "authentication_unavailable";
     error.requestId = response.headers.get("x-request-id") ?? undefined;
@@ -2346,7 +2356,8 @@ async function tenantApi(operationId, {
   }
   recordRequest({ method: "POST", path: `/tenant:${operationId}`, status: response.status, requestId: responseRequestId });
   if (!response.ok) {
-    const error = new Error(result?.detail ?? "The private operation was rejected.");
+    const error = new Error(productErrorCopy({ code: result?.code, status: response.status }));
+    error.serviceDiagnostic = result?.detail;
     error.code = result?.code ?? "unknown_tenant_error";
     error.status = response.status;
     error.requestId = result?.requestId ?? responseRequestId;
@@ -2551,7 +2562,7 @@ async function referenceAgentApi(path, body) {
 }
 
 function usdMinorToMoney(value) {
-  return money.format(Number(asBigInt(value)) / 100);
+  return formatMinorAmount(asBigInt(value), "USD", document.documentElement.lang);
 }
 
 function tenantInputValue(id) {
@@ -4583,7 +4594,7 @@ function renderAgentAuthorityPilot() {
     : challengeExpired
       ? "Expired · create a new request"
       : challenge
-        ? `Open · ${new Intl.DateTimeFormat("en-US", { timeStyle: "short" }).format(new Date(challenge.expiresAt))}`
+        ? `Open · ${productDateTimeFormat( { timeStyle: "short" }).format(new Date(challenge.expiresAt))}`
       : "Not created";
   el("agentAccountAgentAction").textContent = accountBound
     ? "Proof verified"
@@ -4630,7 +4641,7 @@ function renderAgentAuthorityPilot() {
     ? `${usdMinorToMoney(mandate.perActionLimitMinor)} / ${usdMinorToMoney(mandate.aggregateLimitMinor)}`
     : "—";
   el("agentAuthorityExpiry").textContent = mandate?.expiresAt
-    ? new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(mandate.expiresAt))
+    ? productDateTimeFormat( { dateStyle: "medium" }).format(new Date(mandate.expiresAt))
     : "—";
   el("agentAuthorityEvidenceHash").textContent = agentAuthorityPilot.activationEvidenceHash ?? "—";
 
@@ -4646,7 +4657,7 @@ function renderAgentAuthorityPilot() {
       ? mandate.allowedProviderIds.length === 1 && mandate.allowedProviderIds[0] === "provider_gateway_compute"
         ? "Gateway Compute" : `${mandate.allowedProviderIds.length} providers in Mandate scope`
       : "Not specified in this Mandate",
-    expiry: mandate?.expiresAt ? new Intl.DateTimeFormat("en-US", {
+    expiry: mandate?.expiresAt ? productDateTimeFormat( {
       dateStyle: "medium", timeStyle: "short", timeZone: "UTC"
     }).format(new Date(mandate.expiresAt)) + " UTC" : "Not set"
   });
@@ -5007,7 +5018,7 @@ function privateInstallmentAmount(installment) {
 function privateDate(value, options = { dateStyle: "medium" }) {
   const date = new Date(value ?? "");
   if (!Number.isFinite(date.getTime())) return "—";
-  return new Intl.DateTimeFormat("en-US", options).format(date);
+  return productDateTimeFormat( options).format(date);
 }
 
 function privateCheckpoint(title, detail, { complete = false, current = false } = {}) {
@@ -7163,7 +7174,7 @@ function renderCreditPassportPilot() {
         tenantPilot.decision.decisionPassport.decisionPassportHash
       )}`
     : "Not loaded";
-  const snapshot = creditSnapshotPresentation(creditStatePilot, titleize);
+  const snapshot = creditSnapshotPresentation(creditStatePilot, titleize, productLocale());
   el("creditTrackRecordCycleCount").textContent = creditState ? String(creditState.metrics.completedCycleCount) : "Not loaded";
   el("creditTrackRecordLatestOutcome").textContent = creditState ? titleize(creditState.latestOutcome.outcomeLabel) : "Not loaded";
   el("creditTrackRecordReliability").textContent = creditState ? titleize(creditState.factors.repaymentReliability) : "Not loaded";
@@ -7585,7 +7596,7 @@ function renderCapitalPartner() {
   el("capitalPartnerTermsHash").textContent = offer?.termsHash ?? "—";
   el("capitalPartnerBorrowerRef").textContent = offer?.subjectId ?? "—";
   el("capitalPartnerOfferValidity").textContent = offer?.validUntil
-    ? new Intl.DateTimeFormat("en-US", {
+    ? productDateTimeFormat( {
         dateStyle: "medium",
         timeStyle: "short"
       }).format(new Date(offer.validUntil))
@@ -7671,7 +7682,7 @@ function renderCapitalPartner() {
 
   const presentation = capitalPartnerPilot.presentation;
   el("capitalPartnerPortfolioStatus").textContent = presentation
-    ? `As of ${new Intl.DateTimeFormat("en-US", {
+    ? `As of ${productDateTimeFormat( {
         dateStyle: "medium",
         timeStyle: "short"
       }).format(new Date(presentation.asOf))}`
@@ -8234,7 +8245,7 @@ function renderTradingCapital() {
     : "Unavailable";
   el("tradingCapitalAuthorizationHash").title = authorization?.authorizationHash ?? "";
   el("tradingCapitalAuthorizationExpiry").textContent = authorization
-    ? new Intl.DateTimeFormat("en-US", {
+    ? productDateTimeFormat( {
         dateStyle: "medium",
         timeStyle: "short"
       }).format(new Date(authorization.expiresAt))
@@ -8712,7 +8723,7 @@ function renderTenantPilot() {
     ? `${titleize(offer.repaymentFrequency)} · ${offer.installmentCount} installment${offer.installmentCount === 1 ? "" : "s"}`
     : "—";
   el("humanOfferMaturity").textContent = offer
-    ? new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(offer.maturityAt))
+    ? productDateTimeFormat( { dateStyle: "medium" }).format(new Date(offer.maturityAt))
     : "—";
   el("humanOfferValidUntil").textContent = offer
     ? formatEvidenceTime(offer.validUntil, { short: true })
@@ -8838,7 +8849,7 @@ function renderTenantPilot() {
     const item = document.createElement("li");
     const label = document.createElement("span");
     const value = document.createElement("strong");
-    label.textContent = `#${installment.installmentNumber} · ${titleize(installment.status)} · ${new Intl.DateTimeFormat("en-US", {
+    label.textContent = `#${installment.installmentNumber} · ${titleize(installment.status)} · ${productDateTimeFormat( {
       month: "short",
       day: "numeric",
       year: "numeric"
@@ -11216,7 +11227,7 @@ function openBorrowingEntry(entryMode) {
 function formatEvidenceTime(value, { short = false } = {}) {
   const date = new Date(value ?? "");
   if (!Number.isFinite(date.getTime())) return "Unavailable";
-  return new Intl.DateTimeFormat("en-US", short
+  return productDateTimeFormat( short
     ? { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }
     : { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }
   ).format(date);
@@ -14562,8 +14573,24 @@ function bindActions() {
   syncNavigationAccessibility();
 }
 
+let productLocalization;
+document.addEventListener("ipo-product-language-change", () => {
+  // Servicing render normally prefills the next installment. Locale alone must
+  // not overwrite an unsubmitted amount that the user already edited.
+  const ids = ["humanCreditAmount", "humanCreditTerm", "humanInstallments", "humanCreditPurpose",
+    "humanRepaymentFrequency", "humanRepaymentAmount", "humanRepaymentSource",
+    "servicingRepaymentAmount", "servicingRepaymentSource"];
+  const inputs = ids.map(id => el(id)).filter(Boolean).map(node => ({ node, value: node.value }));
+  // Re-present cached server truth; render performs no network operation.
+  render();
+  for (const { node, value } of inputs) node.value = value;
+  obligationHistoryBrowser.refreshPresentation();
+  productLocalization.refresh();
+});
+
 async function boot() {
   applyWorkspaceSurfaceAccess();
+  productLocalization = installProductLocalization(document, window);
   bindActions();
   const localAgentAccount = localPilotAgentAccount();
   if (localAgentAccount && !tenantInputValue("agentAccountAddress")) {

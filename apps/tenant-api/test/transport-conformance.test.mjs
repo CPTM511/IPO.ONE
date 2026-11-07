@@ -446,6 +446,9 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
       "/owned-evidence-presentation.js",
       "/principal-agent-workspace-selection.js",
       "/principal-workspace-access.js",
+      "/product-error-presentation.js",
+      "/product-i18n.js",
+      "/product-localization.js",
       "/request-credit-review-binding.js",
       "/risk-operations-presentation.js",
       "/risk-workspace-selection.js",
@@ -463,12 +466,12 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
       "/workspace-navigation.js",
       "/workspace-surface-access.js"
     ]);
-    for (const modulePath of [...relativeModules, "/web-theme.js", "/web-009-public-review.js", "/web-012b-presentation.js"]) {
+    for (const modulePath of [...relativeModules, "/product-copy.js", "/web-theme.js", "/web-009-public-review.js", "/web-012b-presentation.js"]) {
       const moduleResponse = await fetch(`${baseUrl}${modulePath}`);
       assert.equal(moduleResponse.status, 200, `${modulePath} is missing from the fixed asset allowlist`);
       assert.match(moduleResponse.headers.get("content-type"), /^text\/javascript/);
     }
-    for (const stylesheet of ["/web-012b.css", "/workspace-experience.css"]) {
+    for (const stylesheet of ["/product-localization.css", "/web-012b.css", "/workspace-experience.css"]) {
       const response = await fetch(`${baseUrl}${stylesheet}`);
       assert.equal(response.status, 200);
       assert.match(response.headers.get("content-type"), /^text\/css/);

@@ -1,0 +1,82 @@
+.product-language-control {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  color: inherit;
+  font-size: .8rem;
+  min-width: 0;
+}
+.product-display-panel {
+  position: absolute;
+  top: 46px;
+  right: 0;
+  z-index: 40;
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 12px 32px #0002;
+}
+body.product-experience .workspace-options .product-display-panel .mode-switch {
+  position: static;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+  flex-wrap: wrap;
+}
+.product-display-panel .product-language-control {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.workspace-options .product-language-control > span {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip-path: none;
+}
+.safety-banner { flex-wrap: wrap; }
+.product-time-notice { font-size: .75rem; color: inherit; }
+.product-language-control select {
+  min-height: 2.75rem;
+  max-width: 9rem;
+  padding: .4rem .6rem;
+  border: 1px solid var(--line, #75858b);
+  border-radius: .4rem;
+  background: var(--surface, Canvas);
+  color: var(--ink, CanvasText);
+  font: inherit;
+}
+.product-language-control select:focus-visible {
+  outline: 2px solid var(--brand, #89c9bf);
+  outline-offset: 3px;
+}
+.product-translation-warning {
+  padding: .8rem 1rem;
+  margin: .75rem 0;
+  border: 1px solid var(--line, #75858b);
+  border-radius: .4rem;
+  color: var(--ink, CanvasText);
+  background: var(--surface, Canvas);
+  overflow-wrap: anywhere;
+}
+html:not([lang="en"]) .topbar { flex-wrap: wrap; }
+html:not([lang="en"]) :is(button, summary, label, .nav-item) { overflow-wrap: anywhere; }
+html:not([lang="en"]) .human-workbench-actions { flex: 0 1 auto; flex-wrap: wrap; min-width: 0; max-width: 100%; }
+html:not([lang="en"]) .human-workbench-actions button { white-space: normal; min-width: 0; max-width: 100%; }
+html:not([lang="en"]) .state-pill { white-space: normal; min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+@media (max-width: 700px) {
+  .product-display-panel { position: fixed; top: 120px; left: 16px; right: 16px; width: auto; }
+  .product-language-control > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .product-language-control select { max-width: 7.3rem; }
+  .web009-nav-actions { flex-wrap: wrap; }
+}

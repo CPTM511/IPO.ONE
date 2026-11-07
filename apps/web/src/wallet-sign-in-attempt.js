@@ -78,6 +78,11 @@ export function walletSignInErrorMessage(error, { phase = error?.phase } = {}) {
   if (Number(error?.code) === 4200) {
     return "This wallet does not support the requested sign-in step. Select another discovered EVM wallet and keep the same BNB network.";
   }
+  if (typeof error?.userMessage === "string") {
+    return typeof error.serviceDiagnostic === "string" && error.serviceDiagnostic
+      ? `${error.userMessage} Original sign-in service notice: ${error.serviceDiagnostic.slice(0, 400)}`
+      : error.userMessage;
+  }
   // Preserve explicit provider/service restrictions without guessing geography
   // from a generic HTTP 403 or substituting an endpoint to bypass a restriction.
   const message = typeof error?.message === "string" ? error.message.slice(0, 400) : "";

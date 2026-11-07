@@ -84,7 +84,7 @@
     "testnet:m2b003:recovery:prewrite": "node deploy/testnet/m2b-003-recovery-prewrite.mjs",
     "lint:source": "node scripts/lint-source.mjs",
     "lint:boundaries": "node scripts/lint-boundaries.mjs",
-    "lint": "pnpm run check:ui-baseline && pnpm run lint:source && pnpm run lint:boundaries",
+    "lint": "pnpm run check:ui-baseline && pnpm run check:product-i18n && pnpm run lint:source && pnpm run lint:boundaries",
     "typecheck": "node scripts/check-contract-types.mjs",
     "check:schemas": "node scripts/check-schemas.mjs",
     "check:openapi": "node scripts/check-openapi.mjs",
@@ -158,7 +158,8 @@
     "local:evidence-anchor:disable": "node scripts/local-evidence-anchor.mjs disable",
     "demo": "node packages/mvp-flow/src/run-vertical-slice.js",
     "demo:vertical-slice": "node packages/mvp-flow/src/run-vertical-slice.js",
-    "check:ui-baseline": "node scripts/check-product-ui-baseline.mjs"
+    "check:ui-baseline": "node scripts/check-product-ui-baseline.mjs",
+    "check:product-i18n": "node scripts/check-product-i18n.mjs"
   },
   "dependencies": {
     "@simplewebauthn/server": "14.0.1",
