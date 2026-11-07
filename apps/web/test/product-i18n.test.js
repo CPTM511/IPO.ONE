@@ -6,11 +6,16 @@ import { PRODUCT_LANGUAGES, LANGUAGE_STORAGE_KEY, resolveLanguage, supportedLang
 import { AUTHENTICATION_ERROR_COPY, authenticationErrorCopy, PRODUCT_ERROR_COPY, productErrorCopy, workspaceKindLabel, workspaceSessionPresentation } from "../src/product-error-presentation.js";
 import { walletSignInErrorMessage } from "../src/wallet-sign-in-attempt.js";
 import { ownedCopyCandidate } from "../src/product-localization.js";
-import { walletProviderDiscoveryCopy } from "../src/authentication-availability-presentation.js";
+import { walletProviderDiscoveryCopy, walletSignInSummaryCopy, walletSelectedCopy } from "../src/authentication-availability-presentation.js";
 import { mobileWalletAvailability } from "../src/mobile-wallet-access.js";
 
 test("live login configuration, provider counts and session loss have all six translations without enabling phone pairing", () => {
   const copy = ["Secure session ended. Private browser state was cleared."];
+  for (const label of ["Human Borrower", "Principal Controller", "Workspace"]) copy.push(walletSignInSummaryCopy(label));
+  for (const name of ["Binance Wallet", "OKX Wallet", "Untrusted wallet name"]) {
+    const source = walletSelectedCopy(name); copy.push(source);
+    for (const { code } of PRODUCT_LANGUAGES) assert.ok(translateCopy(source, code).text.includes(name));
+  }
   for (const providerState of ["discovering", "ready"]) for (const providerCount of [0, 1, 2, 3, 16]) for (const selectedProvider of [false, true])
     copy.push(walletProviderDiscoveryCopy({ providerState, providerCount, selectedProvider }));
   for (const origin of ["http://127.0.0.1:4332", "https://ipo.one"]) for (const projectId of ["", "1".repeat(32)]) {

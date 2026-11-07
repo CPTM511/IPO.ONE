@@ -18,6 +18,12 @@ export function walletProviderDiscoveryCopy({ providerState, providerCount, sele
   if (selectedProvider) return "One wallet is explicitly selected for this page session.";
   return `${count} wallet${count === 1 ? "" : "s"} found. Select one before connecting.`;
 }
+export function walletSignInSummaryCopy(workspaceLabel) {
+  return `${workspaceLabel} · one-use SIWE signature · no transaction or fee`;
+}
+export function walletSelectedCopy(providerName) {
+  return `${providerName} selected. No account, network, or signature was requested.`;
+}
 
 export function createManagementAccessPresentation({ optionsState, authenticationProfile, riskPasskey } = {}) {
   const ready = optionsState === "ready";

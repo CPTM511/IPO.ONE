@@ -24,7 +24,9 @@ import {
   createAuthenticationAvailabilityPresentation,
   createManagementAccessPresentation,
   createSandboxProfileActivationPresentation,
-  walletProviderDiscoveryCopy
+  walletProviderDiscoveryCopy,
+  walletSignInSummaryCopy,
+  walletSelectedCopy
 } from "./authentication-availability-presentation.js";
 import { createCapitalNetworkPresentation } from "./capital-network-presentation.js";
 import { createCapitalPartnerPresentation } from "./capital-partner-presentation.js";
@@ -943,7 +945,7 @@ function renderAccess() {
     : "Connect & sign in with wallet";
   el("walletSignInBtn").querySelector("small").textContent = walletSession
     ? "Connect the selected wallet for an exact sandbox confirmation"
-    : `${walletWorkspaceLabel(accessState.selectedWorkspaceRole)} · one-use SIWE signature · no transaction or fee`;
+    : walletSignInSummaryCopy(walletWorkspaceLabel(accessState.selectedWorkspaceRole));
   el("accessWorkspacePicker").hidden =
     authenticated ||
     !accessState.walletAuthenticationEnabled ||
@@ -1157,7 +1159,7 @@ const walletProviderRegistry = createWalletProviderRegistry({
 function selectWalletProvider(providerId) {
   const provider = accessState.walletProviders.find((item) => item.providerId === providerId);
   if (!provider || !walletProviderRegistry.selectProvider(providerId)) return;
-  accessState.helper = `${provider.name} selected. No account, network, or signature was requested.`;
+  accessState.helper = walletSelectedCopy(provider.name);
   renderAccess();
 }
 
