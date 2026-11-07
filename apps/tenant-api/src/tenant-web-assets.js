@@ -13,6 +13,11 @@ const ARTIFACT_MANIFEST_PATH = BUNDLED_RELEASE_ID
   ? fileURLToPath(new URL("../deployment-artifact-manifest.json", import.meta.url))
   : undefined;
 const WEB_ASSETS = Object.freeze({
+  "/product-localization.js": Object.freeze({ file: "product-localization.js", contentType: "text/javascript; charset=utf-8" }),
+  "/product-i18n.js": Object.freeze({ file: "product-i18n.js", contentType: "text/javascript; charset=utf-8" }),
+  "/product-error-presentation.js": Object.freeze({ file: "product-error-presentation.js", contentType: "text/javascript; charset=utf-8" }),
+  "/product-copy.js": Object.freeze({ file: "product-copy.js", contentType: "text/javascript; charset=utf-8" }),
+  "/product-localization.css": Object.freeze({ file: "product-localization.css", contentType: "text/css; charset=utf-8" }),
   "/": Object.freeze({ file: "index.html", contentType: "text/html; charset=utf-8" }),
   "/index.html": Object.freeze({ file: "index.html", contentType: "text/html; charset=utf-8" }),
   "/whitepaper": Object.freeze({ file: "whitepaper.html", contentType: "text/html; charset=utf-8" }),

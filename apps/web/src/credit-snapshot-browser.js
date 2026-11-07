@@ -25,7 +25,7 @@ export function acceptCreditSnapshot(view, subjectId) {
   return view;
 }
 
-export function creditSnapshotPresentation(state, formatState = value => value) {
+export function creditSnapshotPresentation(state, formatState = value => value, locale = "en-US") {
   if (state.error) {
     const [label, copy] = FAILURE_STATES[state.errorCode] ?? ["Read failed", "The verified Credit Track Record could not be read. Retry the read; no economic action is repeated."];
     return { label, title: label, copy };
@@ -33,7 +33,7 @@ export function creditSnapshotPresentation(state, formatState = value => value) 
   if (state.busy) return { label: "Updating snapshot", title: "Checking complete credit history", copy: "The previous snapshot is cleared while this read checks complete server history. The hosted worker runs every 15 minutes; this view does not update automatically." };
   if (!state.projection) return { label: "Not loaded", title: "No credit snapshot loaded", copy: "Restore an owned Subject and load its outcome-derived Credit State. No positive history is inferred from an empty browser state. The hosted worker runs every 15 minutes." };
   const p = state.projection;
-  const formatDate = value => new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "long", timeZone: "UTC" }).format(new Date(value));
+  const formatDate = value => new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "long", timeZone: "UTC" }).format(new Date(value));
   return { label: `Verified snapshot · v${p.projectionVersion}`, title: `${p.metrics.completedCycleCount} completed credit cycle${p.metrics.completedCycleCount === 1 ? "" : "s"}`,
     copy: `Snapshot as of ${formatDate(state.asOf)}. ${formatState(p.latestOutcome.outcomeLabel)} is the latest terminal Credit Outcome in this snapshot. ` +
       (state.lastRefreshAttemptAt ? `Last successful worker attempt: ${formatDate(state.lastRefreshAttemptAt)}. ` : "Last worker attempt time is unavailable. ") +

@@ -1,3 +1,6 @@
+import { installProductLocalization } from "./product-localization.js";
+import { authenticationErrorCopy, productErrorCopy, workspaceKindLabel, workspaceSessionPresentation } from "./product-error-presentation.js";
+import { PRODUCT_LANGUAGES, formatMinorAmount, formatProductDate } from "./product-i18n.js";
 import { createObligationHistoryBrowser } from "./obligation-history-browser.js";
 import { createCreditSnapshotLoader, creditSnapshotPresentation } from "./credit-snapshot-browser.js";
 import { WALLET_NETWORK_PROFILES, WALLET_NETWORK_IDS } from "./wallet-networks.js";
@@ -20,7 +23,10 @@ import {
   createAccessSupportDiagnostic,
   createAuthenticationAvailabilityPresentation,
   createManagementAccessPresentation,
-  createSandboxProfileActivationPresentation
+  createSandboxProfileActivationPresentation,
+  walletProviderDiscoveryCopy,
+  walletSignInSummaryCopy,
+  walletSelectedCopy
 } from "./authentication-availability-presentation.js";
 import { createCapitalNetworkPresentation } from "./capital-network-presentation.js";
 import { createCapitalPartnerPresentation } from "./capital-partner-presentation.js";
@@ -105,8 +111,9 @@ import {
   verifyOfficialReportRetrieval
 } from "./official-report-download.js";
 
-const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
-const percent = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
+const productLocale = () => PRODUCT_LANGUAGES.find(item => item.code === document.documentElement.lang)?.locale ?? "en-US";
+const productDateTimeFormat = options => ({ format: value => formatProductDate(value, document.documentElement.lang, options) });
+const percent = { format: value => new Intl.NumberFormat(productLocale(), { maximumFractionDigits: 1 }).format(value) };
 
 const VIEW_DEFINITIONS = workspaceViewCatalog();
 const VIEW_META = Object.fromEntries(
@@ -780,7 +787,7 @@ function consumePostLoginViewIntent() {
 
 const el = (id) => document.getElementById(id);
 const obligationHistoryBrowser = createObligationHistoryBrowser({
-  root: el("obligationHistoryBrowser"), getContext: ownedHistoryContext, formatState: titleize,
+  root: el("obligationHistoryBrowser"), getContext: ownedHistoryContext, formatState: titleize, getLocale: productLocale,
   searchButton: el("searchObligationHistoryBtn"), previousButton: el("previousObligationHistoryBtn"),
   nextButton: el("nextObligationHistoryBtn"),
   readPage: async (context, history) => (await tenantApi("pilotReadWorkspaceResume", {
@@ -836,6 +843,8 @@ function renderWalletProviders() {
         button.append(fallback);
       }
       name.textContent = provider.name;
+      // Wallet-advertised names are external identity, not owned UI copy.
+      name.setAttribute("translate", "no");
       detail.textContent = provider.source === "legacy_eip1193"
         ? "Legacy EIP-1193 fallback"
         : provider.source === "mobile_walletconnect"
@@ -843,19 +852,18 @@ function renderWalletProviders() {
           : provider.source === "binance_injected"
             ? "Binance Wallet connection"
             : provider.rdns ?? "EIP-6963 wallet";
+      if (provider.rdns && provider.source === "eip6963") detail.setAttribute("translate", "no");
       state.textContent = provider.providerId === selectedProviderId ? "Selected" : "Select";
       identity.append(name, detail);
       button.append(identity, state);
       return button;
     })
   );
-  el("walletProviderStatus").textContent = accessState.walletProviderStatus === "discovering"
-    ? "Discovering browser wallets…"
-    : accessState.walletProviders.length === 0
-      ? "No compatible browser wallet announced itself."
-      : selectedProviderId
-        ? "One wallet is explicitly selected for this page session."
-        : `${accessState.walletProviders.length} wallet${accessState.walletProviders.length === 1 ? "" : "s"} found. Select one before connecting.`;
+  el("walletProviderStatus").textContent = walletProviderDiscoveryCopy({
+    providerState: accessState.walletProviderStatus,
+    providerCount: accessState.walletProviders.length,
+    selectedProvider: Boolean(selectedProviderId)
+  });
 }
 
 function renderOidcProviders(providers) {
@@ -937,7 +945,7 @@ function renderAccess() {
     : "Connect & sign in with wallet";
   el("walletSignInBtn").querySelector("small").textContent = walletSession
     ? "Connect the selected wallet for an exact sandbox confirmation"
-    : `${walletWorkspaceLabel(accessState.selectedWorkspaceRole)} · one-use SIWE signature · no transaction or fee`;
+    : walletSignInSummaryCopy(walletWorkspaceLabel(accessState.selectedWorkspaceRole));
   el("accessWorkspacePicker").hidden =
     authenticated ||
     !accessState.walletAuthenticationEnabled ||
@@ -1045,7 +1053,7 @@ function renderAccess() {
   el("accessCopy").textContent = localSessionEnded
     ? "The local host session ended and authenticated product operations are blocked. Start a fresh local no-funds session only when you are ready to continue."
     : workspaceRoleMismatch
-      ? `This page requires the ${expectedWorkspaceLabel()} role. End the current ${workspaceKindLabel(tenantPilot.workspaceKind)} session, then sign in again on this workspace.`
+      ? currentWorkspaceSessionPresentation().requiredMessage
     : authenticated
       ? "Your server session is separate from wallet connection, credit authority, and funds authority. Continue to the workspace or sign out explicitly."
       : "IPO.ONE shows only sign-in methods verified for this host and this browser. Authentication proves identity; Principal and Mandate rules still decide what you can do.";
@@ -1061,7 +1069,7 @@ function renderAccess() {
   el("accessSessionCopy").textContent = localSessionEnded
     ? "No authenticated operation is available in this page. Reloading explicitly provisions a fresh synthetic local session; it does not restore funds or credit authority."
     : workspaceRoleMismatch
-      ? `The browser is signed in as ${workspaceKindLabel(tenantPilot.workspaceKind)}, while this page requires ${expectedWorkspaceLabel()}. Switching signs out the current role and requires a fresh wallet signature.`
+      ? currentWorkspaceSessionPresentation().switchMessage
     : accessState.pendingWorkspaceBootstrap
       ? "Wallet authentication succeeded. Continue once to reload the protected shell and bind its CSRF-protected workspace session."
       : workspaceVerified
@@ -1070,7 +1078,7 @@ function renderAccess() {
   el("continueAuthenticatedSessionBtn").textContent = localSessionEnded
     ? "Start fresh local session"
     : workspaceRoleMismatch
-      ? `Switch to ${expectedWorkspaceLabel()} session`
+      ? currentWorkspaceSessionPresentation().switchAction
     : accessState.pendingWorkspaceBootstrap
       ? "Finish sign-in"
       : "Continue to workspace";
@@ -1151,7 +1159,7 @@ const walletProviderRegistry = createWalletProviderRegistry({
 function selectWalletProvider(providerId) {
   const provider = accessState.walletProviders.find((item) => item.providerId === providerId);
   if (!provider || !walletProviderRegistry.selectProvider(providerId)) return;
-  accessState.helper = `${provider.name} selected. No account, network, or signature was requested.`;
+  accessState.helper = walletSelectedCopy(provider.name);
   renderAccess();
 }
 
@@ -1241,7 +1249,10 @@ async function authJson(path, { method = "GET", body, headers = {}, signal } = {
     payload = undefined;
   }
   if (!response.ok) {
-    const error = new Error(payload?.detail ?? "The sign-in service is unavailable.");
+    const summary = authenticationErrorCopy({ code: payload?.code, status: response.status });
+    const error = new Error(payload?.detail ?? summary);
+    error.userMessage = summary;
+    error.serviceDiagnostic = payload?.detail;
     error.status = response.status;
     error.code = payload?.code ?? "authentication_unavailable";
     error.requestId = response.headers.get("x-request-id") ?? undefined;
@@ -1847,7 +1858,7 @@ function renderRuntimeGate() {
   const workspaceRoleMismatch = hasWorkspaceSessionRoleMismatch();
   gate.hidden = !workspaceRoleMismatch && (!authenticated || connected);
   el("authenticatedRuntimeGateStatus").textContent = workspaceRoleMismatch
-    ? `${expectedWorkspaceLabel()} session required`
+    ? currentWorkspaceSessionPresentation().requiredTitle
     : connected
     ? "Authenticated workspace"
     : authenticated
@@ -1856,7 +1867,7 @@ function renderRuntimeGate() {
       ? tenantPilot.connectionLabel
       : "Verifying secure session";
   el("authenticatedRuntimeGateCopy").textContent = workspaceRoleMismatch
-    ? `This ${currentWorkspaceName() === "controller" ? "Principal" : "Borrower"} workspace received a ${workspaceKindLabel(tenantPilot.workspaceKind)} session from another local port. Switch roles and sign in again; permissions will not be widened automatically.`
+    ? currentWorkspaceSessionPresentation().receivedWorkspaceMessage
     : connected
     ? "Tenant identity, role, policy, and CSRF bindings were verified. All product state below comes from the authenticated protocol."
     : authenticated
@@ -1866,7 +1877,7 @@ function renderRuntimeGate() {
       : "Checking the authenticated Tenant catalog and browser session. No product operation is available until verification completes.";
   el("authenticatedRuntimeGateAction").hidden = !workspaceRoleMismatch;
   el("authenticatedRuntimeGateAction").textContent =
-    `Switch to ${expectedWorkspaceLabel()} session`;
+    currentWorkspaceSessionPresentation().switchAction;
   gate.classList.toggle("connected", connected);
   gate.classList.toggle("blocked", tenantPilot.checked && !connected);
 }
@@ -2203,11 +2214,8 @@ function expectedWorkspaceKind() {
   }[currentWorkspaceName()] ?? null;
 }
 
-function workspaceKindLabel(kind) {
-  return {
-    human_borrower: "Borrower",
-    principal_controller: "Principal"
-  }[kind] ?? "another role";
+function currentWorkspaceSessionPresentation() {
+  return workspaceSessionPresentation(expectedWorkspaceKind(), tenantPilot.workspaceKind);
 }
 
 function expectedWorkspaceLabel() {
@@ -2346,7 +2354,8 @@ async function tenantApi(operationId, {
   }
   recordRequest({ method: "POST", path: `/tenant:${operationId}`, status: response.status, requestId: responseRequestId });
   if (!response.ok) {
-    const error = new Error(result?.detail ?? "The private operation was rejected.");
+    const error = new Error(productErrorCopy({ code: result?.code, status: response.status }));
+    error.serviceDiagnostic = result?.detail;
     error.code = result?.code ?? "unknown_tenant_error";
     error.status = response.status;
     error.requestId = result?.requestId ?? responseRequestId;
@@ -2551,7 +2560,7 @@ async function referenceAgentApi(path, body) {
 }
 
 function usdMinorToMoney(value) {
-  return money.format(Number(asBigInt(value)) / 100);
+  return formatMinorAmount(asBigInt(value), "USD", document.documentElement.lang);
 }
 
 function tenantInputValue(id) {
@@ -4439,12 +4448,12 @@ function renderAgentAuthorityPilot() {
   if (!principalWorkspace) {
     const borrowerWorkspace = currentWorkspaceName() === "borrower";
     el("agentAuthorityAccessTitle").textContent = workspaceRoleMismatch
-      ? `${workspaceKindLabel(tenantPilot.workspaceKind)} session detected`
+      ? currentWorkspaceSessionPresentation().detectedTitle
       : borrowerWorkspace
       ? "Continue in the Principal workspace"
       : "Principal workspace required";
     el("agentAuthorityAccessCopy").textContent = workspaceRoleMismatch
-      ? `This page requires the ${expectedWorkspaceLabel()} role, but the shared host cookie currently identifies a ${workspaceKindLabel(tenantPilot.workspaceKind)} session. Switch sessions, then sign in again with your connected wallet.`
+      ? currentWorkspaceSessionPresentation().cookieMismatchMessage
       : borrowerWorkspace
       ? "This Borrower workspace can request and repay credit, but it cannot create authority for an Agent. Open the separate Principal workspace and sign in with your connected wallet; no Borrower permission will be widened."
       : "Only an authenticated Principal Controller can create an Agent Subject, issue an account-proof request, or activate a Mandate.";
@@ -4583,7 +4592,7 @@ function renderAgentAuthorityPilot() {
     : challengeExpired
       ? "Expired · create a new request"
       : challenge
-        ? `Open · ${new Intl.DateTimeFormat("en-US", { timeStyle: "short" }).format(new Date(challenge.expiresAt))}`
+        ? `Open · ${productDateTimeFormat( { timeStyle: "short" }).format(new Date(challenge.expiresAt))}`
       : "Not created";
   el("agentAccountAgentAction").textContent = accountBound
     ? "Proof verified"
@@ -4630,7 +4639,7 @@ function renderAgentAuthorityPilot() {
     ? `${usdMinorToMoney(mandate.perActionLimitMinor)} / ${usdMinorToMoney(mandate.aggregateLimitMinor)}`
     : "—";
   el("agentAuthorityExpiry").textContent = mandate?.expiresAt
-    ? new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(mandate.expiresAt))
+    ? productDateTimeFormat( { dateStyle: "medium" }).format(new Date(mandate.expiresAt))
     : "—";
   el("agentAuthorityEvidenceHash").textContent = agentAuthorityPilot.activationEvidenceHash ?? "—";
 
@@ -4646,7 +4655,7 @@ function renderAgentAuthorityPilot() {
       ? mandate.allowedProviderIds.length === 1 && mandate.allowedProviderIds[0] === "provider_gateway_compute"
         ? "Gateway Compute" : `${mandate.allowedProviderIds.length} providers in Mandate scope`
       : "Not specified in this Mandate",
-    expiry: mandate?.expiresAt ? new Intl.DateTimeFormat("en-US", {
+    expiry: mandate?.expiresAt ? productDateTimeFormat( {
       dateStyle: "medium", timeStyle: "short", timeZone: "UTC"
     }).format(new Date(mandate.expiresAt)) + " UTC" : "Not set"
   });
@@ -5007,7 +5016,7 @@ function privateInstallmentAmount(installment) {
 function privateDate(value, options = { dateStyle: "medium" }) {
   const date = new Date(value ?? "");
   if (!Number.isFinite(date.getTime())) return "—";
-  return new Intl.DateTimeFormat("en-US", options).format(date);
+  return productDateTimeFormat( options).format(date);
 }
 
 function privateCheckpoint(title, detail, { complete = false, current = false } = {}) {
@@ -7163,7 +7172,7 @@ function renderCreditPassportPilot() {
         tenantPilot.decision.decisionPassport.decisionPassportHash
       )}`
     : "Not loaded";
-  const snapshot = creditSnapshotPresentation(creditStatePilot, titleize);
+  const snapshot = creditSnapshotPresentation(creditStatePilot, titleize, productLocale());
   el("creditTrackRecordCycleCount").textContent = creditState ? String(creditState.metrics.completedCycleCount) : "Not loaded";
   el("creditTrackRecordLatestOutcome").textContent = creditState ? titleize(creditState.latestOutcome.outcomeLabel) : "Not loaded";
   el("creditTrackRecordReliability").textContent = creditState ? titleize(creditState.factors.repaymentReliability) : "Not loaded";
@@ -7585,7 +7594,7 @@ function renderCapitalPartner() {
   el("capitalPartnerTermsHash").textContent = offer?.termsHash ?? "—";
   el("capitalPartnerBorrowerRef").textContent = offer?.subjectId ?? "—";
   el("capitalPartnerOfferValidity").textContent = offer?.validUntil
-    ? new Intl.DateTimeFormat("en-US", {
+    ? productDateTimeFormat( {
         dateStyle: "medium",
         timeStyle: "short"
       }).format(new Date(offer.validUntil))
@@ -7671,7 +7680,7 @@ function renderCapitalPartner() {
 
   const presentation = capitalPartnerPilot.presentation;
   el("capitalPartnerPortfolioStatus").textContent = presentation
-    ? `As of ${new Intl.DateTimeFormat("en-US", {
+    ? `As of ${productDateTimeFormat( {
         dateStyle: "medium",
         timeStyle: "short"
       }).format(new Date(presentation.asOf))}`
@@ -8234,7 +8243,7 @@ function renderTradingCapital() {
     : "Unavailable";
   el("tradingCapitalAuthorizationHash").title = authorization?.authorizationHash ?? "";
   el("tradingCapitalAuthorizationExpiry").textContent = authorization
-    ? new Intl.DateTimeFormat("en-US", {
+    ? productDateTimeFormat( {
         dateStyle: "medium",
         timeStyle: "short"
       }).format(new Date(authorization.expiresAt))
@@ -8712,7 +8721,7 @@ function renderTenantPilot() {
     ? `${titleize(offer.repaymentFrequency)} · ${offer.installmentCount} installment${offer.installmentCount === 1 ? "" : "s"}`
     : "—";
   el("humanOfferMaturity").textContent = offer
-    ? new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(offer.maturityAt))
+    ? productDateTimeFormat( { dateStyle: "medium" }).format(new Date(offer.maturityAt))
     : "—";
   el("humanOfferValidUntil").textContent = offer
     ? formatEvidenceTime(offer.validUntil, { short: true })
@@ -8838,7 +8847,7 @@ function renderTenantPilot() {
     const item = document.createElement("li");
     const label = document.createElement("span");
     const value = document.createElement("strong");
-    label.textContent = `#${installment.installmentNumber} · ${titleize(installment.status)} · ${new Intl.DateTimeFormat("en-US", {
+    label.textContent = `#${installment.installmentNumber} · ${titleize(installment.status)} · ${productDateTimeFormat( {
       month: "short",
       day: "numeric",
       year: "numeric"
@@ -9433,9 +9442,9 @@ async function recoverAuthenticatedWorkspace({
   const expectedKind = expectedWorkspaceKind();
   if (expectedKind !== null && recovery.workspaceKind !== expectedKind) {
     tenantPilot.connected = false;
-    tenantPilot.connectionLabel = `${expectedWorkspaceLabel()} session required`;
+    tenantPilot.connectionLabel = currentWorkspaceSessionPresentation().requiredTitle;
     tenantPilot.helper =
-      `This page received a ${workspaceKindLabel(recovery.workspaceKind)} session from another local workspace. Switch roles and sign in again.`;
+      currentWorkspaceSessionPresentation().receivedFromOtherPortMessage;
     agentAuthorityPilot.helper = tenantPilot.helper;
     tenantPilot.workspaceObligations = [];
     tenantPilot.workspacePositionViews.clear();
@@ -11216,7 +11225,7 @@ function openBorrowingEntry(entryMode) {
 function formatEvidenceTime(value, { short = false } = {}) {
   const date = new Date(value ?? "");
   if (!Number.isFinite(date.getTime())) return "Unavailable";
-  return new Intl.DateTimeFormat("en-US", short
+  return productDateTimeFormat( short
     ? { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }
     : { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }
   ).format(date);
@@ -14562,8 +14571,24 @@ function bindActions() {
   syncNavigationAccessibility();
 }
 
+let productLocalization;
+document.addEventListener("ipo-product-language-change", () => {
+  // Servicing render normally prefills the next installment. Locale alone must
+  // not overwrite an unsubmitted amount that the user already edited.
+  const ids = ["humanCreditAmount", "humanCreditTerm", "humanInstallments", "humanCreditPurpose",
+    "humanRepaymentFrequency", "humanRepaymentAmount", "humanRepaymentSource",
+    "servicingRepaymentAmount", "servicingRepaymentSource"];
+  const inputs = ids.map(id => el(id)).filter(Boolean).map(node => ({ node, value: node.value }));
+  // Re-present cached server truth; render performs no network operation.
+  render();
+  for (const { node, value } of inputs) node.value = value;
+  obligationHistoryBrowser.refreshPresentation();
+  productLocalization.refresh();
+});
+
 async function boot() {
   applyWorkspaceSurfaceAccess();
+  productLocalization = installProductLocalization(document, window);
   bindActions();
   const localAgentAccount = localPilotAgentAccount();
   if (localAgentAccount && !tenantInputValue("agentAccountAddress")) {
