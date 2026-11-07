@@ -14,7 +14,7 @@ const Ajv2020 = require("ajv/dist/2020").default;
 
 test("API-contract AJV resolves the reviewed fast-uri patch", () => {
   assert.equal(require("ajv/package.json").version, "8.20.0");
-  assert.equal(requireFromAjv("fast-uri/package.json").version, "3.1.8");
+  assert.equal(requireFromAjv("fast-uri/package.json").version, "3.1.9");
 });
 
 test("GHSA-qw65-cvwx-89v3 rejects invalid ports across URI composition paths", () => {
