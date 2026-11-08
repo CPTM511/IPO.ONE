@@ -2,6 +2,8 @@
 .access-dialog .mobile-wallet-access { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border, #d3dfdc); }
 .access-dialog .mobile-wallet-access p { overflow-wrap: anywhere; }
 .access-dialog .mobile-wallet-pairing img { display: block; width: min(240px, 100%); height: auto; background: white; }
+.access-dialog .mobile-wallet-pairing a[href] { display: inline-flex; align-items: center; min-height: 44px; min-width: 0; max-width: 100%; padding: 10px 14px; border: 1px solid var(--b-line); border-radius: 6px; background: var(--b-elevated); color: var(--b-ink); font-size: 13px; font-weight: 600; text-decoration: none; overflow-wrap: anywhere; }
+.access-dialog .mobile-wallet-pairing a[href]:focus-visible { outline: 2px solid var(--b-accent); outline-offset: 3px; }
 /* Never expose the legacy HTML or an intermediate role layout during startup. */
 .app-startup { display: none; }
 html[data-ipo-startup] { color-scheme: light; }
