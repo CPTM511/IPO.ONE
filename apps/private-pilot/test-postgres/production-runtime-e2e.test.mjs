@@ -24,7 +24,7 @@ import {
   X_LAYER_TESTNET_PROFILE
 } from "../../../modules/chain-adapter/src/index.js";
 import { readFile } from "node:fs/promises";
-import { migrationStatus } from "../../../scripts/migrate.mjs";
+import { migrationStatus, migrateDown, migrateUp } from "../../../scripts/migrate.mjs";
 import { createPostgresPool } from "../../../modules/persistence/src/index.js";
 import { hashId } from "../../../packages/domain/src/index.js";
 import {
@@ -32,7 +32,7 @@ import {
   bootstrapProductionDatabase
 } from "../src/production-bootstrap.js";
 import { createHostedSyntheticMeteredProvider } from "../src/local-synthetic-metered-provider.js";
-import { createProductionClosedPilotRuntime } from "../src/production-runtime.js";
+import { createProductionClosedPilotRuntime, assertProductionMigrationSet } from "../src/production-runtime.js";
 
 const { Pool } = pg;
 const CONNECTION_STRING = process.env.DATABASE_URL;
@@ -262,6 +262,10 @@ for (const walletChainId of [84532, 97, 56]) test(
           });
         }
       };
+      if (walletChainId === 84532) {
+        await migrateDown({pool:ownerPool,steps:1});
+        await assert.rejects(assertProductionMigrationSet(ownerPool,{syntheticCollateralEnabled:true}),{code:"production_database_migration_mismatch"});
+      }
       runtime = await createProductionClosedPilotRuntime(runtimeInput);
       const address = await runtime.listen();
       assert.deepEqual(address, { host: "0.0.0.0", port });
@@ -272,6 +276,9 @@ for (const walletChainId of [84532, 97, 56]) test(
         "x-ipo-one-edge-assertion": edgeAssertion
       };
 
+      if (walletChainId === 84532) {
+        assert.equal(await assertProductionMigrationSet(ownerPool),"b3_compatible_off_before_migration");
+      }
       const ready = await fetch(`${baseUrl}/readyz`);
       assert.equal(ready.status, 200);
       assert.equal((await ready.json()).realFundsEnabled, false);
@@ -692,6 +699,12 @@ for (const walletChainId of [84532, 97, 56]) test(
           [walletChainId]
         );
         assert.deepEqual(after.rows, before.rows, "rollback must retain BNB authentication records");
+      }
+
+      if (walletChainId === 84532) {
+        assert.deepEqual(await migrateUp({pool:ownerPool}),["0089_synthetic_collateral_terms"]);
+        assert.equal(await assertProductionMigrationSet(ownerPool,{syntheticCollateralEnabled:true}),"current");
+        assert.equal((await fetch(`${baseUrl}/readyz`)).status,200);
       }
 
       const exhaustedChallenge = await fetch(

@@ -65,7 +65,7 @@ import {
   createTenantSecurityContext,
   setTenantTransactionContext
 } from "../../persistence/src/index.js";
-import { migrateUp } from "../../../scripts/migrate.mjs";
+import { migrateUp, migrateDown } from "../../../scripts/migrate.mjs";
 import {
   AgentTenantCommandClient,
   AuditorTenantQueryClient,
@@ -8063,6 +8063,7 @@ test("B3 PostgreSQL synthetic collateral closes one shared Human and Agent lifec
   };
   try {
     await migrateUp({ pool: owner });
+    await migrateDown({pool:owner,steps:1});
     await owner.query(`CREATE ROLE ${role} NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS`);
     await owner.query(`GRANT USAGE ON SCHEMA public TO ${role}`);
     await owner.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ${role}`);
@@ -8120,6 +8121,26 @@ test("B3 PostgreSQL synthetic collateral closes one shared Human and Agent lifec
     await seedSyntheticIdentityReference({ pool: app, tenantId: tenant, identity: borrower,
       subjectId: subject.subjectId, principalId: subject.principalId, consentId: consent.consentId,
       purposeCodes: ['identity_reference_use','credit_decision','credit_offer_acceptance'] });
+    // Actual unprivileged legacy economic writes before the additive column.
+    const legacyHuman=humanClient(gateway(app,harness),borrower.authenticationContext);
+    const legacyRequest=await legacyHuman.requestCredit(requestCreditCommand({subjectId:subject.subjectId,
+      authorityId:consent.consentId,idempotencyKey:id('legacy-request')}));
+    const legacyOffer=(await legacyHuman.evaluateCreditApplication({creditIntentId:legacyRequest.response.creditIntent.creditIntentId,
+      ...envelope('legacy-evaluate')})).response.offer;
+    const legacyAccepted=await legacyHuman.acceptCreditOffer({creditOfferId:legacyOffer.creditOfferId,payload:{
+      expectedOfferHash:legacyOffer.creditOfferHash,expectedTermsHash:legacyOffer.termsHash,
+      acknowledgementHash:hashId('b3-legacy-acknowledgement',legacyOffer.termsHash)},...envelope('legacy-accept')});
+    const legacyId=legacyAccepted.response.obligation.obligationId;
+    await legacyHuman.executeSandboxObligation({obligationId:legacyId,...envelope('legacy-execute')});
+    const legacyRepaid=await legacyHuman.postSandboxRepayment({obligationId:legacyId,
+      payload:{amountMinor:'12000',sourceCode:'synthetic_wallet'},...envelope('legacy-repay')});
+    assert.equal(legacyRepaid.response.obligation.status,'fully_repaid');
+    assert.equal(legacyRepaid.response.obligation.syntheticCollateral,undefined);
+    assert.deepEqual(await migrateUp({pool:owner}),['0089_synthetic_collateral_terms']);
+    const legacyRecovered=await legacyHuman.getOwnObligation({obligationId:legacyId,
+      requestId:`request-${id('legacy-after-migration')}`,correlationId:`correlation-${id('legacy-after-migration')}`});
+    assert.equal(legacyRecovered.response.obligation.totalRepaidMinor,'12000');
+    console.log('B3 compatible off: legacy accept, execute and repay work before0089 and recover after migration');
     const createdAgent = (await principal.createAgentSubject(createCommand({
       subjectActorId: agentIdentity.authenticationContext.actorId, displayName: 'B3 synthetic Agent', idempotencyKey: id('agent-subject')
     }))).response;

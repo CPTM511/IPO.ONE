@@ -103,7 +103,7 @@ A4 使用的具体读取操作为 `pilotReadOwnObligation`、`pilotReadOwnObliga
 
 **B2 续批历史保留，执行范围已按 Founder 指令收窄。** 三钱包和原四网络／八方法最大签名边界不变；无交易、真实资金、新 SDK／链或新增支出。7e75f33 与 SDK 修复版 959b044 均曾完成技术门禁及条件部署，但两轮 iPhone＋OKX 桌面扫码均未完成。Founder 决定暂缓，已恢复 B1 bcce697、删除唯一 Project ID，禁止旧候选重新激活。直接钱包入口继续；50ee192 / PR #102 已完成同头双 CI、同树合并及正式发布，六语网络提示和停用说明经 96 正式浏览器状态核验，WalletConnect 保持关闭。OKX iOS/Android 内置浏览器登录只记用户反馈，版本、网络、原记录和刷新/重登未冒记通过。
 
-B2 的直接回退基线为已验收 B1 bcce697 / dpl_3HJLd2Xi8EPA5eadzLqCtfaBxFL1；无数据库回退。当前不再等待扫码复测，继续直接钱包路径与下一里程碑。B3 已选择合成确认：复用既有 M2 约束，在申请与 Offer 中先固定非兑付合成 WETH 条款，确认→执行→还款→解除共用同一 Obligation/Ledger/Event/Evidence。本轮无链提交，原 Pool 链接口仍只读。B3 记录产生后不得退回缺少抵押保护的旧 B1/B2 代码；使用兼容停用版，保留 schema、记录和回执。[B3 首个卡点与待审实施方案](../codex/tasks/B3_COLLATERAL_SUBMISSION_ALIGNMENT.md)。伙伴契约与完整矩阵缺证仍未验收。 [B1 精确清单](../../output/b1-language-review-20261108/RELEASE_CHECKLIST.md) · [现有正式体验](https://ipo.one)
+B2 的直接回退基线为已验收 B1 bcce697 / dpl_3HJLd2Xi8EPA5eadzLqCtfaBxFL1；无数据库回退。当前不再等待扫码复测，继续直接钱包路径与下一里程碑。B3 已选择合成确认：复用既有 M2 约束，在申请与 Offer 中先固定非兑付合成 WETH 条款，确认→执行→还款→解除共用同一 Obligation/Ledger/Event/Evidence。本轮无链提交，原 Pool 链接口仍只读。B3 记录产生后不得退回缺少抵押保护的旧 B1/B2 代码；先在旧迁移集合推广兼容停用版，再新增0089、最后启用；停用仅兼容旧/新两个精确集合，启用要求新集合，保留 schema、记录和回执。[B3 首个卡点与待审实施方案](../codex/tasks/B3_COLLATERAL_SUBMISSION_ALIGNMENT.md)。伙伴契约与完整矩阵缺证仍未验收。 [B1 精确清单](../../output/b1-language-review-20261108/RELEASE_CHECKLIST.md) · [现有正式体验](https://ipo.one)
 
 并行准备三个明确决策包，不要求它们先阻断普通国际化工作：
 

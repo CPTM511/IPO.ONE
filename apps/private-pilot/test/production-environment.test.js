@@ -9,7 +9,7 @@ import {
   assertProductionBootstrapConfig,
   loadProductionBootstrapConfig
 } from "../src/production-bootstrap.js";
-import { createProductionClosedPilotRuntime } from "../src/production-runtime.js";
+import { createProductionClosedPilotRuntime, assertProductionMigrationSet } from "../src/production-runtime.js";
 
 const SECRET_REF = "projects/ipo-one-prod/secrets/example/versions/1";
 const futureCredentialExpiry = () =>
@@ -291,4 +291,18 @@ test("production runtime closes both pools when startup validation fails", async
   );
   assert.equal(gatewayClosed, 1);
   assert.equal(authenticationClosed, 1);
+});
+
+
+test("B3 off runtime admits only the exact pre-migration set; activation and other drift fail closed",async()=>{
+  const {readMigrationSet}=await import("../../../scripts/migrate.mjs");
+  const full=(await readMigrationSet()).map(({name,checksum})=>({name,checksum}));
+  const pool=rows=>({query:async()=>({rowCount:rows.length,rows})});
+  assert.equal(await assertProductionMigrationSet(pool(full),{syntheticCollateralEnabled:true}),"current");
+  assert.equal(await assertProductionMigrationSet(pool(full.slice(0,-1))),"b3_compatible_off_before_migration");
+  for(const rows of [full.slice(0,-2),[...full,{name:'future',checksum:'unknown'}],
+    [{...full[0],checksum:'modified'},...full.slice(1,-1)]]){
+    await assert.rejects(assertProductionMigrationSet(pool(rows)),{code:'production_database_migration_mismatch'});
+  }
+  await assert.rejects(assertProductionMigrationSet(pool(full.slice(0,-1)),{syntheticCollateralEnabled:true}),{code:'production_database_migration_mismatch'});
 });

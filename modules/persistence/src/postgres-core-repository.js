@@ -6615,6 +6615,10 @@ export class PostgresCoreRepository {
   }
 
   async #writeSharedObligation(client, value) {
+    // Legacy writes must work while the compatible-off runtime precedes0089.
+    // Only a validated synthetic position writes the new column; an omitted
+    // position can never erase a previously persisted one.
+    const hasSyntheticCollateral = value.syntheticCollateral !== undefined;
     const repaidPrincipalMinor = (
       BigInt(value.originalPrincipalMinor) - BigInt(value.outstandingPrincipalMinor)
     ).toString();
@@ -6637,7 +6641,7 @@ export class PostgresCoreRepository {
          schedule_sequence, servicing_owner_code, resolution_type,
          resolution_reason_code, resolution_at, written_off_principal_minor,
          written_off_interest_minor, written_off_fees_minor,
-         pool_obligation_binding_id, pool_execution_receipt_id, synthetic_collateral
+         pool_obligation_binding_id, pool_execution_receipt_id${hasSyntheticCollateral ? ", synthetic_collateral" : ""}
        ) VALUES (
          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
          NULL, NULL, $11, 1, '[]'::jsonb, '[]'::jsonb, $12, $13, $14, $15,
@@ -6645,7 +6649,7 @@ export class PostgresCoreRepository {
          $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38,
          $39, $40, $41, $42, $43,
          $44, $45, $46, $47, $48, $49, $50, $51, $52, $53,
-         $54, $55, $56, $57, $58, $59, $60::jsonb
+         $54, $55, $56, $57, $58, $59${hasSyntheticCollateral ? ", $60::jsonb" : ""}
        )
        ON CONFLICT (id) DO UPDATE
          SET outstanding_minor = EXCLUDED.outstanding_minor,
@@ -6656,7 +6660,7 @@ export class PostgresCoreRepository {
              outstanding_fees_minor = EXCLUDED.outstanding_fees_minor,
              total_repaid_minor = EXCLUDED.total_repaid_minor,
              execution_status = EXCLUDED.execution_status,
-             synthetic_collateral = EXCLUDED.synthetic_collateral,
+             ${hasSyntheticCollateral ? "synthetic_collateral = EXCLUDED.synthetic_collateral," : ""}
              sandbox_execution_receipt_id = EXCLUDED.sandbox_execution_receipt_id,
              executed_at = EXCLUDED.executed_at,
              last_accrued_at = EXCLUDED.last_accrued_at,
@@ -6750,7 +6754,7 @@ export class PostgresCoreRepository {
         value.writtenOffFeesMinor ?? "0",
         value.poolObligationBindingId ?? null,
         value.poolExecutionReceiptId ?? null,
-        value.syntheticCollateral ? json(value.syntheticCollateral) : null
+        ...(hasSyntheticCollateral ? [json(value.syntheticCollateral)] : [])
       ]
     );
     if (result.rowCount !== 1) {

@@ -132,27 +132,23 @@ function assertClosedConfig(input) {
   ) throw invalidConfig();
 }
 
-async function assertExactMigrationSet(pool) {
+// The compatible-off deployment must be promotable before0089, avoiding an
+// interval where the old deployment rejects the newly migrated database. Only
+// this named terminal migration may be pending; activation still requires all.
+export async function assertProductionMigrationSet(pool, { syntheticCollateralEnabled = false } = {}) {
   const expected = await readMigrationSet();
-  const result = await pool.query(
-    "SELECT name, checksum FROM schema_migrations ORDER BY name"
-  );
-  if (
-    result.rowCount !== expected.length ||
-    expected.some((migration, index) => (
-      result.rows[index]?.name !== migration.name ||
-      !migrationChecksumMatches({
-        name: migration.name,
-        recordedChecksum: result.rows[index]?.checksum,
-        releaseChecksum: migration.checksum
-      })
-    ))
-  ) {
-    throw new DomainError(
-      "production_database_migration_mismatch",
-      "Production database does not match the exact release migration set"
-    );
-  }
+  const result = await pool.query("SELECT name, checksum FROM schema_migrations ORDER BY name");
+  const beforeB3 = syntheticCollateralEnabled === false &&
+    expected.at(-1)?.name === "0089_synthetic_collateral_terms" &&
+    result.rowCount === expected.length - 1;
+  const required = beforeB3 ? expected.slice(0,-1) : expected;
+  if (result.rowCount !== required.length || required.some((migration,index) => (
+    result.rows[index]?.name !== migration.name || !migrationChecksumMatches({
+      name:migration.name,recordedChecksum:result.rows[index]?.checksum,releaseChecksum:migration.checksum
+    })
+  ))) throw new DomainError("production_database_migration_mismatch",
+    "Production database must match the current set, or the exact pre-B3 set only while synthetic collateral is off");
+  return beforeB3 ? "b3_compatible_off_before_migration" : "current";
 }
 
 async function composeProductionClosedPilotRuntime(input) {
@@ -176,7 +172,7 @@ async function composeProductionClosedPilotRuntime(input) {
     typeof input.verifyEdgeRequest !== "function"
   ) throw invalidConfig();
 
-  await assertExactMigrationSet(input.gatewayPool);
+  await assertProductionMigrationSet(input.gatewayPool, { syntheticCollateralEnabled: input.syntheticCollateralEnabled === true });
   const gatewayRole = await assertTenantDatabaseRole(input.gatewayPool);
   const humanAccess = await createPostgresHumanAccessComposition({
     browserOrigin: input.browserOrigin,
