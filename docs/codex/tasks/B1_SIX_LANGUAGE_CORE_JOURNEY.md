@@ -2,6 +2,15 @@
 
 ## 2026-11-08 deployed recovery repair
 
+Follow-up: candidate071b3d1 passed158remote browser checks and restored the
+original14Evidence/money unchanged, but the actual Search history action exposed
+an untranslated loading state before its settled result. It was rejected and
+verified back atb01782f. Inventory every authored history-controller status,
+including loading/empty/error/edited filters/date validation, and add six browser
+cases that hold the actual read pending while asserting translated loading,
+disabled query, zero missing warning and zero economic writes. Release requires
+the replacement source's full gates and actual transient-state acceptance.
+
 Founder authorized the bounded B1 release and confirmed professional review
 completed. Candidate 2f08828 was promoted after source/artifact/health checks;
 the original wallet's actual durable resume exposed 15 missing overview labels.
