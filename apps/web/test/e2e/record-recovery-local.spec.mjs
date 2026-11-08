@@ -10,6 +10,45 @@ const currentId = fixture.valid[0].obligation.obligationId;
 const olderId = `${currentId}_secondary`;
 const principalOrigin = `http://127.0.0.1:${process.env.IPO_ONE_RECOVERY_PRINCIPAL_PORT ?? "42932"}`;
 
+for (const language of ["en", "zh", "es", "fr", "ru", "vi"]) {
+  test(`slow owned history remains localized before its read completes: ${language}`, async ({ page }) => {
+    const guard = await queryGuard(page);
+    let releaseHistory;
+    const historyGate = new Promise(resolve => { releaseHistory = resolve; });
+    await page.route("**/tenant/v1/operations", async route => {
+      const command = route.request().postDataJSON();
+      if (command.operationId !== "pilotReadWorkspaceResume" || !command.payload?.obligationHistory)
+        return route.fallback();
+      const response = await route.fetch();
+      await historyGate;
+      await route.fulfill({ response });
+    });
+    await page.setViewportSize({ width: 390, height: 950 });
+    await page.goto("/");
+    await expect(page.locator("#sidebarApiStatus")).toHaveText("Authenticated");
+    const menu = page.getByRole("button", { name: "Open navigation", exact: true });
+    if (await menu.isVisible()) await menu.click();
+    await page.locator('.nav-item[data-view="obligations"]').click();
+    await page.locator(".workspace-options > summary").click();
+    await page.locator("#productLanguage").selectOption(language);
+    await page.locator(".workspace-options > summary").click();
+    const status = page.locator("#obligationHistoryBrowser [data-history-status]");
+    try {
+      await page.locator("#searchObligationHistoryBtn").click();
+      await expect(status).toHaveText(translateCopy("Loading authorized history…", language).text);
+      await expect(page.locator("#searchObligationHistoryBtn")).toBeDisabled();
+      await expect(page.locator("html")).toHaveAttribute("data-product-translation-missing", "0");
+      await expect(page.locator("#productTranslationWarning")).toBeHidden();
+      expect(guard.writes).toEqual([]);
+    } finally {
+      releaseHistory();
+    }
+    await expect(page.locator("#obligationHistoryBrowser [data-history-rows] button").first()).toBeVisible();
+    await expect(page.locator("html")).toHaveAttribute("data-product-translation-missing", "0");
+    expect(guard.writes).toEqual([]);
+  });
+}
+
 // Reproduce the deployed read-only resume shape: owned Obligation/Subject are
 // returned without the old Intent/Offer. This is UI projection evidence only.
 for (const width of [1440, 390]) for (const language of ["en", "zh", "es", "fr", "ru", "vi"]) {

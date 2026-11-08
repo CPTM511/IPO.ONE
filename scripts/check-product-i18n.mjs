@@ -34,6 +34,12 @@ for (const origin of ["http://127.0.0.1:4332", "https://ipo.one"]) for (const pr
 // Inventory the existing gateway status labels, including ternary branches.
 // Only quoted assignment results enter the copy gate; protocol comparisons do not.
 const appSource = await readFile(new URL("../apps/web/src/app.js", import.meta.url), "utf8");
+// Include every authored history-controller state, not only its settled pages.
+const historySource = await readFile(new URL("../apps/web/src/obligation-history-browser.js", import.meta.url), "utf8");
+for (const match of historySource.matchAll(/"(?:[^"\\]|\\.)*"/g)) {
+  const value = JSON.parse(match[0]);
+  if (/\s/.test(value) && ownedCopyCandidate(value)) copy.add(value);
+}
 // Durable resume can return an Obligation without its historical Intent/Offer.
 // Inventory the actual overview/recovery branches as well as authored HTML.
 for (const view of ["overview", "request-credit", ...views]) {
