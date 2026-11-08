@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { mkdir, readFile } from "node:fs/promises";
+import { translateCopy } from "../../src/product-i18n.js";
 
 // Existing synthetic projections only. No database, credentials, real session,
 // chain submission or economic commands participate in this browser suite.
@@ -8,6 +9,48 @@ const fixture = JSON.parse(await readFile(
 const currentId = fixture.valid[0].obligation.obligationId;
 const olderId = `${currentId}_secondary`;
 const principalOrigin = `http://127.0.0.1:${process.env.IPO_ONE_RECOVERY_PRINCIPAL_PORT ?? "42932"}`;
+
+// Reproduce the deployed read-only resume shape: owned Obligation/Subject are
+// returned without the old Intent/Offer. This is UI projection evidence only.
+for (const width of [1440, 390]) for (const language of ["en", "zh", "es", "fr", "ru", "vi"]) {
+  test(`durable Human overview has no missing copy without a historical Offer: ${language}, ${width}`, async ({ page }) => {
+    const guard = await queryGuard(page);
+    await page.route("**/tenant/v1/operations", async route => {
+      const command = route.request().postDataJSON();
+      if (command.operationId !== "pilotReadWorkspaceResume") return route.fallback();
+      const response = await route.fetch();
+      const body = await response.json();
+      body.response.resources = body.response.resources.filter(resource => resource.resourceType !== "credit_intent");
+      await route.fulfill({ response, json: body });
+    });
+    await page.setViewportSize({ width, height: 950 });
+    await page.goto("/");
+    await expect(page.locator("#sidebarApiStatus")).toHaveText("Authenticated");
+    const nav = page.getByRole("button", { name: "Open navigation", exact: true });
+    if (await nav.isVisible()) await nav.click();
+    if (!(await page.locator('.nav-item[data-view="overview"]').isVisible()))
+      await page.locator("#sidebarMoreBtn").click();
+    await page.locator('.nav-item[data-view="overview"]').click();
+    await expect(page.locator("#v9OverviewStateTitle")).toHaveText("Workspace recovered from durable server state");
+    await expect(page.locator("#privateLifecycleList")).toContainText("Awaiting deterministic evaluation");
+    const before = guard.reads.length;
+    await page.locator(".workspace-options > summary").click();
+    await page.locator("#productLanguage").selectOption(language);
+    await expect(page.locator("html")).toHaveAttribute("lang", language);
+    await expect.poll(() => page.evaluate(async () =>
+      (await import("/product-localization.js")).productLocalizationAudit().missing)).toEqual([]);
+    await expect(page.locator("html")).toHaveAttribute("data-product-translation-missing", "0");
+    await expect(page.locator("#productTranslationWarning")).toBeHidden();
+    expect(guard.reads.length).toBe(before);
+    expect(guard.writes).toEqual([]);
+    expect(await page.locator("#privatePortfolioSurface").evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute("lang", language);
+    await expect(page.locator("#v9OverviewStateTitle")).toHaveText(translateCopy("Workspace recovered from durable server state", language).text);
+    await expect(page.locator("html")).toHaveAttribute("data-product-translation-missing", "0");
+    expect(guard.writes).toEqual([]);
+  });
+}
 
 async function queryGuard(page) {
   const writes = [];

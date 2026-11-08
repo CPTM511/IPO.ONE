@@ -9,6 +9,27 @@ import { ownedCopyCandidate } from "../src/product-localization.js";
 import { walletProviderDiscoveryCopy, walletSignInSummaryCopy, walletSelectedCopy } from "../src/authentication-availability-presentation.js";
 import { mobileWalletAvailability } from "../src/mobile-wallet-access.js";
 
+test("durable resume without a historical Offer preserves resource counts and obligation schedule versions in all languages", () => {
+  for (const { code } of PRODUCT_LANGUAGES) {
+    const payment = translateCopy("$60.00\nDue Aug 15", code);
+    assert.equal(payment.translated, true);
+    assert.ok(payment.text.includes("$60.00"));
+    assert.ok(payment.text.includes("Aug 15"));
+    for (const count of [0, 1, 4, 513]) {
+      const source = `${count} Actor-bound resource reference${count === 1 ? "" : "s"} restored after session verification.`;
+      const result = translateCopy(source, code);
+      assert.equal(result.translated, true, `${code}: ${source}`);
+      assert.ok(result.text.includes(String(count)));
+    }
+    for (const state of ["Created", "Active", "Fully Repaid", "Defaulted", "Written Off"]) {
+      const result = translateCopy(`${state} · schedule v12`, code);
+      assert.equal(result.translated, true, `${code}: ${state}`);
+      assert.ok(result.text.includes("v12"));
+    }
+  }
+  assert.equal(translateCopy("A future unknown state · schedule v12", "zh").translated, false);
+});
+
 test("live login configuration, provider counts and session loss have all six translations without enabling phone pairing", () => {
   const copy = ["Secure session ended. Private browser state was cleared."];
   for (const label of ["Human Borrower", "Principal Controller", "Workspace"]) copy.push(walletSignInSummaryCopy(label));

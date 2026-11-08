@@ -6,6 +6,7 @@ import { createAuthenticationAvailabilityPresentation, createManagementAccessPre
 import { mobileWalletAvailability } from "../apps/web/src/mobile-wallet-access.js";
 import { ownedCopyCandidate } from "../apps/web/src/product-localization.js";
 import { PRODUCT_LANGUAGES, normalizeCopy, translateCopy, validateProductCopy } from "../apps/web/src/product-i18n.js";
+import { WORKSPACE_NAVIGATION_MANIFEST } from "../apps/web/src/workspace-surface-access.js";
 
 // Source-copy inventory over our authored HTML, not an HTML sanitizer. Only
 // owned labels/copy enter the catalog; input values and protocol/code are raw.
@@ -31,6 +32,35 @@ for (const origin of ["http://127.0.0.1:4332", "https://ipo.one"]) for (const pr
 // Inventory the existing gateway status labels, including ternary branches.
 // Only quoted assignment results enter the copy gate; protocol comparisons do not.
 const appSource = await readFile(new URL("../apps/web/src/app.js", import.meta.url), "utf8");
+// Durable resume can return an Obligation without its historical Intent/Offer.
+// Inventory the actual overview/recovery branches as well as authored HTML.
+for (const view of ["overview", "request-credit", ...views]) {
+  for (const value of Object.values(WORKSPACE_NAVIGATION_MANIFEST.views[view]))
+    if (typeof value === "string") copy.add(value);
+}
+for (const [start, end] of [
+  ["function renderV9ShellStates()", "  if (tenantPilot.decision)"],
+  ["function renderPrivateProductSurfaces()", "  const obligationPortfolio = renderObligationPortfolio();"]
+]) {
+  const offset = appSource.indexOf(start);
+  const limit = appSource.indexOf(end, offset);
+  if (offset < 0 || limit < offset) throw new Error("Durable overview copy inventory boundary changed");
+  const source = appSource.slice(offset, limit);
+  for (const match of source.matchAll(/"(?:[^"\\]|\\.)*"/g)) {
+    const value = JSON.parse(match[0]);
+    if (/\s/.test(value) && ownedCopyCandidate(value)) copy.add(value);
+  }
+}
+for (const count of [0, 1, 4, 513]) {
+  copy.add(`${count} Actor-bound resource reference${count === 1 ? "" : "s"} restored after session verification.`);
+  copy.add(`${count} latest verified`);
+  copy.add(`${count} partial`);
+  copy.add(`Repayment complete · ${count} partial Evidence events`);
+  copy.add(`${count} partial Evidence events loaded`);
+}
+for (const state of ["Created", "Active", "Fully Repaid", "Defaulted", "Written Off"])
+  for (const version of [1, 12]) copy.add(`${state} · schedule v${version}`);
+copy.add("$60.00\nDue Aug 15");
 for (const match of appSource.matchAll(/connectionLabel\s*:\s*("(?:[^"\\]|\\.)*")/g)) copy.add(JSON.parse(match[1]));
 for (const match of appSource.matchAll(/(?:connectionLabel|accessState\.helper)\s*=\s*([^;]+);/g)) {
   const expression = match[1];
