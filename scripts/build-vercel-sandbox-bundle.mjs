@@ -161,7 +161,14 @@ try {
     migrationProfile: {
       ...VERCEL_MIGRATION_PROFILE,
       excludedLocalMigrations: allMigrations.filter(item => VERCEL_MIGRATION_PROFILE.localOnly.includes(item.name)).map(({ name, checksum }) => ({ name, checksum })),
-      runtimeMigrationCheck: "exact_set_and_checksums_unchanged",
+      runtimeMigrationCheck: "exact_current_set_or_exact_pre_b3_prefix_only_while_collateral_off",
+      compatibleOffPrefix: {
+        count: hostedMigrations.length - 1,
+        setSha256: createHash("sha256").update(JSON.stringify(hostedMigrations.slice(0,-1)
+          .map(({name,checksum})=>({name,checksum})))).digest("hex"),
+        onlyPendingMigration: "0089_synthetic_collateral_terms",
+        activationRequiresCurrentSet: true
+      },
       productionDatabaseMutation: false
     },
     releaseClaim: false,
