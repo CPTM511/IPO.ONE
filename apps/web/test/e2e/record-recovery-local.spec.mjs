@@ -10,6 +10,37 @@ const currentId = fixture.valid[0].obligation.obligationId;
 const olderId = `${currentId}_secondary`;
 const principalOrigin = `http://127.0.0.1:${process.env.IPO_ONE_RECOVERY_PRINCIPAL_PORT ?? "42932"}`;
 
+for (const language of ["en", "zh", "es", "fr", "ru", "vi"]) for (const theme of ["light", "dark"]) {
+  test(`translated progress labels stay within their narrow cells: ${language}, ${theme}`, async ({ page }) => {
+    const guard = await queryGuard(page);
+    await page.setViewportSize({ width: 390, height: 1000 });
+    await page.goto("/");
+    await expect(page.locator("#sidebarApiStatus")).toHaveText("Authenticated");
+    const menu = page.getByRole("button", { name: "Open navigation", exact: true });
+    if (await menu.isVisible()) await menu.click();
+    await page.locator('.nav-item[data-view="request-credit"]').click();
+    await page.locator("#web009AppContext").getByLabel("Appearance", { exact: true }).selectOption(theme);
+    await page.locator(".workspace-options > summary").click();
+    await page.locator("#productLanguage").selectOption(language);
+    await page.locator(".workspace-options > summary").click();
+    await expect(page.locator("html")).toHaveAttribute("lang", language);
+    await expect(page.locator("html")).toHaveAttribute("data-ipo-theme", theme);
+    await expect(page.locator("#humanJourney")).toBeVisible();
+    const labels = await page.locator("#humanJourney > li").evaluateAll(items => items.map(item => ({
+      text: item.querySelector("strong").textContent,
+      width: item.clientWidth, scrollWidth: item.scrollWidth,
+      height: item.clientHeight, scrollHeight: item.scrollHeight
+    })));
+    expect(labels).toHaveLength(5);
+    for (const label of labels) {
+      expect(label.scrollWidth, label.text).toBeLessThanOrEqual(label.width + 1);
+      expect(label.scrollHeight, label.text).toBeLessThanOrEqual(label.height + 1);
+    }
+    await expect(page.locator("html")).toHaveAttribute("data-product-translation-missing", "0");
+    expect(guard.writes).toEqual([]);
+  });
+}
+
 for (const language of ["en", "zh", "es", "fr", "ru", "vi"]) {
   test(`slow owned history remains localized before its read completes: ${language}`, async ({ page }) => {
     const guard = await queryGuard(page);

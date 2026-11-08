@@ -74,6 +74,10 @@ html:not([lang="en"]) :is(button, summary, label, .nav-item) { overflow-wrap: an
 html:not([lang="en"]) .human-workbench-actions { flex: 0 1 auto; flex-wrap: wrap; min-width: 0; max-width: 100%; }
 html:not([lang="en"]) .human-workbench-actions button { white-space: normal; min-width: 0; max-width: 100%; }
 html:not([lang="en"]) .state-pill { white-space: normal; min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+html:not([lang="en"]) body.product-experience .human-journey li strong {
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
 @media (max-width: 700px) {
   .product-display-panel { position: fixed; top: 120px; left: 16px; right: 16px; width: auto; }
   .product-language-control > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
