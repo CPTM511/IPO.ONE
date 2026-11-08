@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { PRODUCT_LANGUAGES, translateCopy } from "../../src/product-i18n.js";
 
 async function openWallet(page, { chain = 56, mode = "reject_signature", wallet = "OKX Wallet", width = 1440, theme = "light" } = {}) {
   await page.setViewportSize({ width, height: 1000 });
@@ -48,7 +49,7 @@ async function openWallet(page, { chain = 56, mode = "reject_signature", wallet 
     };
     if (wallet === "Binance Wallet") window.binancew3w = { ethereum: provider };
     else window.addEventListener("eip6963:requestProvider", () => window.dispatchEvent(new CustomEvent("eip6963:announceProvider", {
-      detail: { provider, info: { uuid: "12345678-1234-4234-9234-123456789012", name: wallet, rdns: "com.okx.wallet", icon: "data:image/png;base64,iVBORw0KGgo=" } }
+      detail: { provider, info: { uuid: "12345678-1234-4234-9234-123456789012", name: wallet, rdns: wallet === "MetaMask" ? "io.metamask" : "com.okex.wallet", icon: "data:image/png;base64,iVBORw0KGgo=" } }
     })));
   }, { mode, wallet, theme });
   const errors = [];
@@ -61,7 +62,7 @@ async function openWallet(page, { chain = 56, mode = "reject_signature", wallet 
 }
 
 for (const chain of [56, 97]) {
-  for (const wallet of ["OKX Wallet", "Binance Wallet"]) for (const [width, theme] of [[1440, "light"], [1440, "dark"], [390, "light"], [390, "dark"]]) {
+  for (const wallet of ["OKX Wallet", "Binance Wallet", "MetaMask"]) for (const [width, theme] of [[1440, "light"], [1440, "dark"], [390, "light"], [390, "dark"]]) {
     test(`${wallet} connects exact BNB ${chain} through visible ${width} ${theme} clicks before synthetic signature rejection`, async ({ page }) => {
       const errors = await openWallet(page, { chain, wallet, width, theme });
       let challenge;
@@ -228,3 +229,154 @@ for (const chain of [56, 97]) test(`OKX BNB ${chain} account switching binds the
   const signatureAccounts = await page.evaluate(() => window.__walletRequests.filter(value => value.method === "personal_sign").map(value => value.params[1]));
   expect(signatureAccounts).toEqual(challenges.map(value => value.address));
 });
+
+// Synthetic canonical-origin transport only: every https://ipo.one request is
+// fulfilled from the isolated loopback host or explicit authentication fixtures.
+// No real project, wallet, relay, signature or production service is used here.
+async function openPhoneFixture(page, { language = "en", width = 390, theme = "light" } = {}) {
+  const localOrigin = `http://127.0.0.1:${process.env.IPO_ONE_WALLET_REVIEW_PORT ?? 42919}`;
+  let verifies = 0;
+  let forward = Promise.resolve();
+  await page.clock.setFixedTime(new Date("2026-11-09T00:00:00Z"));
+  await page.setViewportSize({ width, height: 1000 });
+  await page.addInitScript(({ theme, language }) => {
+    localStorage.setItem("ipo-one-theme", theme);
+    localStorage.setItem("ipo-one-language-v1", language);
+  }, { theme, language });
+  await page.route("https://ipo.one/**", async route => {
+    const url = new URL(route.request().url());
+    if (url.pathname === "/auth/v1/wallet/challenge") return route.fulfill({ status: 201,
+      json: { handle: "synthetic-phone-challenge", message: "Synthetic login fixture; never sign with a real wallet" } });
+    if (url.pathname === "/auth/v1/wallet/verify") {
+      verifies++;
+      return route.fulfill({ status: 503, json: { code: "fixture_verify_unknown", detail: "Synthetic verification result is unknown" } });
+    }
+    // Intercepted canonical requests bypass Chromium's HTTP/1 connection cap.
+    // Serialize only this test projection; preserve the real server admission cap.
+    const pending = forward.then(() => page.request.get(localOrigin + url.pathname + url.search));
+    forward = pending.then(() => undefined);
+    const response = await pending;
+    let body = await response.body();
+    if (url.pathname === "/") body = Buffer.from(body.toString().replace(
+      '<meta name="ipo-one-walletconnect-project-id" content="" />',
+      `<meta name="ipo-one-walletconnect-project-id" content="${"1".repeat(32)}" />`));
+    const headers = { ...response.headers() }; delete headers["content-length"];
+    return route.fulfill({ status: response.status(), headers, body });
+  });
+  await page.goto("https://ipo.one/");
+  await page.evaluate(async () => {
+    const { createMobileWalletConnector } = await import("/mobile-wallet-connector.js");
+    const listeners = new Map();
+    let chain = 97, account = "0x" + "1".repeat(40), approve;
+    window.__phoneRequests = [];
+    const emit = (event, value) => { for (const fn of listeners.get(event) ?? []) fn(value); };
+    const provider = {
+      on(event, fn) { if (!listeners.has(event)) listeners.set(event, new Set()); listeners.get(event).add(fn); },
+      removeListener(event, fn) { listeners.get(event)?.delete(fn); },
+      async connect(options) {
+        chain = options.chains[0];
+        emit("display_uri", `wc:${"a".repeat(64)}@2?relay-protocol=irn&symKey=${"b".repeat(64)}`);
+        await new Promise(resolve => { approve = resolve; });
+        return { accounts: [`eip155:${chain}:${account}`] };
+      },
+      async disconnect() {},
+      async request(input) {
+        window.__phoneRequests.push(input.method);
+        if (input.method === "eth_accounts" || input.method === "eth_requestAccounts") return [account];
+        if (input.method === "eth_chainId") return `0x${chain.toString(16)}`;
+        if (input.method === "wallet_getCapabilities") return {};
+        if (input.method === "personal_sign") return new Promise(resolve => { window.__approvePhoneSignature = () => resolve("0x" + "1".repeat(130)); });
+        throw new Error("Unexpected synthetic phone RPC");
+      }
+    };
+    window.__approvePhoneConnection = () => approve();
+    window.IpoOneWalletConnectBundle = {
+      createMobileWalletConnector,
+      loadApprovedWalletConnectEthereumProvider: async input => ({
+        packageName: input.packageName, packageVersion: input.packageVersion, storageApplied: true, provider
+      }),
+      createPairingQrSvg: async () => '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240"><text x="10" y="30">SYNTHETIC TEST QR</text></svg>'
+    };
+  });
+  await page.locator("#web009Product button").filter({ hasText: translateCopy("Open IPO.ONE", language).text }).first().click();
+  await page.locator("#mobileWalletBtn").click();
+  await page.locator('[data-wallet-chain="97"]').click();
+  return { verifies: () => verifies };
+}
+
+test("phone connection and signature each require visible actions; approval cannot silently verify", async ({ page }) => {
+  const fixture = await openPhoneFixture(page);
+  await page.locator("#walletSignInBtn").click();
+  await expect(page.locator("#mobileWalletLinks")).toBeVisible();
+  for (const id of ["mobileWalletBinanceLink", "mobileWalletOkxAppLink", "mobileWalletOkxWalletLink", "mobileWalletMetaMaskLink"])
+    await expect(page.locator("#" + id)).toHaveAttribute("href", /wc\?uri=wc%3A/);
+  await page.evaluate(() => window.__approvePhoneConnection());
+  await expect(page.locator("#mobileWalletSignatureBtn")).toBeVisible();
+  expect(await page.evaluate(() => window.__phoneRequests.includes("personal_sign"))).toBe(false);
+  expect(fixture.verifies()).toBe(0);
+  await page.locator("#mobileWalletSignatureBtn").click();
+  await expect(page.locator("#mobileWalletMetaMaskLink")).toHaveAttribute("href", "metamask://");
+  expect(await page.evaluate(() => window.__phoneRequests.filter(x => x === "personal_sign").length)).toBe(1);
+  await page.evaluate(() => window.__approvePhoneSignature());
+  await expect(page.locator("#accessAuthStatus")).toContainText("could not be confirmed");
+  expect(fixture.verifies()).toBe(1);
+  await expect(page.locator("#mobileWalletLinks")).toBeHidden();
+  expect(await page.evaluate(() => window.__phoneRequests.some(x => /sendTransaction|signTransaction|sendCalls/.test(x)))).toBe(false);
+});
+
+test("closing phone sign-in discards late approval and removes pairing links", async ({ page }) => {
+  const fixture = await openPhoneFixture(page);
+  await page.locator("#walletSignInBtn").click();
+  await expect(page.locator("#mobileWalletLinks")).toBeVisible();
+  await page.locator("#accessCloseBtn").click();
+  await page.evaluate(() => window.__approvePhoneConnection());
+  await expect(page.locator("#accessLayer")).toBeHidden();
+  await expect(page.locator("#mobileWalletLinks")).toBeHidden();
+  expect(await page.locator("#mobileWalletMetaMaskLink").getAttribute("href")).toBeNull();
+  expect(fixture.verifies()).toBe(0);
+  expect(await page.evaluate(() => window.__phoneRequests.includes("personal_sign"))).toBe(false);
+});
+
+
+test("cancelling phone signature discards a late signature without verification", async ({ page }) => {
+  const fixture = await openPhoneFixture(page);
+  await page.locator("#walletSignInBtn").click();
+  await expect(page.locator("#mobileWalletLinks")).toBeVisible();
+  await page.evaluate(() => window.__approvePhoneConnection());
+  await page.locator("#mobileWalletSignatureBtn").click();
+  await expect.poll(() => page.evaluate(() => typeof window.__approvePhoneSignature)).toBe("function");
+  await page.locator("#mobileWalletCancelBtn").click();
+  await page.evaluate(() => window.__approvePhoneSignature());
+  await expect(page.locator("#walletSignInBtn")).toBeEnabled();
+  await expect(page.locator("#mobileWalletLinks")).toBeHidden();
+  await expect(page.locator("#mobileWalletSignatureBtn")).toBeHidden();
+  await expect(page.locator("#mobileWalletStatus")).toContainText("cancelled");
+  await expect(page.locator("#mobileWalletBtn")).toBeEnabled();
+  expect(fixture.verifies()).toBe(0);
+});
+
+for (const { code: language } of PRODUCT_LANGUAGES) {
+  for (const theme of ["light", "dark"]) test(`phone controls are usable at 390px in ${language} ${theme}`, async ({ page }) => {
+    await openPhoneFixture(page, { language, theme });
+    await expect(page.locator("html")).toHaveAttribute("lang", language);
+    await page.locator("#walletSignInBtn").click();
+    await expect(page.locator("#mobileWalletLinks")).toBeVisible();
+    await expect(page.locator("#mobileWalletStatus")).toHaveText(translateCopy("On this phone, open your installed wallet below. On another device, scan the QR code. Approve only the selected network.", language).text);
+    for (const id of ["mobileWalletBinanceLink", "mobileWalletOkxAppLink", "mobileWalletOkxWalletLink", "mobileWalletMetaMaskLink"]) {
+      const link = page.locator("#" + id);
+      await expect(link).toBeVisible();
+      expect(await link.evaluate(node => node.getBoundingClientRect().height >= 44 && node.scrollWidth <= node.clientWidth)).toBe(true);
+    }
+    expect(await page.locator(".access-dialog").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
+    await page.locator(".access-dialog").screenshot({ path: `output/wallet-sign-in/phone-${language}-${theme}-connection.png` });
+    await page.evaluate(() => window.__approvePhoneConnection());
+    await expect(page.locator("#mobileWalletSignatureBtn")).toHaveText(translateCopy("Request login signature", language).text);
+    await page.locator("#mobileWalletSignatureBtn").click();
+    await expect(page.locator("#mobileWalletMetaMaskLink")).toHaveAttribute("href", "metamask://");
+    await expect(page.locator("#mobileWalletStatus")).toHaveText(translateCopy("Login signature requested. Open your wallet below, review the message, then return to this page.", language).text);
+    await expect(page.locator("#accessAuthStatus")).toHaveText(translateCopy("Review the one-use sign-in message in WalletConnect mobile / QR. This signature does not submit a transaction or charge a fee.", language).text);
+    await expect.poll(() => page.evaluate(async () => (await import("/product-localization.js")).productLocalizationAudit().missing)).toEqual([]);
+    await page.locator(".access-dialog").screenshot({ path: `output/wallet-sign-in/phone-${language}-${theme}-signature.png` });
+    await page.locator("#mobileWalletCancelBtn").click();
+  });
+}

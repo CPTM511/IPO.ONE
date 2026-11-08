@@ -29,14 +29,15 @@ for (const label of ["Human Borrower", "Principal Controller", "Workspace"]) cop
 for (const name of ["Binance Wallet", "OKX Wallet", "Untrusted wallet name"]) copy.add(walletSelectedCopy(name));
 for (const providerState of ["discovering", "ready"]) for (const providerCount of [0, 1, 2, 3, 16]) for (const selectedProvider of [false, true])
   copy.add(walletProviderDiscoveryCopy({ providerState, providerCount, selectedProvider }));
-for (const origin of ["http://127.0.0.1:4332", "https://ipo.one"]) for (const projectId of ["", "1".repeat(32)]) for (const time of ["2026-09-21T00:00:00Z", "2026-11-08T00:00:00Z"])
+for (const origin of ["http://127.0.0.1:4332", "https://ipo.one"]) for (const projectId of ["", "1".repeat(32)]) for (const time of ["2026-11-08T00:00:00Z", "2026-12-09T00:00:00Z"])
   copy.add(mobileWalletAvailability({ origin, projectId, now: new Date(time) }).reason);
 // Inventory the existing gateway status labels, including ternary branches.
 // Only quoted assignment results enter the copy gate; protocol comparisons do not.
 const appSource = await readFile(new URL("../apps/web/src/app.js", import.meta.url), "utf8");
 // Include every authored history-controller state, not only its settled pages.
 const historySource = await readFile(new URL("../apps/web/src/obligation-history-browser.js", import.meta.url), "utf8");
-for (const match of historySource.matchAll(/"(?:[^"\\]|\\.)*"/g)) {
+const mobileSource = await readFile(new URL("../apps/web/src/mobile-wallet-access.js", import.meta.url), "utf8");
+for (const match of `${historySource}\n${mobileSource}`.matchAll(/"(?:[^"\\]|\\.)*"/g)) {
   const value = JSON.parse(match[0]);
   if (/\s/.test(value) && ownedCopyCandidate(value)) copy.add(value);
 }

@@ -1,0 +1,73 @@
+{
+  "status": "APPROVED_BOUNDED_B2_IMPLEMENTATION_AND_CONDITIONAL_RELEASE",
+  "preparedAt": "2026-11-08T05:53:59.082978+00:00",
+  "owner": "IPO.ONE Founder",
+  "implementationBaseline": "bcce697fa70dc04e83a05c3cb9bb4de54f3e90d6",
+  "baselineDeployment": "dpl_3HJLd2Xi8EPA5eadzLqCtfaBxFL1",
+  "projectName": "IPO.ONE Testnet",
+  "projectEvidence": "output/b2-wallet-alignment-20261108/reown-existing-project.json (read-only inventory in Founder workspace)",
+  "rawProjectIdCommitted": false,
+  "wallets": [
+    "Binance Wallet",
+    "OKX Wallet",
+    "MetaMask"
+  ],
+  "package": "@walletconnect/ethereum-provider",
+  "packageVersion": "2.23.10",
+  "origin": "https://ipo.one",
+  "relay": "wss://relay.walletconnect.org",
+  "proposedExpiryUTC": "2026-12-08T15:59:59.999Z",
+  "proposedExpiryAsiaShanghai": "2026-12-08 23:59:59",
+  "existingSignatureOnlyProfiles": [
+    "eip155:84532",
+    "eip155:1952",
+    "eip155:97",
+    "eip155:56"
+  ],
+  "methodsMaximum": [
+    "eth_requestAccounts",
+    "eth_accounts",
+    "eth_chainId",
+    "wallet_switchEthereumChain",
+    "wallet_addEthereumChain",
+    "wallet_getCapabilities",
+    "personal_sign",
+    "eth_signTypedData_v4"
+  ],
+  "newMethods": false,
+  "newNetworks": false,
+  "transactionsAllowed": false,
+  "realFundsEnabled": false,
+  "newPaidServiceOrPlan": false,
+  "additionalSpendAuthorizedUSD": 0,
+  "proposedConfigurationChange": {
+    "projectId": "prj_KLyAPHnFCtQAxIbUjdJa012gAq7Y",
+    "teamId": "team_f6TQU7mloG5OnQGNmtXwFkOi",
+    "variableName": "IPO_ONE_WALLETCONNECT_PROJECT_ID",
+    "target": [
+      "production"
+    ],
+    "baselineVariableAbsent": true,
+    "projectSelection": "existing exact project; only owner-managed runtime value",
+    "otherVariablesChanged": false
+  },
+  "releaseProposal": "Approved conditional release: complete local/CI/frozen-artifact/staged checks, freeze exact SHA and rollback, and arrange available phone operators before canonical promotion. Actual phone acceptance follows exact-SHA promotion; critical failure rolls back to the named B1 deployment. Canonical origin protection remains enforced.",
+  "rollbackSource": "bcce697fa70dc04e83a05c3cb9bb4de54f3e90d6",
+  "rollbackDeployment": "dpl_3HJLd2Xi8EPA5eadzLqCtfaBxFL1",
+  "databaseMutation": false,
+  "partnerProductionReturnContract": "not supplied; no partner E2E claim",
+  "coreCompatibilityRows": 21,
+  "partnerRows": 2,
+  "fallbackRows": 2,
+  "recordedAt": "2026-11-08T06:02:07.293680+00:00",
+  "approvalSource": "Current conversation; request_user_input_async call_11df171e7be34056aa180df0e225d6e2",
+  "founderReply": "批准上述续批、配置与条件发布",
+  "deviceAvailabilityReply": "iPhone 和 Android 均可安排",
+  "proposalSHA256": "406038d87f5ad220e4457b7e66a7129396b2e3a46e882d48f8919f127262c96b",
+  "expiresAt": "2026-12-08T15:59:59.999Z",
+  "proposedExpiryIsNowApproved": true,
+  "historicalPreparationAuthority": "Start B2 alignment; first batch expressly includes Binance Wallet, OKX Wallet and MetaMask. No new expiry/activation grant inferred.",
+  "currentUserAuthorization": "Founder explicitly approved the exact B2 renewal, one production public configuration variable, bounded implementation, and conditional release after gates and device-operator availability; iPhone and Android are both available.",
+  "projectIdSHA256": "94fea371a011f5f378859f1f076f8d0de509fe9662a2bce0d04e4aabf3e285d2",
+  "currentDeviceOperatorReadiness": "Founder replied: 两台现在都可配合，随后补版本信息. Exact OS/wallet versions must be recorded during acceptance."
+}

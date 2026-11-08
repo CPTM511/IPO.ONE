@@ -45,7 +45,7 @@ test("durable resume without a historical Offer preserves resource counts and ob
   assert.equal(translateCopy("A future unknown state · schedule v12", "zh").translated, false);
 });
 
-test("live login configuration, provider counts and session loss have all six translations without enabling phone pairing", () => {
+test("live login configuration, provider counts and session loss localize both current and expired pairing states", () => {
   const copy = ["Secure session ended. Private browser state was cleared."];
   for (const label of ["Human Borrower", "Principal Controller", "Workspace"]) copy.push(walletSignInSummaryCopy(label));
   for (const name of ["Binance Wallet", "OKX Wallet", "Untrusted wallet name"]) {
@@ -54,9 +54,9 @@ test("live login configuration, provider counts and session loss have all six tr
   }
   for (const providerState of ["discovering", "ready"]) for (const providerCount of [0, 1, 2, 3, 16]) for (const selectedProvider of [false, true])
     copy.push(walletProviderDiscoveryCopy({ providerState, providerCount, selectedProvider }));
-  for (const origin of ["http://127.0.0.1:4332", "https://ipo.one"]) for (const projectId of ["", "1".repeat(32)]) {
-    const p = mobileWalletAvailability({ origin, projectId, now: new Date("2026-11-08T00:00:00Z") });
-    assert.equal(p.available, false);
+  for (const origin of ["http://127.0.0.1:4332", "https://ipo.one"]) for (const projectId of ["", "1".repeat(32)]) for (const date of ["2026-11-09T00:00:00Z", "2026-12-09T00:00:00Z"]) {
+    const p = mobileWalletAvailability({ origin, projectId, now: new Date(date) });
+    assert.equal(p.available, origin === "https://ipo.one" && projectId.length === 32 && date.startsWith("2026-11"));
     copy.push(p.reason);
   }
   for (const source of copy) for (const { code } of PRODUCT_LANGUAGES) assert.equal(translateCopy(source, code).translated, true, `${code}: ${source}`);
@@ -166,4 +166,12 @@ test("authentication keeps an explicit original service stop and localizes its r
   }
   assert.equal(authenticationErrorCopy({ code: "authentication_unavailable", status: 503 }), AUTHENTICATION_ERROR_COPY.unavailable);
   assert.match(walletSignInErrorMessage({ ...error, phase: "verify", status: 503 }), /could not be confirmed/);
+});
+
+
+test("mobile connected and signature phases localize every owned status in six languages", () => {
+  const states = ["Connected", "BSC Testnet connected", "Base Sepolia connected", "BNB Smart Chain connected",
+    "Review the one-use sign-in message in WalletConnect mobile / QR. This signature does not submit a transaction or charge a fee."];
+  for (const source of states) for (const { code } of PRODUCT_LANGUAGES)
+    assert.equal(translateCopy(source, code).translated, true, `${code}: ${source}`);
 });

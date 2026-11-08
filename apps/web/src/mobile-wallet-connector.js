@@ -1,5 +1,6 @@
 import { WALLET_NETWORK_PROFILES } from "./wallet-networks.js";
 import { createEvmWalletConnector } from "./evm-wallet-connector.js";
+import { MOBILE_WALLET_APPROVAL, assertMobileWalletApproval, mobileWalletApprovalIsCurrent } from "./wallet-connection-policy.js";
 
 export const MOBILE_WALLET_CONNECTOR_SCHEMA_VERSION =
   "mobile_wallet_connector.v1";
@@ -12,7 +13,7 @@ export const APPROVED_WALLETCONNECT_RELAY_URL =
 export const MOBILE_WALLET_PROVIDER_ID =
   "walletconnect:mobile-v2.23.10";
 
-const APPROVAL_EXPIRES_AT = "2026-09-22T23:59:59.999Z";
+const APPROVAL_EXPIRES_AT = MOBILE_WALLET_APPROVAL.expiresAt;
 const APPROVED_CHAINS = Object.freeze([84532, 1952, 97, 56]);
 const APPROVED_METHODS = Object.freeze([
   "eth_requestAccounts",
@@ -286,6 +287,7 @@ export function createMobileWalletConnector({
   currentOrigin,
   loadEthereumProvider,
   onDisplayUri = () => {},
+  onSignatureRequest = () => {},
   clock = () => new Date()
 } = {}) {
   const approvedOrigin = exactHttpsOrigin("expectedOrigin", expectedOrigin);
@@ -297,13 +299,12 @@ export function createMobileWalletConnector({
     !PROJECT_ID.test(projectId) ||
     typeof loadEthereumProvider !== "function" ||
     typeof onDisplayUri !== "function" ||
+    typeof onSignatureRequest !== "function" ||
     typeof clock !== "function"
   ) {
     throw new TypeError("Mobile wallet connector runtime approval is invalid");
   }
-  if (clock().getTime() > new Date(APPROVAL_EXPIRES_AT).getTime()) {
-    throw new TypeError("Mobile wallet connector approval has expired");
-  }
+  assertMobileWalletApproval(clock());
 
   const storage = createMemoryOnlyConnectorStorage();
   const listeners = new Map(
@@ -338,6 +339,7 @@ export function createMobileWalletConnector({
   }
 
   function emit(event, value) {
+    if (disposed || (event !== "disconnect" && !mobileWalletApprovalIsCurrent(clock()))) return;
     for (const listener of listeners.get(event) ?? []) {
       listener(structuredClone(value));
     }
@@ -356,6 +358,11 @@ export function createMobileWalletConnector({
   function bindProviderEvents() {
     for (const event of APPROVED_PROVIDER_EVENTS) {
       subscribe(event, (value) => {
+        if (!mobileWalletApprovalIsCurrent(clock())) {
+          emit("disconnect", { code: 4900 });
+          void dispose();
+          return;
+        }
         if (event === "connect") status = "connected";
         if (event === "disconnect") {
           status = "disconnected";
@@ -365,7 +372,7 @@ export function createMobileWalletConnector({
       });
     }
     subscribe("display_uri", (value) => {
-      if (typeof value === "string" && DISPLAY_URI.test(value)) {
+      if (!disposed && mobileWalletApprovalIsCurrent(clock()) && typeof value === "string" && DISPLAY_URI.test(value)) {
         onDisplayUri(value);
       }
     });
@@ -376,6 +383,7 @@ export function createMobileWalletConnector({
   }
 
   async function initialize() {
+    assertMobileWalletApproval(clock());
     if (disposed) throw new TypeError("Mobile wallet connector is disposed");
     if (provider) return snapshot();
     if (pendingInitialization) return pendingInitialization;
@@ -390,11 +398,18 @@ export function createMobileWalletConnector({
           relayUrl: APPROVED_WALLETCONNECT_RELAY_URL,
           optionalChains: [...APPROVED_CHAINS],
           methods: [...APPROVED_METHODS],
+          optionalMethods: [],
           events: ["accountsChanged", "chainChanged"],
+          optionalEvents: [],
           rpcMap: { ...RPC_MAP },
-          showQrModal: false
+          showQrModal: false,
+          logger: "silent"
         })
       });
+      if (!mobileWalletApprovalIsCurrent(clock())) {
+        void Promise.resolve().then(() => loaded?.provider?.disconnect()).catch(() => {});
+        assertMobileWalletApproval(clock());
+      }
       if (
         !loaded ||
         loaded.packageName !== APPROVED_WALLETCONNECT_PACKAGE ||
@@ -428,10 +443,18 @@ export function createMobileWalletConnector({
 
   const providerFacade = Object.freeze({
     async request(input) {
+      assertMobileWalletApproval(clock());
       if (!provider || disposed) {
         throw new TypeError("Mobile wallet connector is not initialized");
       }
-      return provider.request(checkedRequest(input));
+      const request = checkedRequest(input);
+      // EVM account/chain checks have completed. The UI may now offer the
+      // separate app-opening action; this callback carries no message or URI.
+      if (request.method === "personal_sign") onSignatureRequest();
+      const result = await provider.request(request);
+      assertMobileWalletApproval(clock());
+      if (disposed) throw new TypeError("Mobile wallet connector is disposed");
+      return result;
     },
     on(event, listener) {
       if (
@@ -451,6 +474,7 @@ export function createMobileWalletConnector({
   });
 
   async function connect({ chainId } = {}) {
+    assertMobileWalletApproval(clock());
     const selected = chainId === undefined ? undefined : WALLET_NETWORK_PROFILES[chainId];
     if (chainId !== undefined && !selected) {
       throw new TypeError("Mobile wallet network is not approved");
@@ -466,6 +490,11 @@ export function createMobileWalletConnector({
           chains: [numericChainId],
           optionalChains: APPROVED_CHAINS.filter((id) => id !== numericChainId)
         });
+        if (!mobileWalletApprovalIsCurrent(clock())) {
+          void Promise.resolve().then(() => provider?.disconnect()).catch(() => {});
+          await storage.clear();
+          assertMobileWalletApproval(clock());
+        }
         if (disposed) throw new TypeError("Mobile wallet connector is disposed");
         status = "connected";
         return structuredClone(result);

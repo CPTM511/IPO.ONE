@@ -1192,6 +1192,7 @@ function openAccess() {
 
 function closeAccess({ restoreFocus = true } = {}) {
   interruptWalletSignIn();
+  void mobileWalletAccess?.dispose();
   el("accessLayer").hidden = true;
   document.body.classList.remove("access-open");
   syncNavigationAccessibility();
@@ -1439,8 +1440,12 @@ let walletSignInAttempt;
 
 function interruptWalletSignIn() {
   if (!walletSignInAttempt) return;
+  const phoneWallet = accessState.walletProviders.find(
+    provider => provider.providerId === accessState.selectedWalletProviderId
+  )?.source === "mobile_walletconnect";
   walletSignInAttempt.cancel();
   walletSignInAttempt = undefined;
+  if (phoneWallet) void mobileWalletAccess?.dispose();
   accessState.busy = false;
   accessState.helper = "Wallet sign-in interrupted. Dismiss any pending wallet request before trying again.";
   renderAccess();
@@ -1516,11 +1521,17 @@ async function connectApprovedNetwork({ authenticate = false } = {}) {
       walletAuthorityLifecycle.assertContextEpoch(walletChallengeEpoch);
       accessState.helper = `Review the one-use sign-in message in ${walletName}. This signature does not submit a transaction or charge a fee.`;
       renderAccess();
-      const signature = await attempt.run(() => connector.signMessage({
-        accountId: account.accountId,
-        message: challenge.message,
-        signal: attempt.signal
-      }), { phase: "signature", timeoutMs: 120_000 });
+      const sign = () => {
+        attempt.assertActive();
+        walletAuthorityLifecycle.assertContextEpoch(walletChallengeEpoch);
+        return connector.signMessage({ accountId: account.accountId, message: challenge.message, signal: attempt.signal });
+      };
+      const phoneWallet = accessState.walletProviders.find(
+        provider => provider.providerId === accessState.selectedWalletProviderId
+      )?.source === "mobile_walletconnect";
+      const signature = await attempt.run(() => phoneWallet
+        ? mobileWalletAccess.requestSignature({ action: sign, signal: attempt.signal })
+        : sign(), { phase: "signature", timeoutMs: 120_000 });
       walletAuthorityLifecycle.assertContextEpoch(walletChallengeEpoch);
       accessState.helper = "Verifying your wallet sign-in…";
       renderAccess();

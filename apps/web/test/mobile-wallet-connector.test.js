@@ -15,7 +15,7 @@ import {
 import { createWalletAuthorityLifecycle } from "../src/wallet-authority-lifecycle.js";
 import { createWalletProviderRegistry } from "../src/wallet-provider-registry.js";
 
-const NOW = new Date("2026-07-23T08:00:00.000Z");
+const NOW = new Date("2026-11-09T08:00:00.000Z");
 const PROJECT_ID = "a".repeat(32);
 
 function fakeProvider() {
@@ -99,7 +99,7 @@ test("mobile connector rejects origin drift, invalid Project ID, and expired app
       projectId: PROJECT_ID,
       expectedOrigin: APPROVED_WALLETCONNECT_ORIGIN,
       currentOrigin: APPROVED_WALLETCONNECT_ORIGIN,
-      clock: () => new Date("2026-09-23T00:00:00.000Z")
+      clock: () => new Date("2026-12-09T00:00:00.000Z")
     }
   ]) {
     assert.throws(
@@ -137,6 +137,9 @@ test("initialization proves exact package, fixed signature networks/methods, and
   assert.equal(load.options.methods.includes("personal_sign"), true);
   assert.equal(load.options.methods.includes("eth_signTypedData_v4"), true);
   assert.equal(load.options.showQrModal, false);
+  assert.deepEqual(load.options.optionalMethods, [], "SDK defaults cannot request transaction permissions");
+  assert.deepEqual(load.options.optionalEvents, []);
+  assert.equal(load.options.logger, "silent");
   assert.equal(load.storage.descriptor.persistence, "memory_only");
   assert.equal(load.storage.descriptor.localStorage, false);
   assert.equal(load.storage.descriptor.sessionStorage, false);
@@ -471,4 +474,38 @@ for (const phase of ["initialization", "pairing"]) test(`cancelling pending ${ph
   provider.emit("connect", { chainId: "eip155:97" });
   assert.equal(connector.getSnapshot().status, "disposed");
   await assert.rejects(connector.provider.request({ method: "eth_accounts" }), /not initialized/);
+});
+
+test("approval expiry during initialization disconnects the late provider and cannot expose it", async () => {
+  let now = new Date("2026-11-09T00:00:00Z"), release, disconnects = 0;
+  const provider = fakeProvider(); provider.disconnect = async () => { disconnects++; };
+  const connector = createMobileWalletConnector({ projectId: PROJECT_ID,
+    expectedOrigin: APPROVED_WALLETCONNECT_ORIGIN, currentOrigin: APPROVED_WALLETCONNECT_ORIGIN,
+    clock: () => now, loadEthereumProvider: () => new Promise(resolve => { release = resolve; }) });
+  const pending = connector.initialize();
+  now = new Date("2026-12-09T00:00:00Z");
+  release({ packageName: APPROVED_WALLETCONNECT_PACKAGE, packageVersion: APPROVED_WALLETCONNECT_VERSION, storageApplied: true, provider });
+  await assert.rejects(pending, /expired/); await Promise.resolve();
+  assert.equal(disconnects, 1);
+  await assert.rejects(connector.provider.request({ method: "eth_accounts" }), /expired/);
+  await connector.dispose();
+});
+
+test("approval expiry discards late signature results and late connection events", async () => {
+  let now = new Date("2026-11-09T00:00:00Z"), release, invalidations = 0;
+  const provider = fakeProvider();
+  const connector = createMobileWalletConnector({ projectId: PROJECT_ID,
+    expectedOrigin: APPROVED_WALLETCONNECT_ORIGIN, currentOrigin: APPROVED_WALLETCONNECT_ORIGIN,
+    clock: () => now, loadEthereumProvider: async () => ({ packageName: APPROVED_WALLETCONNECT_PACKAGE,
+      packageVersion: APPROVED_WALLETCONNECT_VERSION, storageApplied: true, provider }) });
+  await connector.initialize();
+  provider.request = () => new Promise(resolve => { release = resolve; });
+  connector.provider.on("disconnect", () => { invalidations++; });
+  const pending = connector.provider.request({ method: "personal_sign", params: ["0x6869", "0x" + "1".repeat(40)] });
+  now = new Date("2026-12-09T00:00:00Z"); release("0x" + "1".repeat(130));
+  await assert.rejects(pending, /expired/);
+  provider.emit("connect", { chainId: "eip155:84532" });
+  await Promise.resolve();
+  assert.equal(invalidations, 1);
+  assert.equal(connector.getSnapshot().status, "disposed");
 });

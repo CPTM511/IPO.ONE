@@ -18,10 +18,10 @@ test("fixed WalletConnect browser bundle is deterministic, same-origin, and carr
     readFile(LICENSE)
   ]);
 
-  assert.equal(bundle.length, 2_011_840);
+  assert.equal(bundle.length, 2_012_607);
   assert.equal(
     createHash("sha256").update(bundle).digest("hex"),
-    "3d1e62f3349351209db14b42a6a1bcec93b36e44864715dea69dc75e209b216e"
+    "13900b9edcab79bf28e3918284ad2dd5cde3f6481ae59dbf47a7982bb97029a7"
   );
   assert.match(bundle.toString("utf8", 0, 500), /IpoOneWalletConnectBundle/);
   assert.equal(bundle.includes(Buffer.from("sourceMappingURL=")), false);

@@ -3310,9 +3310,21 @@
               <p id="mobileWalletStatus" role="status" aria-live="polite">Phone wallet pairing is awaiting operator configuration.</p>
               <div id="mobileWalletPairing" class="mobile-wallet-pairing" hidden>
                 <img hidden id="mobileWalletQr" alt="Scan this connection QR code with your phone wallet" width="240" height="240" />
+                <button class="primary" id="mobileWalletSignatureBtn" type="button" hidden>Request login signature</button>
+                <div id="mobileWalletLinks" class="button-row" hidden>
+                  <a class="button secondary" id="mobileWalletBinanceLink" rel="noreferrer noopener">Open Binance Wallet</a>
+                  <a class="button secondary" id="mobileWalletOkxAppLink" rel="noreferrer noopener">Open OKX exchange app wallet</a>
+                  <a class="button secondary" id="mobileWalletOkxWalletLink" rel="noreferrer noopener">Open standalone OKX Wallet</a>
+                  <a class="button secondary" id="mobileWalletMetaMaskLink" rel="noreferrer noopener">Open MetaMask</a>
+                </div>
                 <p>Keep this page open. Scan in your wallet, then return here after approval. No transaction or payment is requested.</p>
                 <button class="secondary" id="mobileWalletCancelBtn" type="button">Cancel phone connection</button>
               </div>
+              <details class="protocol-disclosure">
+                <summary>Phone connection help</summary>
+                <p>If this app browser cannot open your wallet, open IPO.ONE in Safari or Chrome. After signing in, saved records are restored from the server.</p>
+                <button class="secondary" id="copyMobileWalletLinkBtn" type="button">Copy IPO.ONE link</button>
+              </details>
             </div>
             <div class="access-support" id="accessSupportPanel" hidden>
               <div>
