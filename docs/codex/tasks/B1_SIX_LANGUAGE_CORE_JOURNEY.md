@@ -2,6 +2,19 @@
 
 ## 2026-11-08 deployed recovery repair
 
+Visual follow-up: b5dbe6f passed the actual 144 view/layout and 42 history-state checks,
+with unchanged original 14 Evidence/money. Final visual inspection found Russian
+progress labels overflowing their own 57px cells (one label 72px), although the
+whole page had no horizontal overflow. Keep the safe usable build available;
+do not mark B1 complete. Scope a non-English progress-label wrapping rule in
+product-localization.css, preserving the current UI baseline, words and actions.
+Add six-language/light-dark 390px regression checks for each label cell's width
+and height, then release the exact gated replacement and inspect actual text.
+The 12 targeted cases passed after scoping the Appearance selector to the visible
+authenticated header. Immediate rollback for this presentation-only follow-up is
+the currently usable b5dbe6f / dpl_757mYeZvbrpyATyr2Gx4EwM565cs. Retain the earlier
+b01782f / dpl_VnhV1yYA6aCvB5g7eHyAhhMywixP as secondary historical fallback.
+
 Follow-up: candidate071b3d1 passed158remote browser checks and restored the
 original14Evidence/money unchanged, but the actual Search history action exposed
 an untranslated loading state before its settled result. It was rejected and
