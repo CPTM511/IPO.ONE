@@ -1,5 +1,50 @@
 # B1 — Six-language core journey
 
+## 2026-11-08 deployed recovery repair
+
+Founder authorized the bounded B1 release and confirmed professional review
+completed. Candidate 2f08828 was promoted after source/artifact/health checks;
+the original wallet's actual durable resume exposed 15 missing overview labels.
+The candidate was rejected and ipo.one was verified back at b01782f/Vnh.
+Original $120 repayment, Obligation and 14 Evidence digests were preserved.
+
+Scope: presentation copy for existing durable recovery and overview branches,
+plus a source inventory and browser regression for an owned Obligation returned
+without its historical Intent/Offer. Likely files: product-copy.js,
+check-product-i18n.mjs, product-i18n.test.js, record-recovery-local.spec.mjs.
+The same account's other five core views exposed existing metered-profile,
+Evidence-event and singular history-result copy. Cover these presentation-only
+sources too; keep substituted examples in durable-human-runtime-copy.v1.json,
+without Actor, session, record identifiers or original hashes/timestamps.
+No protocol, authorization, funds, fees, wallets, dependencies, schema or hosting
+configuration changes. Additional labels remain within the shared overview;
+this does not declare Agent operator workspaces fully translated.
+
+Acceptance: actual recovery sources and plural/count/version/date branches are
+translated in all six languages; amounts, IDs and versions remain exact.
+Read-only local browser regression covers 1440/390 widths, missing-copy marker,
+refresh and no request replay or economic writes. Then full pnpm check and remote
+Quality Gate at the exact candidate, fixed artifacts, staged readiness, canonical
+source/assets/security, and actual original-wallet six-language record recovery.
+Local tests do not substitute for deployed persistence. Professional review
+clearance is Founder-attested, not an invented independent report.
+
+Commands: pnpm check:ui-baseline; pnpm check:product-i18n;
+node --test apps/web/test/product-i18n.test.js;
+pnpm test:browser:record-recovery; pnpm check. Database tests use only the existing
+isolated loopback test database. No production migration or data reset.
+
+Rollback: dpl_VnhV1yYA6aCvB5g7eHyAhhMywixP/b01782f. Check project target,
+canonical alias and actual health together. If the platform rollback changes
+the target but omits ipo.one, restore that existing alias explicitly to the same
+approved deployment and verify actual old release; preserve business records.
+Any missing copy or source/assets/security/critical-flow regression blocks
+release. Record exact replacement source/deployment and user evidence in the
+existing output/b1-language-review-20261108 directory; do not reuse rejected2f
+as a successful B1 verdict.
+
+## Initial local scope and historical evidence
+
 2026-11-07 · Founder approved in the current conversation after A2/B0 review.
 
 Target: local implementation and visible local verification, followed by a
