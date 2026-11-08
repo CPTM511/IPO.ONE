@@ -152,3 +152,24 @@ test("disposing during bundle loading cannot register a late connector and permi
   await f.access.prepare();
   assert.equal(f.registered.length, 1);
 });
+
+
+test("a failed phone attempt removes its QR and links, disposes the provider and offers fresh selection", async () => {
+  const f = fixture();
+  f.window.IpoOneWalletConnectBundle = f.bundle;
+  await f.access.prepare();
+  await f.connections[0].options.onDisplayUri(`wc:${"a".repeat(64)}@2?relay-protocol=irn&symKey=${"b".repeat(64)}`);
+  assert.equal(f.get("mobileWalletPairing").hidden, false);
+  const message = "The wallet has not responded. Select phone wallet to try again.";
+  await f.access.failAttempt(message);
+  f.access.render({ walletEnabled: true });
+  assert.equal(f.get("mobileWalletPairing").hidden, true);
+  assert.equal(f.get("mobileWalletQr").src, undefined);
+  assert.equal(f.get("mobileWalletMetaMaskLink").href, undefined);
+  assert.equal(f.connections[0].disposed, true);
+  assert.equal(f.get("mobileWalletStatus").textContent, message);
+  await f.connections[0].options.onDisplayUri("wc:late-expired-attempt");
+  assert.equal(f.get("mobileWalletPairing").hidden, true);
+  await f.access.prepare();
+  assert.equal(f.connections.length, 2);
+});
