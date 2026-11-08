@@ -318,7 +318,8 @@ test("phone connection and signature each require visible actions; approval cann
   await expect(page.locator("#mobileWalletMetaMaskLink")).toHaveAttribute("href", "metamask://");
   expect(await page.evaluate(() => window.__phoneRequests.filter(x => x === "personal_sign").length)).toBe(1);
   await page.evaluate(() => window.__approvePhoneSignature());
-  await expect(page.locator("#accessAuthStatus")).toContainText("could not be confirmed");
+  await expect(page.locator("#mobileWalletStatus")).toContainText("could not be confirmed");
+  await expect(page.locator("#mobileWalletBtn")).toBeEnabled();
   expect(fixture.verifies()).toBe(1);
   await expect(page.locator("#mobileWalletLinks")).toBeHidden();
   expect(await page.evaluate(() => window.__phoneRequests.some(x => /sendTransaction|signTransaction|sendCalls/.test(x)))).toBe(false);
@@ -380,3 +381,25 @@ for (const { code: language } of PRODUCT_LANGUAGES) {
     await page.locator("#mobileWalletCancelBtn").click();
   });
 }
+
+
+test("phone connection timeout clears stale QR, rejects late approval and permits a fresh attempt", async ({ page }) => {
+  const fixture = await openPhoneFixture(page);
+  await page.clock.install({ time: new Date("2026-11-09T00:00:00Z") });
+  await page.locator("#walletSignInBtn").click();
+  await expect(page.locator("#mobileWalletQr")).toBeVisible();
+  await page.clock.fastForward(60_001);
+  await expect(page.locator("#mobileWalletPairing")).toBeHidden();
+  await expect(page.locator("#mobileWalletMetaMaskLink")).not.toHaveAttribute("href");
+  await expect(page.locator("#mobileWalletQr")).not.toHaveAttribute("src");
+  await expect(page.locator("#mobileWalletStatus")).toContainText("wallet has not responded");
+  await expect(page.locator("#mobileWalletBtn")).toBeEnabled();
+  await page.evaluate(() => window.__approvePhoneConnection());
+  await expect(page.locator("#mobileWalletSignatureBtn")).toBeHidden();
+  expect(fixture.verifies()).toBe(0);
+  expect(await page.evaluate(() => window.__phoneRequests.includes("personal_sign"))).toBe(false);
+  await page.locator("#mobileWalletBtn").click();
+  await page.locator("#walletSignInBtn").click();
+  await expect(page.locator("#mobileWalletQr")).toBeVisible();
+  await page.locator("#mobileWalletCancelBtn").click();
+});

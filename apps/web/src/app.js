@@ -1471,6 +1471,10 @@ async function connectApprovedNetwork({ authenticate = false } = {}) {
     return;
   }
   if (authenticate) rememberPostLoginViewIntent();
+  const phoneWalletAttempt = accessState.walletProviders.find(
+    provider => provider.providerId === accessState.selectedWalletProviderId
+  )?.source === "mobile_walletconnect";
+  let phoneFailureMessage;
   const attempt = createWalletSignInAttempt();
   walletSignInAttempt = attempt;
   const selectedRole = accessState.selectedWorkspaceRole;
@@ -1557,11 +1561,13 @@ async function connectApprovedNetwork({ authenticate = false } = {}) {
   } catch (error) {
     if (walletSignInAttempt !== attempt) return;
     accessState.helper = walletSignInErrorMessage(error, { phase: attempt.phase });
+    if (phoneWalletAttempt) phoneFailureMessage = accessState.helper;
   } finally {
     if (walletSignInAttempt === attempt) {
       attempt.cancel();
       walletSignInAttempt = undefined;
       accessState.busy = false;
+      if (phoneFailureMessage) await mobileWalletAccess.failAttempt(phoneFailureMessage);
       renderAccess();
       renderTenantPilot();
     }

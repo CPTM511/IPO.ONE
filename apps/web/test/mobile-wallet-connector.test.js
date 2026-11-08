@@ -125,7 +125,8 @@ test("initialization proves exact package, fixed signature networks/methods, and
   assert.equal(load.packageName, APPROVED_WALLETCONNECT_PACKAGE);
   assert.equal(load.packageVersion, APPROVED_WALLETCONNECT_VERSION);
   assert.equal(load.options.relayUrl, APPROVED_WALLETCONNECT_RELAY_URL);
-  assert.deepEqual(load.options.optionalChains, [84532, 1952, 97, 56]);
+  assert.deepEqual(load.options.chains, [84532]);
+  assert.deepEqual(load.options.optionalChains, [1952, 97, 56]);
   assert.deepEqual(load.options.rpcMap, {
     84532: "https://sepolia.base.org/",
     1952: "https://testrpc.xlayer.tech/terigon",
@@ -133,12 +134,14 @@ test("initialization proves exact package, fixed signature networks/methods, and
     56: "https://bsc-dataseed.bnbchain.org/"
   });
   assert.equal(load.options.methods.includes("eth_sendTransaction"), false);
-  assert.equal(load.options.methods.includes("wallet_getCapabilities"), true);
+  assert.equal(load.options.optionalMethods.includes("wallet_getCapabilities"), true);
   assert.equal(load.options.methods.includes("personal_sign"), true);
-  assert.equal(load.options.methods.includes("eth_signTypedData_v4"), true);
+  assert.equal(load.options.optionalMethods.includes("eth_signTypedData_v4"), true);
   assert.equal(load.options.showQrModal, false);
-  assert.deepEqual(load.options.optionalMethods, [], "SDK defaults cannot request transaction permissions");
-  assert.deepEqual(load.options.optionalEvents, []);
+  assert.deepEqual(load.options.methods, ["personal_sign"]);
+  assert.equal(load.options.optionalMethods.length, 7, "nonempty exact lists suppress SDK transaction defaults");
+  assert.equal(load.options.optionalMethods.some(method => /sendTransaction|sendCalls|signTransaction/.test(method)), false);
+  assert.deepEqual(load.options.optionalEvents, ["accountsChanged", "chainChanged"]);
   assert.equal(load.options.logger, "silent");
   assert.equal(load.storage.descriptor.persistence, "memory_only");
   assert.equal(load.storage.descriptor.localStorage, false);

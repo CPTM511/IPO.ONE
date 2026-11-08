@@ -382,8 +382,11 @@ export function createMobileWalletConnector({
     });
   }
 
-  async function initialize() {
+  async function initialize({ chainId } = {}) {
     assertMobileWalletApproval(clock());
+    const selectedProfile = chainId === undefined ? undefined : WALLET_NETWORK_PROFILES[chainId];
+    if (chainId !== undefined && !selectedProfile) throw new TypeError("Mobile wallet network is not approved");
+    const initialChain = selectedProfile ? Number(selectedProfile.chainId.split(":")[1]) : APPROVED_CHAINS[0];
     if (disposed) throw new TypeError("Mobile wallet connector is disposed");
     if (provider) return snapshot();
     if (pendingInitialization) return pendingInitialization;
@@ -396,11 +399,15 @@ export function createMobileWalletConnector({
         options: deepFreeze({
           projectId,
           relayUrl: APPROVED_WALLETCONNECT_RELAY_URL,
-          optionalChains: [...APPROVED_CHAINS],
-          methods: [...APPROVED_METHODS],
-          optionalMethods: [],
+          // This SDK drops required methods/events when initialized without
+          // a required chain. Empty optional lists also restore SDK defaults
+          // (including transaction methods), so always supply bounded lists.
+          chains: [initialChain],
+          optionalChains: APPROVED_CHAINS.filter(id => id !== initialChain),
+          methods: ["personal_sign"],
+          optionalMethods: APPROVED_METHODS.filter(method => method !== "personal_sign"),
           events: ["accountsChanged", "chainChanged"],
-          optionalEvents: [],
+          optionalEvents: ["accountsChanged", "chainChanged"],
           rpcMap: { ...RPC_MAP },
           showQrModal: false,
           logger: "silent"
@@ -483,7 +490,7 @@ export function createMobileWalletConnector({
     const cancelled = new Promise((_, reject) => { cancelConnection = reject; });
     try {
       return await Promise.race([cancelled, (async () => {
-        await initialize();
+        await initialize({ chainId });
         if (disposed) throw new TypeError("Mobile wallet connector is disposed");
         const numericChainId = selected && Number(selected.chainId.split(":")[1]);
         const result = await provider.connect(numericChainId === undefined ? undefined : {

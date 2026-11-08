@@ -158,6 +158,14 @@ export function createMobileWalletAccess({ document, window, registry, selectPro
     status.textContent = idleStatus;
     onStatus(status.textContent);
   }
+  async function failAttempt(message) {
+    // A timed-out QR must never remain scannable or keep its SDK request alive.
+    // Drop the connector before exposing a fresh user-driven retry.
+    idleStatus = message;
+    await dispose();
+    status.textContent = availability().available ? idleStatus : availability().reason;
+    onStatus(status.textContent);
+  }
   function requestSignature({ action, signal }) {
     if (!mobile || signatureGate || !availability().available || signal?.aborted || typeof action !== "function") {
       return Promise.reject(Object.assign(new Error("Phone wallet login was interrupted."), { code: 4001 }));
@@ -198,5 +206,5 @@ export function createMobileWalletAccess({ document, window, registry, selectPro
   const refreshAvailability = () => render(renderState);
   window.addEventListener?.("pageshow", refreshAvailability);
   document.addEventListener?.("visibilitychange", refreshAvailability);
-  return Object.freeze({ render, prepare, cancel, clearPairing, requestSignature, dispose });
+  return Object.freeze({ render, prepare, cancel, clearPairing, requestSignature, failAttempt, dispose });
 }
