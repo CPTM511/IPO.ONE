@@ -2,8 +2,12 @@
 
 Read only the sources relevant to the current decision. This index is not a mandatory reading sequence; original DOCX archives are for provenance or source-fidelity checks.
 
-- Highest product-truth authority and requirement registry:
-  `docs/PRODUCT_CONSTITUTION.md`
+- Highest product-truth authority and enduring principles:
+  `docs/PRODUCT_CONSTITUTION.md` (v2.0)
+- Current capability registry, phase/profile permissions and retained decisions:
+  `docs/governance/CURRENT_AUTHORIZATION_REGISTER.md`
+- Constitution v1.7 provenance and historical audit disposition:
+  `docs/governance/history/PRODUCT_CONSTITUTION_v1.7_2026-09-10.md`
 - Canonical Product Charter: `docs/guidance/IPO_ONE_PRODUCT_CHARTER_v1.1.md`
 - Founding Edition source archive:
   `docs/guidance/IPO_ONE_Product_Charter_v1.1_Founding_Edition.docx`
@@ -16,7 +20,8 @@ Read only the sources relevant to the current decision. This index is not a mand
 - Founder-approved product optimization measure:
   `docs/guidance/IPO_ONE_PRODUCT_OPTIMIZATION_MEASURE_v1.0.md`
 - Founder-directed product engineering and experience standard:
-  `docs/guidance/IPO_ONE_PRODUCT_ENGINEERING_AND_EXPERIENCE_STANDARD_v1.0.md`
+  `docs/guidance/IPO_ONE_PRODUCT_ENGINEERING_AND_EXPERIENCE_STANDARD_v1.1.md`
+  (v1.0 remains unchanged as historical guidance)
 - Local-to-closed-pilot delivery guidance:
   `docs/guidance/IPO_ONE_LOCAL_TO_CLOSED_PILOT_DELIVERY_GUIDE_v0.1_DRAFT.md`
 - Public beta launch gate: `docs/guidance/IPO_ONE_PUBLIC_BETA_LAUNCH_READINESS_v0.3.md`
@@ -42,18 +47,21 @@ untracked notes.
 
 Guidance hierarchy:
 
-- The current checkout's Product Constitution is the highest product-truth authority and conflict
-  resolver. It assigns stable requirement IDs, records approved/gated/rejected
-  capabilities, and resolves the current CreditLine, Agent Lockbox, Strategy
-  Vault, and dispute-workflow decisions. Approval in the Constitution is not
-  implementation, verification, hosting, real-value, or production evidence.
+- Product Constitution v2.0 is the highest repository product-truth authority
+  and conflict resolver. It sets Agent-first direction, shared-kernel safeguards,
+  valid scoped authorization, delivery-target acceptance and evidence discipline.
+  The Current Authorization Register owns all 56 stable IDs and current exact
+  profile gates. Approval does not establish implementation or availability.
+  Explicit Founder task grants are recorded and reused within scope; they do not
+  waive executable controls or grant new financial authority.
 - Product Charter v1.1 is the canonical long-term product and governance source.
   It ratifies one shared obligation kernel with Human and Agent as parallel,
   first-class entry modes. Product Description v1.0 remains a historical source
-  and is superseded where it conflicts with v1.1.
-- MVP Build Spec v0.1 governs first implementation work, repository scaffolding,
-  issue decomposition, architecture defaults, launch gates, and Codex operating
-  rules.
+  and is superseded where it conflicts with v1.1. Constitution v2.0 governs the
+  updated Agent-first entry strategy, delivery sequencing and authority rules.
+- MVP Build Spec v0.1 supplies retained foundation/FR detail where relevant and
+  not superseded. It does not force existing implementations to repeat setup or
+  override Constitution v2.0 / engineering standard v1.1 task and acceptance rules.
 - Architecture Review v0.2 is a non-canonical audit and target-model proposal.
   Use it to identify known gaps and proposed ADRs, but do not treat protocol,
   funds, permissions, or production-model changes as approved until human review.
@@ -64,18 +72,23 @@ Guidance hierarchy:
 - Product Optimization Measure v1.0 is the Founder-approved near-term product
   and development reference. It sets the three product families, four delivery
   phases, bilateral Capital Partner workflow, Credit Passport direction, and
-  non-redundancy rules. It does not itself approve deployment, credentials,
+  non-redundancy rules. Its phase sequence is retained planning context; current
+  tasks and the authorization register govern present sequencing and profile
+  scope. It does not itself approve deployment, credentials,
   contracts, signers, KYC vendors, production risk, or funds movement.
-- Product Engineering and Experience Standard v1.0 is the mandatory
-  implementation and acceptance standard for local synthetic/no-funds work.
-  It requires one primary next action, explicit mutation language, safe
-  defaults, server-derived workspace recovery, queryable automation,
-  issue-sized delivery, minimal architecture and real-browser verification.
-  It grants no permission, risk, deployment, signer, KYC or funds authority.
+- Product Engineering and Experience Standard v1.1 is the active implementation
+  and acceptance standard at the authorized document/local/test/deployed target.
+  It preserves usability, security, accounting, queryable automation and deployed
+  verification requirements; permits Agent invocation through independent server
+  authorization; and scales task records/checks to actual impact. The v1.0 task
+  sequence and initial navigation counts are historical, not current blockers.
+  Current architecture/profile detail follows the register and accepted ADRs.
 - Local-to-Closed-Pilot Delivery Guide v0.1 is non-canonical delivery guidance.
   Use it to separate repeatable local integration, invited durable no-funds
   operation, live testnet execution, and controlled real value. It grants no
-  deployment, signer, remote-access, risk, contract, or funds authority.
+  deployment, signer, remote-access, risk, contract, or funds authority. Its
+  historical invitation model does not reinstate ordinary-user admission gates
+  superseded by the public authenticated no-funds Beta decision.
 - M2 Pre-Development Alignment v1.0 and ADR-M2-001 through ADR-M2-005 govern the
   Founder-approved secured-pool architecture and issue sequence. They grant no
   runtime, dependency, contract, deployment, signer, oracle, risk-parameter,

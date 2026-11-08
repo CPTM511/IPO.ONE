@@ -1,156 +1,110 @@
 # IPO.ONE Project Guidance
 
-For product, architecture, or implementation decisions, use this checkout's
-`docs/PRODUCT_CONSTITUTION.md` for authority, current phase, requirement status,
-and explicit supersession. Read its relevant sections and the accepted ADRs,
-security invariants, contracts, and acceptance criteria needed for the task.
-Do not import another checkout's phase or permissions.
+## Current authority and task scope
 
-For implementation and user-facing changes, also apply the relevant sections of
-`docs/guidance/IPO_ONE_PRODUCT_ENGINEERING_AND_EXPERIENCE_STANDARD_v1.0.md`.
-Use `docs/guidance/CODEX_GUIDANCE_INDEX.md` to locate additional sources by topic.
-Read original archives only for provenance or source-fidelity questions; draft
-reviews and roadmaps do not confer approval. Reuse already-read guidance until
-its relevant version or evidence changes.
+Use this checkout's `docs/PRODUCT_CONSTITUTION.md` for product purpose, enduring
+invariants, authority and completion principles. Use
+`docs/governance/CURRENT_AUTHORIZATION_REGISTER.md` for stable requirement IDs,
+current profiles, financial restrictions and retained decision references.
+Do not import another checkout's permissions or infer activation from code.
 
-Keep project decisions in their versioned canonical documents. Specific product,
-identity, funds, privacy, release, and acceptance requirements below remain binding;
-general workflow efficiency does not waive them. An existing task or issue may
-supply the required issue contract without duplicating its contents elsewhere.
+For implementation and user-facing work, apply relevant sections of
+`docs/guidance/IPO_ONE_PRODUCT_ENGINEERING_AND_EXPERIENCE_STANDARD_v1.1.md`
+and the accepted ADRs, security invariants, contracts and acceptance criteria
+needed by the task. `docs/guidance/CODEX_GUIDANCE_INDEX.md` routes by topic.
+Read relevant sources once and reuse them until their version or evidence changes.
+Historical build plans and audits do not force current work to restart foundations.
 
-## Product usability and truthful completion gate
+Explicit current Founder instructions govern their stated scope. Keep material
+product/risk/permission decisions in their owning versioned source before the
+affected operation or release. An existing valid scoped grant remains authority;
+do not ask again merely because a task resumes. Never broaden its target,
+budget, data, validity or effects, revive expiry, reuse a one-use grant, or turn
+local approval into deployment approval.
 
-For every user-facing IPO.ONE capability:
+Use `.agents/skills/ipo-one-guidance-gate/SKILL.md` when phase/authority routing
+is needed. Keep detailed product knowledge in canonical project documents.
 
-1. A feature is not complete merely because code, a component, handler, test,
-   contract, artifact, or feature flag exists.
-2. Completion requires explicit evidence for five states: CODE, RUNTIME,
-   DEPLOYED, REACHABLE, and VERIFIED.
-3. Every Human workflow step requiring action must have a visible,
-   understandable, operable UI control. Direct hashes, internal functions,
-   hidden DOM, fixtures, and developer tools do not count.
-4. Every Agent workflow step must have an equivalent authorized, versioned
-   API/MCP operation.
-5. Every role-allowed view must be reachable from a visible control. An orphan
-   view is a release-blocking defect.
-6. Navigation placement and authorization are separate concerns. A non-primary
-   view may move to an advanced group but may not lose all entry points.
-7. Disabled or unconfigured capabilities must remain truthfully visible with
-   the reason and recovery condition; they may not silently disappear or be
-   represented as live.
-8. Local tests, historical testnet transactions, static artifacts, preview
-   screenshots, successful merges, and Vercel Ready status do not prove
-   production usability.
-9. Final browser acceptance must run against the actual deployed SHA and use
-   visible clicks for Human journeys.
-10. Critical state must survive refresh, logout/login, process restart, worker
-    replay, duplicate events, and database recovery as applicable.
-11. Sandbox data is allowed, but final acceptance must use deployed services
-    and durable persistence, not frontend mocks or hardcoded success responses.
-12. Chain claims must distinguish digest, transaction, observation, finality,
-    and reconciliation. Never present historical or synthetic artifacts as a
-    current user's chain record.
-13. Do not put PII, KYC, raw transactions, or full credit histories on-chain.
-14. Credit history may inform a new explainable Decision/Offer; it may not
-    silently increase limits or bypass authorization.
-15. Finding a defect creates an obligation to implement the smallest correct
-    fix, add regression protection, deploy, and retest. A defect report alone
-    does not complete a repair task.
-16. If any required verification is unavailable, report
-    `BLOCKED — NOT COMPLETE`. Never substitute "code complete" for product
-    complete.
+## Product and implementation invariants
 
-Allowed final verdicts:
+- Agent-first commercial entry; Human and Agent remain first-class interfaces
+  over one shared obligation, Ledger, risk, Event, Evidence, servicing and
+  reconciliation kernel. Profiles and adapters cannot fork economic truth.
+- Preserve `Identity + Payment + Obligation`, accountable Principals, current
+  Consent/Mandate, exact accepted terms and independently enforced server policy.
+- Agents may invoke authorized versioned operations. Model output cannot create
+  permission, make the active credit decision, expand limits or bypass checks.
+- Private state is authenticated, Tenant/object-authorized and durable. Browser
+  state, fixtures and static catalogs are not canonical product truth.
+- Keep sensitive data, keys, credentials and full private histories off public
+  or onchain surfaces. Preserve least privilege and governed privileged roles.
+- Preserve exact server-resolved intents, atomic persistence, idempotency,
+  reconciliation, bounded risk, pause/freeze and protected recovery.
+- Distinguish chain digest, transaction, observation, finality and reconciliation.
+  Never reclassify synthetic or historical records as current user transactions.
+- Current no-real-funds, exact testnet, M2/M3, Provider, signer, custody and L4/L5
+  constraints remain in the authorization register and executable launch policy.
+  This guidance does not activate a profile or authorize spend/deployment.
 
-- `PASS — DEPLOYED AND USER-VERIFIED`
-- `BLOCKED — NOT COMPLETE`
-- `FAIL — NOT COMPLETE`
+## Proportionate work and permission
 
-Current core constraints:
+Continue from the current task and existing implementation. Each task needs a
+clear scope, delivery target, acceptance and evidence; reuse an adequate user
+request/issue rather than duplicating a template. For material architecture,
+data, financial, permission or production changes, record relevant security,
+negative/recovery tests, migration, rollback and authority in a versioned issue.
+Routine reversible work can use a concise task/result record.
 
-- IPO.one is a machine-readable credit obligation protocol layer, not a simple
-  lending app.
-- Product primitive: `Identity + Payment + Obligation`.
-- Product direction: dual-native through one shared kernel. Agent and Human
-  pilots progress in parallel; Agent implementation may land first, but neither
-  entry mode may fork the obligation, ledger, risk, event, or Evidence model.
-- The no-real-funds product must provide an operable Human pilot, including
-  Human Subject, Consent, KYC/VC references, Credit Intent, explainable Offer,
-  Obligation, repayment schedule, DPD/default, restructure, repurchase,
-  write-off, and Evidence using synthetic or redacted data only.
-- Must remain multi-chain-ready from day 1 using CAIP-2, CAIP-10,
-  chain-agnostic obligation IDs, event indexing, per-chain caps, and adapter
-  boundaries.
-- M2 is secured-only and may implement one curated Base Sepolia test-asset pool
-  after governance ratification. The pool is an adapter-connected Capital
-  Facility, not a second kernel. No hybrid/unsecured real-value exposure, market
-  factory, mainnet, real funds, multiple markets/assets, flash loans, recursive
-  leverage, or unrestricted withdrawal is authorized. Each L3 profile,
-  contract, asset, oracle, account, signer, and run remains separately reviewed.
-- M3 is narrowly limited to Metered Usage Evidence and deterministic charge
-  admission as a Provider Spend Facility profile over the shared kernel. The
-  exact `provider_gateway_compute` / `inference_tokens` / `token` synthetic
-  profile is authorized at L0 and L2 through the canonical launch policy. No
-  separate Task/API/Compute product, ledger, orchestration platform, external
-  Provider, second resource profile or real value is authorized.
-- Do not enable real Human cash loans, tokens/DAO governance, arbitrary
-  withdrawals, or black-box credit scoring before real repayment events exist.
-- Sensitive human data and raw KYC/PII should stay offchain by default; use
-  encrypted offchain references, hashes, attestations, and least-privilege
-  access boundaries.
-- Architecture should be event-sourced, versioned, adapter-based, auditable,
-  and designed around explicit risk controls, pause/freeze operations, caps,
-  stop-loss covenants, and verifiable repayment/default state.
+Complete necessary authorized fixes and dependent changes. Review tasks can
+finish with findings; a repair task needs its fix and verification at the agreed
+target. Record unrelated defects/opportunities without silently extending the
+task into new features, deployment or continuous background work.
 
-MVP build rules:
+New/expanded contracts, funds/custody/signing, risk/pricing, permissions,
+privacy/KYC, external credentials, material dependency/service trust boundaries,
+recurring spend and operations outside an approved deployment/execution envelope
+require applicable named human review. Reuse valid authority for work already
+inside such an envelope and meet every condition before execution.
 
-- Implement the first shared vertical slice as a no-real-funds credit lifecycle:
-  Subject and Principal binding, Consent/Mandate, Credit Intent, deterministic
-  decision and Offer, accepted Obligation, controlled execution, repayment,
-  servicing/default transitions, Evidence, and Admin/Risk visibility. Reuse it
-  for both Human and Agent entry modes.
-- Agent Lockbox remains the first production-limited credit candidate. Human
-  credit may be fully functional only in synthetic/private pilot modes until
-  legal, KYC/privacy, risk, capital, servicing, and production permissions are
-  separately approved.
-- Human-facing UI and machine-facing OpenAPI/SDK/MCP surfaces are co-equal
-  product interfaces over the same versioned application protocol.
-- Normal role journeys must not require internal IDs, hashes, versions, or
-  operation names. Technical details remain available through progressive
-  disclosure and queryable receipts.
-- Labels such as View, Open, Continue, Back, and Next must not hide an
-  economic, authority, or lifecycle mutation.
-- Browser state is never canonical product truth. Role workspaces and next
-  actions must recover from authenticated server truth.
-- Automation may prepare, route, reconcile, and execute exact Mandate-bound
-  work, but every run must remain queryable and fail closed on stale,
-  unknown, unauthorized, or unreconciled state.
-- Multi-chain tests use Base Sepolia (`eip155:84532`) as the first execution
-  profile and X Layer Testnet (`eip155:1952`) as the portability profile. This
-  is a reversible test configuration, not a mainnet or capital commitment.
-- Codex work must be issue-based. Each task needs context, scope, non-goals,
-  likely files, acceptance criteria, test command, security checklist,
-  permission boundary, migration impact, rollback plan, and completion
-  Evidence.
-- Continue from the current approved task and existing implementation. Use
-  foundation/scaffolding guidance only when those foundations are actually missing.
-- Contracts, funds movement, risk controls, permissions, privacy boundaries,
-  production dependencies, and deployment changes require human review.
+## Truthful completion and product usability
 
-## Product experience handoff
+Match the verdict to the agreed document/local/test/deployed target using
+Constitution section 5. A local or document target does not require deployment.
+An agreed deployed target cannot be marked complete with only local evidence.
+If required verification for the target is unavailable, report
+`BLOCKED — NOT COMPLETE`; if acceptance demonstrably fails, report
+`FAIL — NOT COMPLETE`.
 
-For product iterations, provide a clickable experience URL. For local work, keep
-the loopback runtime available through the requested Founder review; use the
-applicable hosted URL after separately authorized deployment. A PR, screenshot,
-test log, or report does not substitute for the experience link. This requirement
-does not authorize deployment, public exposure, credentials, or funds movement.
+For deployed user-facing acceptance, establish CODE, RUNTIME, DEPLOYED,
+REACHABLE and VERIFIED against the actual deployed source/configuration:
 
-For IPO.ONE planning or implementation that needs phase/authority routing, use
-`.agents/skills/ipo-one-guidance-gate/SKILL.md`; detailed product truth remains in
-the canonical project documents above.
+- Human actions use visible, understandable controls; internal functions,
+  hidden DOM, raw-ID entry and developer tools do not count as the journey.
+- Agent actions use equivalent authorized versioned API/MCP semantics and
+  queryable receipts. Supported role/journey scope must be explicit.
+- Every role-allowed view has a visible entry. Advanced grouping cannot orphan
+  a capability; relevant disabled features explain the reason and recovery.
+- Navigation labels such as View, Open, Continue and Next do not conceal a
+  mutation. Protected actions disclose the relevant effect and terms.
+- Final acceptance uses deployed services and durable persistence, with visible
+  Human clicks and affected Agent checks. Critical state survives applicable
+  refresh, re-login, restart/replay, duplicates and database recovery.
+- Merges, Vercel Ready, screenshots, local tests and historical testnet records
+  alone do not prove production usability.
 
-For all user-facing feature development, follow
+Select validation for affected behavior and mandatory gates. Reuse valid checks
+when dependencies are unchanged; do not weaken checks to obtain a PASS. Do not
+replace an unmet product target with a lower implementation checkpoint.
+
+## Experience handoff and UI baseline
+
+For runtime product iterations, provide a clickable experience URL. Keep the
+authorized local runtime available through the requested Founder review; use
+the hosted URL after an authorized deployment. Documents and static artifacts
+do not require a fabricated runtime URL or deployment.
+
+For all user-facing development, follow
 `docs/guidance/IPO_ONE_CURRENT_UI_BASELINE.md` and run `pnpm check:ui-baseline`.
-Use the current WEB-027 Precision Terminal UI and subsequent approved fixes;
-never build a new feature on an old UI branch. Verify the actual served assets
-and affected screens, including login dialogs, themes and narrow viewports.
+Use WEB-027 Precision Terminal and subsequent approved fixes. Do not build on
+old UI branches. Verify actual served assets and affected screens, including
+access dialogs, saved themes and narrow viewports, at the requested target.
