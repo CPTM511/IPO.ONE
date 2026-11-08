@@ -7,7 +7,7 @@ const PAIRING_URI = /^wc:[A-Za-z0-9._~%:@/?&=+-]{1,2045}$/;
 
 export function mobileWalletAvailability({ origin, projectId, now = new Date() }) {
   if (origin !== MOBILE_WALLET_APPROVAL.origin) return { available: false, reason: "Phone wallet pairing is available on the approved IPO.ONE website." };
-  if (typeof projectId !== "string" || !PROJECT_ID.test(projectId)) return { available: false, reason: "Phone wallet pairing is awaiting operator configuration. Browser wallets remain available." };
+  if (typeof projectId !== "string" || !PROJECT_ID.test(projectId)) return { available: false, reason: "External wallet / QR connection is paused. Open IPO.ONE in your wallet app's browser, or select an installed browser wallet below." };
   if (!mobileWalletApprovalIsCurrent(now)) return { available: false, reason: "Phone wallet pairing approval has expired. Operator renewal is required." };
   return { available: true, reason: "Select phone wallet, choose your network, then connect. Scan the QR code using your wallet's WalletConnect scanner." };
 }
@@ -51,9 +51,9 @@ export function createMobileWalletAccess({ document, window, registry, selectPro
   copyButton.addEventListener?.("click", async () => {
     try {
       await window.navigator.clipboard.writeText(MOBILE_WALLET_APPROVAL.origin);
-      status.textContent = "IPO.ONE link copied. Open it in Safari or Chrome, then choose your wallet.";
+      status.textContent = "IPO.ONE link copied. Open it in your wallet app's browser, then select your wallet.";
     } catch {
-      status.textContent = "Open https://ipo.one in Safari or Chrome to continue. No private record is included in this link.";
+      status.textContent = "Open https://ipo.one in your wallet app's browser to continue. This link contains no private record.";
     }
   });
   function render({ busy = false, walletEnabled = false } = {}) {

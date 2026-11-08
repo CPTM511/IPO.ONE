@@ -69,5 +69,13 @@
   "historicalPreparationAuthority": "Start B2 alignment; first batch expressly includes Binance Wallet, OKX Wallet and MetaMask. No new expiry/activation grant inferred.",
   "currentUserAuthorization": "Founder explicitly approved the exact B2 renewal, one production public configuration variable, bounded implementation, and conditional release after gates and device-operator availability; iPhone and Android are both available.",
   "projectIdSHA256": "94fea371a011f5f378859f1f076f8d0de509fe9662a2bce0d04e4aabf3e285d2",
-  "currentDeviceOperatorReadiness": "Founder replied: 两台现在都可配合，随后补版本信息. Exact OS/wallet versions must be recorded during acceptance."
+  "currentDeviceOperatorReadiness": "Founder replied: 两台现在都可配合，随后补版本信息. Exact OS/wallet versions must be recorded during acceptance.",
+  "operationalDisposition": {
+    "decisionSource": "Founder current conversation on 2026-11-08 after second failed QR test",
+    "desktopQrAcceptance": "DEFERRED_BY_FOUNDER_NOT_PASSED",
+    "walletConnectPublicActivation": "DISABLED_AFTER_FAILED_QR_ACCEPTANCE",
+    "resumptionRequiresExplicitFounderRequest": true,
+    "directInjectedWalletEntry": "CONTINUE_EXISTING_SCOPE",
+    "maximumGrantHistoryRetained": true
+  }
 }

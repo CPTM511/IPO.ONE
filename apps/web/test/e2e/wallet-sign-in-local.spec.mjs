@@ -1,10 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { PRODUCT_LANGUAGES, translateCopy } from "../../src/product-i18n.js";
 
-async function openWallet(page, { chain = 56, mode = "reject_signature", wallet = "OKX Wallet", width = 1440, theme = "light" } = {}) {
+async function openWallet(page, { chain = 56, mode = "reject_signature", wallet = "OKX Wallet", width = 1440, theme = "light", language = "en" } = {}) {
   await page.setViewportSize({ width, height: 1000 });
-  await page.addInitScript(({ mode, wallet, theme }) => {
+  await page.addInitScript(({ mode, wallet, theme, language }) => {
     localStorage.setItem("ipo-one-theme", theme);
+    localStorage.setItem("ipo-one-language-v1", language);
     const listeners = new Map();
     let account = "0x1111111111111111111111111111111111111111";
     let chain = "0x14a34";
@@ -51,11 +52,11 @@ async function openWallet(page, { chain = 56, mode = "reject_signature", wallet 
     else window.addEventListener("eip6963:requestProvider", () => window.dispatchEvent(new CustomEvent("eip6963:announceProvider", {
       detail: { provider, info: { uuid: "12345678-1234-4234-9234-123456789012", name: wallet, rdns: wallet === "MetaMask" ? "io.metamask" : "com.okex.wallet", icon: "data:image/png;base64,iVBORw0KGgo=" } }
     })));
-  }, { mode, wallet, theme });
+  }, { mode, wallet, theme, language });
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
   await page.goto("/");
-  await page.getByRole("button", { name: "Open IPO.ONE", exact: true }).first().click();
+  await page.getByRole("button", { name: translateCopy("Open IPO.ONE", language).text, exact: true }).filter({ visible: true }).first().click();
   await page.locator("#walletProviderList button").filter({ hasText: wallet }).click();
   await page.locator(`[data-wallet-chain="${chain}"]`).click();
   return errors;
@@ -403,3 +404,21 @@ test("phone connection timeout clears stale QR, rejects late approval and permit
   await expect(page.locator("#mobileWalletQr")).toBeVisible();
   await page.locator("#mobileWalletCancelBtn").click();
 });
+
+
+for (const { code: language } of PRODUCT_LANGUAGES) for (const theme of ["light", "dark"]) {
+  test(`direct wallet network selection and waiting states localize in ${language} ${theme}`, async ({ page }) => {
+    await openWallet(page, { language, theme, wallet: "OKX Wallet", mode: "pending", width: 390 });
+    for (const chain of [56, 84532, 1952, 97]) {
+      await page.locator(`[data-wallet-chain="${chain}"]`).click();
+      await expect.poll(() => page.evaluate(async () => (await import("/product-localization.js")).productLocalizationAudit().missing)).toEqual([]);
+    }
+    await page.locator("#walletSignInBtn").click();
+    await expect(page.locator("#accessAuthStatus")).toHaveText(translateCopy("Waiting for OKX Wallet account approval and BSC Testnet network connection. Open your wallet extension or wallet app to review the request.", language).text);
+    await expect.poll(() => page.evaluate(async () => (await import("/product-localization.js")).productLocalizationAudit().missing)).toEqual([]);
+    expect(await page.locator(".access-dialog").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
+    await page.locator(".access-dialog").screenshot({ path: `output/wallet-sign-in/direct-${language}-${theme}-waiting.png` });
+    await page.locator("#accessCloseBtn").click();
+    expect(await page.evaluate(() => window.__walletRequests.some(r => /sendTransaction|sendCalls|signTransaction|personal_sign/.test(r.method)))).toBe(false);
+  });
+}

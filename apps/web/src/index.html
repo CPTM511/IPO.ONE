@@ -3305,9 +3305,9 @@
               <button class="primary" id="retryWalletAuthorityBtn" type="button">Retry secure session reset</button>
             </div>
             <div class="mobile-wallet-access" aria-labelledby="mobileWalletTitle">
-              <h3 id="mobileWalletTitle">Connect a phone wallet</h3>
+              <h3 id="mobileWalletTitle">External wallet / QR connection</h3>
               <button class="secondary" id="mobileWalletBtn" type="button" disabled>Use phone wallet / QR</button>
-              <p id="mobileWalletStatus" role="status" aria-live="polite">Phone wallet pairing is awaiting operator configuration.</p>
+              <p id="mobileWalletStatus" role="status" aria-live="polite">External wallet / QR connection is paused. Open IPO.ONE in your wallet app's browser, or select an installed browser wallet below.</p>
               <div id="mobileWalletPairing" class="mobile-wallet-pairing" hidden>
                 <img hidden id="mobileWalletQr" alt="Scan this connection QR code with your phone wallet" width="240" height="240" />
                 <button class="primary" id="mobileWalletSignatureBtn" type="button" hidden>Request login signature</button>
@@ -3321,8 +3321,8 @@
                 <button class="secondary" id="mobileWalletCancelBtn" type="button">Cancel phone connection</button>
               </div>
               <details class="protocol-disclosure">
-                <summary>Phone connection help</summary>
-                <p>If this app browser cannot open your wallet, open IPO.ONE in Safari or Chrome. After signing in, saved records are restored from the server.</p>
+                <summary>Wallet connection help</summary>
+                <p>Open https://ipo.one in your wallet app's built-in browser, then select that wallet in this dialog. Installed desktop browser wallets also remain available. External app connections are paused in this release.</p>
                 <button class="secondary" id="copyMobileWalletLinkBtn" type="button">Copy IPO.ONE link</button>
               </details>
             </div>
