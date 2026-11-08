@@ -204,6 +204,24 @@ export const TENANT_PROTOCOL_OPERATIONS = deepFreeze([
     fundsAuthority: false
   },
   {
+    operationId: "pilotReadSyntheticCollateralProfile", kind: "query", actorTypes: ["human", "agent"],
+    resourceType: "subject", requiredCapability: "credit.request", idempotency: "prohibited", quotaClass: "read",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION, responseSchemaVersion: "tenant_synthetic_collateral_profile.v1",
+    public: false, fundsAuthority: false
+  },
+  {
+    operationId: "pilotConfirmSyntheticCollateral", kind: "command", actorTypes: ["human", "agent"],
+    resourceType: "obligation", requiredCapability: "credit.execute.sandbox.self", idempotency: "required", quotaClass: "economic",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION, responseSchemaVersion: "tenant_synthetic_collateral_confirmed.v1",
+    public: false, fundsAuthority: false
+  },
+  {
+    operationId: "pilotReleaseSyntheticCollateral", kind: "command", actorTypes: ["human", "agent"],
+    resourceType: "obligation", requiredCapability: "repayment.post.sandbox.self", idempotency: "required", quotaClass: "economic",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION, responseSchemaVersion: "tenant_synthetic_collateral_released.v1",
+    public: false, fundsAuthority: false
+  },
+  {
     operationId: "pilotExecuteSandboxObligation",
     kind: "command",
     actorTypes: ["human", "agent"],

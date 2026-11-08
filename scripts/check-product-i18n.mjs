@@ -69,6 +69,8 @@ for (const count of [0, 1, 4, 513]) {
 }
 for (const state of ["Created", "Active", "Fully Repaid", "Defaulted", "Written Off"])
   for (const version of [1, 12]) copy.add(`${state} · schedule v${version}`);
+copy.add("Anchor service unavailable");
+copy.add("No chain contract is composed for this runtime. Server Evidence digests must not be presented as blockchain transactions.");
 copy.add("$60.00\nDue Aug 15");
 for (const match of appSource.matchAll(/connectionLabel\s*:\s*("(?:[^"\\]|\\.)*")/g)) copy.add(JSON.parse(match[1]));
 for (const match of appSource.matchAll(/(?:connectionLabel|accessState\.helper)\s*=\s*([^;]+);/g)) {

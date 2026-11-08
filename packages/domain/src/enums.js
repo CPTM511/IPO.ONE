@@ -413,6 +413,8 @@ export const CreditEventType = Object.freeze({
   CREDIT_OFFER_STATUS_CHANGED: "credit_offer_status_changed",
   RISK_DECISION_CREATED: "risk_decision_created",
   OBLIGATION_CREATED: "obligation_created",
+  SYNTHETIC_COLLATERAL_CONFIRMED: "synthetic_collateral_confirmed",
+  SYNTHETIC_COLLATERAL_RELEASED: "synthetic_collateral_released",
   OBLIGATION_SANDBOX_EXECUTED: "obligation_sandbox_executed",
   INTEREST_ACCRUED: "interest_accrued",
   OBLIGATION_STATUS_CHANGED: "obligation_status_changed",

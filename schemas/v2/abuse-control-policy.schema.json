@@ -211,7 +211,10 @@
         "pilotFileCase",
         "pilotTransitionCase",
         "agentCreateSecuredFacilityAuthorization",
-        "agentRevokeSecuredFacilityAuthorization"
+        "agentRevokeSecuredFacilityAuthorization",
+        "pilotReadSyntheticCollateralProfile",
+        "pilotConfirmSyntheticCollateral",
+        "pilotReleaseSyntheticCollateral"
       ],
       "properties": {
         "pilotReadOwnSecuredPool": {
@@ -618,6 +621,15 @@
         },
         "pilotReadRiskAgentDirectory": {
           "const": "read"
+        },
+        "pilotReadSyntheticCollateralProfile": {
+          "const": "read"
+        },
+        "pilotConfirmSyntheticCollateral": {
+          "const": "economic"
+        },
+        "pilotReleaseSyntheticCollateral": {
+          "const": "economic"
         }
       }
     },

@@ -1199,12 +1199,14 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0085_local_bnb_ordinary_wallet_access",
         "0086_local_bnb_risk_passkey_origin",
         "0087_hosted_bnb_no_funds_wallet_networks",
-        "0088_credit_state_refresh_rotation"
+        "0088_credit_state_refresh_rotation",
+        "0089_synthetic_collateral_terms"
       ]);
       const firstStatus = await migrationStatus({ pool });
       assert.equal(firstStatus.every((migration) => migration.applied && migration.checksum.length === 64), true);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 89 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 90 }), [
+        "0089_synthetic_collateral_terms",
         "0088_credit_state_refresh_rotation",
         "0087_hosted_bnb_no_funds_wallet_networks",
         "0086_local_bnb_risk_passkey_origin",
@@ -1384,10 +1386,12 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0085_local_bnb_ordinary_wallet_access",
         "0086_local_bnb_risk_passkey_origin",
         "0087_hosted_bnb_no_funds_wallet_networks",
-        "0088_credit_state_refresh_rotation"
+        "0088_credit_state_refresh_rotation",
+        "0089_synthetic_collateral_terms"
       ]);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 87 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 88 }), [
+        "0089_synthetic_collateral_terms",
         "0088_credit_state_refresh_rotation",
         "0087_hosted_bnb_no_funds_wallet_networks",
         "0086_local_bnb_risk_passkey_origin",
@@ -1576,7 +1580,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0085_local_bnb_ordinary_wallet_access",
         "0086_local_bnb_risk_passkey_origin",
         "0087_hosted_bnb_no_funds_wallet_networks",
-        "0088_credit_state_refresh_rotation"
+        "0088_credit_state_refresh_rotation",
+        "0089_synthetic_collateral_terms"
       ]);
       assert.equal(
         (await pool.query("SELECT primary_principal_id FROM subjects WHERE id = 'subject_legacy_upgrade'"))
@@ -5255,7 +5260,7 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         (error) => error.code === "23514"
       );
       await assert.rejects(
-        () => migrateDown({ pool, steps: 32 }),
+        () => migrateDown({ pool, steps: 33 }),
         (error) => error.code === "23514"
       );
       const rollbackStatus = await migrationStatus({ pool });
@@ -5356,7 +5361,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0085_local_bnb_ordinary_wallet_access",
         "0086_local_bnb_risk_passkey_origin",
         "0087_hosted_bnb_no_funds_wallet_networks",
-        "0088_credit_state_refresh_rotation"
+        "0088_credit_state_refresh_rotation",
+        "0089_synthetic_collateral_terms"
       ]);
 
       const subjectContribution = contributeTradingSubjectCollateral(

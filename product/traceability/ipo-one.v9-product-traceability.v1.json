@@ -2519,6 +2519,72 @@
         "modules/tenant-command-gateway/test/local-review-contract.test.js",
         "apps/private-pilot/test/local-special-role-access.test.js"
       ]
+    },
+    {
+      "operationId": "pilotReadSyntheticCollateralProfile",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_synthetic_collateral_profile.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/synthetic-collateral-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/app.js",
+        "apps/agent-mcp/src/synthetic-collateral-mcp-adapter.js",
+        "packages/sdk/src/synthetic-collateral-client.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/credit-execution-handlers.test.js",
+        "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+        "apps/web/test-postgres/b3-synthetic-collateral-browser.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotConfirmSyntheticCollateral",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_synthetic_collateral_confirmed.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/synthetic-collateral-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/app.js",
+        "apps/agent-mcp/src/synthetic-collateral-mcp-adapter.js",
+        "packages/sdk/src/synthetic-collateral-client.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/credit-execution-handlers.test.js",
+        "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+        "apps/web/test-postgres/b3-synthetic-collateral-browser.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotReleaseSyntheticCollateral",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_synthetic_collateral_released.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/synthetic-collateral-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/app.js",
+        "apps/agent-mcp/src/synthetic-collateral-mcp-adapter.js",
+        "packages/sdk/src/synthetic-collateral-client.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/credit-execution-handlers.test.js",
+        "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+        "apps/web/test-postgres/b3-synthetic-collateral-browser.test.mjs"
+      ]
     }
   ],
   "destinations": [
@@ -2801,6 +2867,36 @@
           "truthBoundary": "The versioned policy explicitly records production pricing and fee calculation as unavailable. Principal and unrealized PnL are prohibited fee bases; prototype fee copy cannot establish commercial terms.",
           "nextTaskIds": [
             "V9-009"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "request_credit.synthetic_collateral",
+          "label": "Review, confirm and release exact synthetic collateral through the shared no-funds Obligation",
+          "prototypeLabels": [],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotReadSyntheticCollateralProfile",
+            "pilotConfirmSyntheticCollateral",
+            "pilotReleaseSyntheticCollateral"
+          ],
+          "authorityReferences": [
+            "docs/codex/tasks/B3_COLLATERAL_SUBMISSION_ALIGNMENT.md"
+          ],
+          "uiAdapters": [
+            "apps/web/src/app.js",
+            "apps/agent-mcp/src/synthetic-collateral-mcp-adapter.js",
+            "packages/sdk/src/synthetic-collateral-client.js"
+          ],
+          "testFiles": [
+            "modules/tenant-command-gateway/test/credit-execution-handlers.test.js",
+            "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+            "apps/web/test-postgres/b3-synthetic-collateral-browser.test.mjs"
+          ],
+          "truthBoundary": "L0 synthetic fixture scenario only, not wallet reserves, redeemable collateral or a chain transaction. Real HTTP/PostgreSQL Human clicks and Agent SDK/MCP tested locally. Production activation and deployed user verification remain pending.",
+          "nextTaskIds": [
+            "B3"
           ],
           "humanGateRequired": false
         }

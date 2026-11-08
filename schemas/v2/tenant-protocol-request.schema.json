@@ -135,7 +135,10 @@
         "venueReadExecution",
         "pilotReadOwnSecuredPool",
         "pilotReviewSecuredPoolAction",
-        "pilotReadSecuredPoolRisk"
+        "pilotReadSecuredPoolRisk",
+        "pilotReadSyntheticCollateralProfile",
+        "pilotConfirmSyntheticCollateral",
+        "pilotReleaseSyntheticCollateral"
       ]
     },
     "payload": {
@@ -3178,6 +3181,88 @@
         "resource": { "$ref": "#/$defs/pilotCaseResourceReference" }
       },
       "not": { "anyOf": [{ "required": ["purpose"] }, { "required": ["reasonCode"] }, { "required": ["approvalArtifact"] }] }
+    },
+    {
+      "title": "pilotReadSyntheticCollateralProfile",
+      "required": [
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "pilotReadSyntheticCollateralProfile"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/subjectResourceReference"
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          },
+          {
+            "required": [
+              "approvalArtifact"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "pilotConfirmSyntheticCollateral",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "pilotConfirmSyntheticCollateral"
+        },
+        "payload": {
+          "$ref": "#/$defs/syntheticCollateralPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/obligationResourceReference"
+        }
+      },
+      "not": {
+        "required": [
+          "reasonCode"
+        ]
+      }
+    },
+    {
+      "title": "pilotReleaseSyntheticCollateral",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "pilotReleaseSyntheticCollateral"
+        },
+        "payload": {
+          "$ref": "#/$defs/syntheticCollateralPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/obligationResourceReference"
+        }
+      },
+      "not": {
+        "required": [
+          "reasonCode"
+        ]
+      }
     }
   ],
   "allOf": [
@@ -3202,6 +3287,39 @@
     }
   ],
   "$defs": {
+    "syntheticCollateralPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expectedVersion",
+        "termsHash",
+        "chainId",
+        "amountAssets",
+        "actionConfirmation"
+      ],
+      "properties": {
+        "expectedVersion": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "termsHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "chainId": {
+          "const": "eip155:84532"
+        },
+        "amountAssets": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)$",
+          "maxLength": 78
+        },
+        "actionConfirmation": {
+          "$ref": "#/$defs/economicActionConfirmation"
+        }
+      }
+    },
     "localApprovalCommand": {
       "oneOf": [
         {
@@ -4615,11 +4733,7 @@
       ],
       "properties": {
         "actionType": {
-          "enum": [
-            "accept_offer",
-            "execute_obligation",
-            "post_repayment"
-          ]
+          "enum": ["accept_offer", "execute_obligation", "post_repayment", "confirm_synthetic_collateral", "release_synthetic_collateral"]
         },
         "resourceId": {
           "$ref": "#/$defs/domainIdentifier"
@@ -4693,11 +4807,7 @@
       ],
       "properties": {
         "actionType": {
-          "enum": [
-            "accept_offer",
-            "execute_obligation",
-            "post_repayment"
-          ]
+          "enum": ["accept_offer", "execute_obligation", "post_repayment", "confirm_synthetic_collateral", "release_synthetic_collateral"]
         },
         "resourceId": {
           "$ref": "#/$defs/domainIdentifier"
@@ -4853,6 +4963,9 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 520
+        },
+        "collateralProfile": {
+          "const": "m2_synthetic_weth_usd_cent.v1"
         }
       }
     },

@@ -9,7 +9,8 @@ let runtime;
 try {
   runtime = await createPrivatePilotRuntime({
     ownerConnectionString: databaseUrl,
-    basePort
+    basePort,
+    syntheticCollateralEnabled: process.env.IPO_ONE_LOCAL_SYNTHETIC_COLLATERAL === "b3_v1"
   });
   process.stdout.write("IPO.ONE private no-funds product is ready.\n");
   process.stdout.write(`tenant     ${runtime.profile.tenantId}\n`);

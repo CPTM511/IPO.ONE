@@ -15,6 +15,8 @@ import {
   assertPositiveMinorUnits
 } from "./validators.js";
 
+import { createSyntheticCollateralTerms } from "./synthetic-collateral.js";
+
 const PURPOSE_CODE_PATTERN = /^[a-z][a-z0-9_.-]{1,63}$/;
 const REASON_CODE_PATTERN = /^[a-z][a-z0-9_.-]{1,95}$/;
 const MAX_TERM_DAYS = 3_660;
@@ -71,6 +73,7 @@ export function createCreditIntent({
   authorityRef,
   assetId,
   requestedPrincipalMinor,
+  collateralProfile,
   purposeCode,
   requestedTermDays,
   repaymentFrequency,
@@ -87,6 +90,7 @@ export function createCreditIntent({
   assertSafeIntegerRange("requestedTermDays", requestedTermDays, 1, MAX_TERM_DAYS);
   assertSafeIntegerRange("installmentCount", installmentCount, 1, MAX_INSTALLMENTS);
 
+  createSyntheticCollateralTerms({ profile: collateralProfile, assetId, principalMinor: requestedPrincipalMinor });
   const createdAt = now.toISOString();
   const intentCore = {
     subjectId,
@@ -95,6 +99,7 @@ export function createCreditIntent({
     authorityRef,
     assetId,
     requestedPrincipalMinor,
+    ...(collateralProfile ? { collateralProfile } : {}),
     purposeCode,
     requestedTermDays,
     repaymentFrequency,
@@ -122,6 +127,7 @@ export function createCreditOffer({
   riskDecisionId,
   assetId,
   approvedPrincipalMinor,
+  collateralProfile,
   annualRateBps,
   originationFeeMinor = "0",
   repaymentFrequency,
@@ -166,6 +172,7 @@ export function createCreditOffer({
   }
 
   const normalizedReasonCodes = uniqueReasonCodes(reasonCodes);
+  const collateralTerms = createSyntheticCollateralTerms({ profile: collateralProfile, assetId, principalMinor: approvedPrincipalMinor });
   const termsCore = {
     assetId,
     approvedPrincipalMinor,
@@ -176,7 +183,8 @@ export function createCreditOffer({
     firstPaymentAt: normalizedFirstPaymentAt,
     maturityAt: normalizedMaturityAt,
     disclosureRef,
-    termsVersion: "credit_terms.v1"
+    ...(collateralTerms ? { collateralTerms } : {}),
+    termsVersion: collateralTerms ? "credit_terms.synthetic_secured.v1" : "credit_terms.v1"
   };
   const offerCore = {
     creditIntentId,

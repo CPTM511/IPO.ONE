@@ -13,6 +13,7 @@ import {
   SandboxRepaymentSource,
   enumValues
 } from "./enums.js";
+import { assertSyntheticCollateralAllowsExecution } from "./synthetic-collateral.js";
 import { DomainError } from "./errors.js";
 import { hashId } from "./ids.js";
 import {
@@ -270,6 +271,7 @@ export function executeSandboxObligation(obligation, {
   ) {
     throw new DomainError("obligation_not_executable", "Obligation is not pending sandbox execution");
   }
+  assertSyntheticCollateralAllowsExecution(obligation);
   const receipt = createSandboxExecutionReceipt({ obligation, adapterReceipt, now });
   const accounts = createSandboxLedgerAccounts(obligation, { now });
   const ledgerTransaction = createBalancedTransaction({

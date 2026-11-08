@@ -189,6 +189,7 @@ const CLASSIFIED_OPERATIONS = Object.freeze({
     "pilotReadApproval",
     "pilotReadAgentAccountBinding",
     "pilotReadAgentSelf",
+    "pilotReadSyntheticCollateralProfile",
     "pilotReadOwnSecuredPool",
     "pilotReviewSecuredPoolAction",
     "pilotReadSecuredPoolRisk",
@@ -283,6 +284,8 @@ const CLASSIFIED_OPERATIONS = Object.freeze({
   ],
   [QuotaClass.ECONOMIC]: [
     "pilotAcceptCreditOffer",
+    "pilotConfirmSyntheticCollateral",
+    "pilotReleaseSyntheticCollateral",
     "pilotExecuteSandboxObligation",
     "pilotPostSandboxRepayment",
     "pilotRequestCredit",

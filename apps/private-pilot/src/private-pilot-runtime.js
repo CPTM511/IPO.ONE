@@ -114,7 +114,8 @@ function createGateway(
     credentialRegistry = authentication.credentialRegistry,
     referenceHasher = authentication.referenceHasher,
     meteredUsageProvider,
-    approvalRuntimeFactory
+    approvalRuntimeFactory,
+    syntheticCollateralEnabled = false
   } = {}
 ) {
   const durableGateway = new TenantCommandGateway({
@@ -122,6 +123,7 @@ function createGateway(
     handlers: new TenantCommandHandlerRegistry(
       createTenantFoundationHandlers({
         localSandboxHumanActivation: localAccessEnabled(),
+        syntheticCollateralEnabled,
         localRiskAgentDirectory: localAccessEnabled(),
         hyperliquidInfoAdapter: new HyperliquidTestnetInfoAdapter(),
         hyperliquidBindingProofVerifier:
@@ -247,6 +249,7 @@ async function createLocalHumanAccess({
 export async function createPrivatePilotRuntime({
   ownerConnectionString,
   basePort = 8787,
+  syntheticCollateralEnabled = false,
   profile,
   creditRegistryObservationArtifactPath =
     process.env.IPO_ONE_CREDIT_REGISTRY_OBSERVATION_ARTIFACT,
@@ -260,6 +263,14 @@ export async function createPrivatePilotRuntime({
     );
   }
   assertPort("basePort", basePort);
+  if (syntheticCollateralEnabled !== false) {
+    const target = new URL(ownerConnectionString);
+    if (syntheticCollateralEnabled !== true || target.hostname !== "127.0.0.1" ||
+      target.port !== "59989" || !((target.pathname === "/ipo_one_b3_synthetic_review" && basePort === 8877) ||
+        (target.pathname === "/b3_browser_test_20261108" && basePort === 8891))) {
+      throw new DomainError("synthetic_collateral_local_profile_invalid", "B3 local activation requires its exact isolated review database and ports");
+    }
+  }
   if (localAccessEnabled()) assertLocalAccessDatabase(ownerConnectionString, basePort);
   if (localSpecialRolesEnabled()) {
     if (!localAccessEnabled()) throw new Error("WEB-027M requires the existing local access gate");
@@ -341,6 +352,7 @@ export async function createPrivatePilotRuntime({
       ({ profile }) => profile.name === "risk"
     ).humanAccess.credentialRegistry;
     gateway = createGateway(pool, authentication, {
+      syntheticCollateralEnabled,
       credentialRegistry:
         humanAccessProfiles[0].humanAccess.credentialRegistry,
       referenceHasher: createReferenceHasher(

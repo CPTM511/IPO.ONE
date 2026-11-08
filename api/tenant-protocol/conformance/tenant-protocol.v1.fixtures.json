@@ -529,7 +529,10 @@
         "reasonCode": "context_missing",
         "schemaVersion": "pilot_case_file.v1"
       },
-      "resource": { "resourceType": "subject", "resourceId": "subject_human_fixture" },
+      "resource": {
+        "resourceType": "subject",
+        "resourceId": "subject_human_fixture"
+      },
       "idempotencyKey": "pilot-case-file-fixture-0001",
       "requestId": "request-fixture-file-pilot-case",
       "correlationId": "correlation-fixture-file-pilot-case",
@@ -538,7 +541,10 @@
     {
       "operationId": "pilotListOwnCases",
       "payload": {},
-      "resource": { "resourceType": "subject", "resourceId": "subject_human_fixture" },
+      "resource": {
+        "resourceType": "subject",
+        "resourceId": "subject_human_fixture"
+      },
       "requestId": "request-fixture-list-own-pilot-cases",
       "correlationId": "correlation-fixture-list-own-pilot-cases",
       "schemaVersion": "tenant_protocol_request.v1"
@@ -546,15 +552,25 @@
     {
       "operationId": "pilotReadCaseQueue",
       "payload": {},
-      "resource": { "resourceType": "risk_portfolio", "resourceId": "risk_portfolio_fixture" },
+      "resource": {
+        "resourceType": "risk_portfolio",
+        "resourceId": "risk_portfolio_fixture"
+      },
       "requestId": "request-fixture-read-pilot-case-queue",
       "correlationId": "correlation-fixture-read-pilot-case-queue",
       "schemaVersion": "tenant_protocol_request.v1"
     },
     {
       "operationId": "pilotTransitionCase",
-      "payload": { "transition": "correct", "correctionCode": "status_context_added", "schemaVersion": "pilot_case_transition.v1" },
-      "resource": { "resourceType": "pilot_case", "resourceId": "pilot_case_fixture" },
+      "payload": {
+        "transition": "correct",
+        "correctionCode": "status_context_added",
+        "schemaVersion": "pilot_case_transition.v1"
+      },
+      "resource": {
+        "resourceType": "pilot_case",
+        "resourceId": "pilot_case_fixture"
+      },
       "idempotencyKey": "pilot-case-transition-fixture-0001",
       "requestId": "request-fixture-transition-pilot-case",
       "correlationId": "correlation-fixture-transition-pilot-case",
@@ -749,7 +765,9 @@
         ],
         "undrawnRevocationRule": "capital_partner_before_acceptance",
         "validUntil": "2026-07-31T00:00:00.000Z",
-        "reasonCodes": ["capital_partner_underwritten"],
+        "reasonCodes": [
+          "capital_partner_underwritten"
+        ],
         "disclosureRef": "terms:capital-partner:phase2",
         "schemaVersion": "capital_partner_offer_authoring.v1"
       },
@@ -1482,6 +1500,75 @@
       "requestId": "request-fixture-agentRevokeSecuredFacilityAuthorization",
       "correlationId": "correlation-fixture-agentRevokeSecuredFacilityAuthorization",
       "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotReadSyntheticCollateralProfile",
+      "payload": {},
+      "resource": {
+        "resourceType": "subject",
+        "resourceId": "subject_b3_contract_fixture"
+      },
+      "requestId": "request-b3-fixture-pilotReadSyntheticCollateralProfile",
+      "correlationId": "correlation-b3-fixture-0001",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotConfirmSyntheticCollateral",
+      "payload": {
+        "expectedVersion": 0,
+        "termsHash": "0x19ca1167981be4743c46effe4e65542213d362fafbb93ff66952cc44477b131c",
+        "chainId": "eip155:84532",
+        "amountAssets": "80000000000000000",
+        "actionConfirmation": {
+          "actionType": "confirm_synthetic_collateral",
+          "resourceId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c",
+          "resourceHash": "0x753cf7606b548179136e7776714429841d42b99eb65e4e78469ac5a97d5ee277",
+          "payloadHash": "0x8fddb24c624cb50fd3c0c60a28871e3f3e26beaff8e9a5ffb9e6170c2625d898",
+          "requestId": "request-b3-fixture-pilotConfirmSyntheticCollateral",
+          "confirmationMethod": "authenticated_protocol_request",
+          "rawSignaturePersisted": false,
+          "blockchainTransactionSubmitted": false,
+          "schemaVersion": "economic_action_confirmation_result.v1",
+          "confirmationHash": "0x23e16f34bc71bb413ac4002e638784b3b75ea2f0327710d98f1749727bde4fb2"
+        }
+      },
+      "resource": {
+        "resourceType": "obligation",
+        "resourceId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c"
+      },
+      "requestId": "request-b3-fixture-pilotConfirmSyntheticCollateral",
+      "correlationId": "correlation-b3-fixture-0001",
+      "schemaVersion": "tenant_protocol_request.v1",
+      "idempotencyKey": "idempotency-b3-fixture-pilotConfirmSyntheticCollateral"
+    },
+    {
+      "operationId": "pilotReleaseSyntheticCollateral",
+      "payload": {
+        "expectedVersion": 1,
+        "termsHash": "0x19ca1167981be4743c46effe4e65542213d362fafbb93ff66952cc44477b131c",
+        "chainId": "eip155:84532",
+        "amountAssets": "80000000000000000",
+        "actionConfirmation": {
+          "actionType": "release_synthetic_collateral",
+          "resourceId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c",
+          "resourceHash": "0x753cf7606b548179136e7776714429841d42b99eb65e4e78469ac5a97d5ee277",
+          "payloadHash": "0x280145935451b21d1b8fa8ac5ed33328719c4e69664f6658bb0484bd7647cd1b",
+          "requestId": "request-b3-fixture-pilotReleaseSyntheticCollateral",
+          "confirmationMethod": "authenticated_protocol_request",
+          "rawSignaturePersisted": false,
+          "blockchainTransactionSubmitted": false,
+          "schemaVersion": "economic_action_confirmation_result.v1",
+          "confirmationHash": "0xc3adaeb3e785e4e1b2d8bc6ecf86ee9760f516658294946df3f1bee5bccf927c"
+        }
+      },
+      "resource": {
+        "resourceType": "obligation",
+        "resourceId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c"
+      },
+      "requestId": "request-b3-fixture-pilotReleaseSyntheticCollateral",
+      "correlationId": "correlation-b3-fixture-0001",
+      "schemaVersion": "tenant_protocol_request.v1",
+      "idempotencyKey": "idempotency-b3-fixture-pilotReleaseSyntheticCollateral"
     }
   ],
   "invalidRequests": [
@@ -1863,6 +1950,124 @@
         "correlationId": "correlation-invalid-trading-accept-funds",
         "schemaVersion": "tenant_protocol_request.v1"
       }
+    },
+    {
+      "operationId": "pilotConfirmSyntheticCollateral",
+      "payload": {
+        "expectedVersion": 0,
+        "termsHash": "0x19ca1167981be4743c46effe4e65542213d362fafbb93ff66952cc44477b131c",
+        "chainId": "eip155:1",
+        "amountAssets": "80000000000000000",
+        "actionConfirmation": {
+          "actionType": "confirm_synthetic_collateral",
+          "resourceId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c",
+          "resourceHash": "0x753cf7606b548179136e7776714429841d42b99eb65e4e78469ac5a97d5ee277",
+          "payloadHash": "0x8fddb24c624cb50fd3c0c60a28871e3f3e26beaff8e9a5ffb9e6170c2625d898",
+          "requestId": "request-b3-fixture-pilotConfirmSyntheticCollateral",
+          "confirmationMethod": "authenticated_protocol_request",
+          "rawSignaturePersisted": false,
+          "blockchainTransactionSubmitted": false,
+          "schemaVersion": "economic_action_confirmation_result.v1",
+          "confirmationHash": "0x23e16f34bc71bb413ac4002e638784b3b75ea2f0327710d98f1749727bde4fb2"
+        }
+      },
+      "resource": {
+        "resourceType": "obligation",
+        "resourceId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c"
+      },
+      "requestId": "request-b3-fixture-pilotConfirmSyntheticCollateral",
+      "correlationId": "correlation-b3-fixture-0001",
+      "schemaVersion": "tenant_protocol_request.v1",
+      "idempotencyKey": "idempotency-b3-fixture-pilotConfirmSyntheticCollateral"
+    },
+    {
+      "operationId": "pilotConfirmSyntheticCollateral",
+      "payload": {
+        "expectedVersion": 0,
+        "termsHash": "0x19ca1167981be4743c46effe4e65542213d362fafbb93ff66952cc44477b131c",
+        "chainId": "eip155:84532",
+        "amountAssets": "80000000000000000",
+        "actionConfirmation": {
+          "actionType": "confirm_synthetic_collateral",
+          "resourceId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c",
+          "resourceHash": "0x753cf7606b548179136e7776714429841d42b99eb65e4e78469ac5a97d5ee277",
+          "payloadHash": "0x8fddb24c624cb50fd3c0c60a28871e3f3e26beaff8e9a5ffb9e6170c2625d898",
+          "requestId": "request-b3-fixture-pilotConfirmSyntheticCollateral",
+          "confirmationMethod": "authenticated_protocol_request",
+          "rawSignaturePersisted": false,
+          "blockchainTransactionSubmitted": false,
+          "schemaVersion": "economic_action_confirmation_result.v1",
+          "confirmationHash": "0x23e16f34bc71bb413ac4002e638784b3b75ea2f0327710d98f1749727bde4fb2"
+        },
+        "rawSignature": "test-only-forbidden"
+      },
+      "resource": {
+        "resourceType": "obligation",
+        "resourceId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c"
+      },
+      "requestId": "request-b3-fixture-pilotConfirmSyntheticCollateral",
+      "correlationId": "correlation-b3-fixture-0001",
+      "schemaVersion": "tenant_protocol_request.v1",
+      "idempotencyKey": "idempotency-b3-fixture-pilotConfirmSyntheticCollateral"
+    },
+    {
+      "operationId": "pilotReleaseSyntheticCollateral",
+      "payload": {
+        "expectedVersion": 1,
+        "termsHash": "0x19ca1167981be4743c46effe4e65542213d362fafbb93ff66952cc44477b131c",
+        "chainId": "eip155:1",
+        "amountAssets": "80000000000000000",
+        "actionConfirmation": {
+          "actionType": "release_synthetic_collateral",
+          "resourceId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c",
+          "resourceHash": "0x753cf7606b548179136e7776714429841d42b99eb65e4e78469ac5a97d5ee277",
+          "payloadHash": "0x280145935451b21d1b8fa8ac5ed33328719c4e69664f6658bb0484bd7647cd1b",
+          "requestId": "request-b3-fixture-pilotReleaseSyntheticCollateral",
+          "confirmationMethod": "authenticated_protocol_request",
+          "rawSignaturePersisted": false,
+          "blockchainTransactionSubmitted": false,
+          "schemaVersion": "economic_action_confirmation_result.v1",
+          "confirmationHash": "0xc3adaeb3e785e4e1b2d8bc6ecf86ee9760f516658294946df3f1bee5bccf927c"
+        }
+      },
+      "resource": {
+        "resourceType": "obligation",
+        "resourceId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c"
+      },
+      "requestId": "request-b3-fixture-pilotReleaseSyntheticCollateral",
+      "correlationId": "correlation-b3-fixture-0001",
+      "schemaVersion": "tenant_protocol_request.v1",
+      "idempotencyKey": "idempotency-b3-fixture-pilotReleaseSyntheticCollateral"
+    },
+    {
+      "operationId": "pilotReleaseSyntheticCollateral",
+      "payload": {
+        "expectedVersion": 1,
+        "termsHash": "0x19ca1167981be4743c46effe4e65542213d362fafbb93ff66952cc44477b131c",
+        "chainId": "eip155:84532",
+        "amountAssets": "80000000000000000",
+        "actionConfirmation": {
+          "actionType": "release_synthetic_collateral",
+          "resourceId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c",
+          "resourceHash": "0x753cf7606b548179136e7776714429841d42b99eb65e4e78469ac5a97d5ee277",
+          "payloadHash": "0x280145935451b21d1b8fa8ac5ed33328719c4e69664f6658bb0484bd7647cd1b",
+          "requestId": "request-b3-fixture-pilotReleaseSyntheticCollateral",
+          "confirmationMethod": "authenticated_protocol_request",
+          "rawSignaturePersisted": false,
+          "blockchainTransactionSubmitted": false,
+          "schemaVersion": "economic_action_confirmation_result.v1",
+          "confirmationHash": "0xc3adaeb3e785e4e1b2d8bc6ecf86ee9760f516658294946df3f1bee5bccf927c"
+        },
+        "rawSignature": "test-only-forbidden"
+      },
+      "resource": {
+        "resourceType": "obligation",
+        "resourceId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c"
+      },
+      "requestId": "request-b3-fixture-pilotReleaseSyntheticCollateral",
+      "correlationId": "correlation-b3-fixture-0001",
+      "schemaVersion": "tenant_protocol_request.v1",
+      "idempotencyKey": "idempotency-b3-fixture-pilotReleaseSyntheticCollateral"
     }
   ],
   "validResults": [
@@ -3866,7 +4071,15 @@
           "assigned": false,
           "resolution": null,
           "correctionCode": null,
-          "safety": { "originalRecordImmutable": true, "additiveCorrectionOnly": true, "freeTextAccepted": false, "piiIncluded": false, "sandboxOnly": true, "productionAuthority": false, "economicMutationAuthorized": false },
+          "safety": {
+            "originalRecordImmutable": true,
+            "additiveCorrectionOnly": true,
+            "freeTextAccepted": false,
+            "piiIncluded": false,
+            "sandboxOnly": true,
+            "productionAuthority": false,
+            "economicMutationAuthorized": false
+          },
           "schemaVersion": "tenant_pilot_case_view.v1"
         },
         "schemaVersion": "tenant_pilot_case_filed.v1"
@@ -3890,7 +4103,12 @@
         "asOf": "2026-07-14T01:00:00.000Z",
         "items": [],
         "hasMore": false,
-        "safety": { "freeTextIncluded": false, "piiIncluded": false, "sandboxOnly": true, "productionAuthority": false },
+        "safety": {
+          "freeTextIncluded": false,
+          "piiIncluded": false,
+          "sandboxOnly": true,
+          "productionAuthority": false
+        },
         "schemaVersion": "tenant_pilot_case_queue.v1"
       },
       "schemaVersion": "tenant_protocol_result.v1"
@@ -3913,7 +4131,15 @@
           "assigned": true,
           "resolution": "correct",
           "correctionCode": "status_context_added",
-          "safety": { "originalRecordImmutable": true, "additiveCorrectionOnly": true, "freeTextAccepted": false, "piiIncluded": false, "sandboxOnly": true, "productionAuthority": false, "economicMutationAuthorized": false },
+          "safety": {
+            "originalRecordImmutable": true,
+            "additiveCorrectionOnly": true,
+            "freeTextAccepted": false,
+            "piiIncluded": false,
+            "sandboxOnly": true,
+            "productionAuthority": false,
+            "economicMutationAuthorized": false
+          },
           "schemaVersion": "tenant_pilot_case_view.v1"
         },
         "schemaVersion": "tenant_pilot_case_transitioned.v1"
@@ -5175,7 +5401,9 @@
           "disclosureRef": "terms:capital-partner:phase2",
           "termsVersion": "credit_terms.v2",
           "validUntil": "2026-07-31T00:00:00.000Z",
-          "reasonCodes": ["capital_partner_underwritten"],
+          "reasonCodes": [
+            "capital_partner_underwritten"
+          ],
           "sandboxOnly": true,
           "productionFundsApproved": false,
           "status": "offered",
@@ -5230,7 +5458,9 @@
           "disclosureRef": "terms:capital-partner:phase2",
           "termsVersion": "credit_terms.v2",
           "validUntil": "2026-07-31T00:00:00.000Z",
-          "reasonCodes": ["capital_partner_underwritten"],
+          "reasonCodes": [
+            "capital_partner_underwritten"
+          ],
           "sandboxOnly": true,
           "productionFundsApproved": false,
           "status": "withdrawn",
@@ -5611,18 +5841,54 @@
             },
             "types": {
               "HyperliquidAccountBindingProof": [
-                { "name": "tenantHash", "type": "bytes32" },
-                { "name": "subjectHash", "type": "bytes32" },
-                { "name": "principalHash", "type": "bytes32" },
-                { "name": "masterAddressHash", "type": "bytes32" },
-                { "name": "subaccountAddressHash", "type": "bytes32" },
-                { "name": "nonceHash", "type": "bytes32" },
-                { "name": "challengeId", "type": "string" },
-                { "name": "environment", "type": "string" },
-                { "name": "infoProfileId", "type": "string" },
-                { "name": "bindingEpoch", "type": "uint256" },
-                { "name": "issuedAt", "type": "uint256" },
-                { "name": "expiresAt", "type": "uint256" }
+                {
+                  "name": "tenantHash",
+                  "type": "bytes32"
+                },
+                {
+                  "name": "subjectHash",
+                  "type": "bytes32"
+                },
+                {
+                  "name": "principalHash",
+                  "type": "bytes32"
+                },
+                {
+                  "name": "masterAddressHash",
+                  "type": "bytes32"
+                },
+                {
+                  "name": "subaccountAddressHash",
+                  "type": "bytes32"
+                },
+                {
+                  "name": "nonceHash",
+                  "type": "bytes32"
+                },
+                {
+                  "name": "challengeId",
+                  "type": "string"
+                },
+                {
+                  "name": "environment",
+                  "type": "string"
+                },
+                {
+                  "name": "infoProfileId",
+                  "type": "string"
+                },
+                {
+                  "name": "bindingEpoch",
+                  "type": "uint256"
+                },
+                {
+                  "name": "issuedAt",
+                  "type": "uint256"
+                },
+                {
+                  "name": "expiresAt",
+                  "type": "uint256"
+                }
               ]
             },
             "primaryType": "HyperliquidAccountBindingProof",
@@ -7978,7 +8244,10 @@
           "facilityVersion": 1,
           "chainId": "eip155:84532",
           "operationFamily": "agent_trading_capital_intent.v1",
-          "allowedIntentKinds": ["open", "close"],
+          "allowedIntentKinds": [
+            "open",
+            "close"
+          ],
           "validFrom": "2026-08-25T00:00:00.000Z",
           "expiresAt": "2026-08-25T00:15:00.000Z",
           "sandboxOnly": true,
@@ -8063,7 +8332,10 @@
           "facilityVersion": 1,
           "chainId": "eip155:84532",
           "operationFamily": "agent_trading_capital_intent.v1",
-          "allowedIntentKinds": ["open", "close"],
+          "allowedIntentKinds": [
+            "open",
+            "close"
+          ],
           "validFrom": "2026-08-25T00:00:00.000Z",
           "expiresAt": "2026-08-25T00:15:00.000Z",
           "sandboxOnly": true,
@@ -8148,7 +8420,10 @@
           "facilityVersion": 1,
           "chainId": "eip155:84532",
           "operationFamily": "agent_trading_capital_intent.v1",
-          "allowedIntentKinds": ["open", "close"],
+          "allowedIntentKinds": [
+            "open",
+            "close"
+          ],
           "validFrom": "2026-08-25T00:00:00.000Z",
           "expiresAt": "2026-08-25T00:15:00.000Z",
           "sandboxOnly": true,
@@ -8208,6 +8483,336 @@
         "networkCalled": false,
         "fundsMoved": false,
         "schemaVersion": "tenant_agent_secured_facility_authorization_revoked.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReadSyntheticCollateralProfile",
+      "replayed": false,
+      "response": {
+        "enabled": true,
+        "profile": "m2_synthetic_weth_usd_cent.v1",
+        "exampleTerms": {
+          "profile": "m2_synthetic_weth_usd_cent.v1",
+          "chainId": "eip155:84532",
+          "collateralAssetId": "weth",
+          "collateralDecimals": 18,
+          "debtAssetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "principalMinor": "12000",
+          "requiredAssets": "80000000000000000",
+          "loanToValueBps": "7500",
+          "liquidationThresholdBps": "8000",
+          "scenarioPriceUsdWad": "2000000000000000000000",
+          "policyVersion": "m2_secured_pool_fixture_policy.v1",
+          "source": "deterministic_synthetic_scenario",
+          "marketPrice": false,
+          "withdrawable": false,
+          "productionFundsMoved": false,
+          "transactionHash": null,
+          "schemaVersion": "synthetic_collateral_terms.v1",
+          "termsHash": "0x19ca1167981be4743c46effe4e65542213d362fafbb93ff66952cc44477b131c"
+        },
+        "syntheticOnly": true,
+        "productionFundsMoved": false,
+        "transactionHash": null,
+        "schemaVersion": "tenant_synthetic_collateral_profile.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotConfirmSyntheticCollateral",
+      "replayed": false,
+      "response": {
+        "obligation": {
+          "obligationId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c",
+          "obligationHash": "0x6548132430b4a148a1c03b251982d8e64ce489235164fd091894e9d176a1160d",
+          "subjectId": "subject_b3_contract_fixture",
+          "principalId": "principal_b3_contract_fixture",
+          "creditIntentId": "credit_intent_db5b6b65-a6fc-4d0b-bf82-88e39278f08e",
+          "riskDecisionId": "risk_decision_f64f1f1120f3857cf0221c6c4ae13fd860a157db90bc23f15ff36aff7a4d1275",
+          "creditOfferId": "credit_offer_d461366d9fd9f3ff3e3840dea86f3cde3a378ea5c743378820123ad407618250",
+          "creditOfferAcceptanceId": "credit_offer_acceptance_c7fbec5dfdcbb9fb377575a67eda0a14846d385180efdb064ebd7f49d085df1e",
+          "authorityType": "consent",
+          "authorityId": "consent_b3_contract_fixture",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "originalPrincipalMinor": "12000",
+          "outstandingPrincipalMinor": "12000",
+          "annualRateBps": 600,
+          "originationFeeMinor": "0",
+          "accruedInterestMinor": "0",
+          "outstandingInterestMinor": "0",
+          "accruedFeesMinor": "0",
+          "outstandingFeesMinor": "0",
+          "totalRepaidMinor": "0",
+          "repaymentFrequency": "end_of_term",
+          "installmentCount": 1,
+          "firstPaymentAt": "2026-12-08T00:00:00.000Z",
+          "maturityAt": "2026-12-08T00:00:00.000Z",
+          "scheduleVersion": "obligation_schedule.v1",
+          "scheduleHash": "0x871af1b87598eb583991667a3bc287c00874bc1d71ec732f7e970a16209dfaaa",
+          "scheduleSequence": 1,
+          "installments": [
+            {
+              "installmentId": "obligation_installment_2bcddadb9c9508e461a8178b022eb75b732b82b0805651ac69c9a672c7ac29f4",
+              "obligationId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c",
+              "installmentNumber": 1,
+              "dueAt": "2026-12-08T00:00:00.000Z",
+              "scheduledPrincipalMinor": "12000",
+              "scheduledInterestMinor": "0",
+              "scheduledFeeMinor": "0",
+              "paidPrincipalMinor": "0",
+              "paidInterestMinor": "0",
+              "paidFeeMinor": "0",
+              "status": "scheduled",
+              "scheduleVersion": "obligation_schedule.v1",
+              "scheduleSequence": 1,
+              "schemaVersion": "obligation_installment.v1"
+            }
+          ],
+          "executionStatus": "pending",
+          "syntheticCollateral": {
+            "terms": {
+              "profile": "m2_synthetic_weth_usd_cent.v1",
+              "chainId": "eip155:84532",
+              "collateralAssetId": "weth",
+              "collateralDecimals": 18,
+              "debtAssetId": "urn:ipo-one:sandbox-asset:usd-cent",
+              "principalMinor": "12000",
+              "requiredAssets": "80000000000000000",
+              "loanToValueBps": "7500",
+              "liquidationThresholdBps": "8000",
+              "scenarioPriceUsdWad": "2000000000000000000000",
+              "policyVersion": "m2_secured_pool_fixture_policy.v1",
+              "source": "deterministic_synthetic_scenario",
+              "marketPrice": false,
+              "withdrawable": false,
+              "productionFundsMoved": false,
+              "transactionHash": null,
+              "schemaVersion": "synthetic_collateral_terms.v1",
+              "termsHash": "0x19ca1167981be4743c46effe4e65542213d362fafbb93ff66952cc44477b131c"
+            },
+            "state": "confirmed",
+            "version": 1,
+            "amountAssets": "80000000000000000",
+            "finality": "not_applicable",
+            "transactionHash": null,
+            "syntheticOnly": true,
+            "productionFundsMoved": false,
+            "confirmationReceiptId": "0xcbc7ddc14141cec691505c3abf0df37e7a58a7d84d55dc4d12edfcadb25f572d",
+            "lastReceipt": {
+              "obligationId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c",
+              "subjectId": "subject_b3_contract_fixture",
+              "action": "confirm",
+              "termsHash": "0x19ca1167981be4743c46effe4e65542213d362fafbb93ff66952cc44477b131c",
+              "chainId": "eip155:84532",
+              "collateralAssetId": "weth",
+              "amountAssets": "80000000000000000",
+              "previousVersion": 0,
+              "version": 1,
+              "state": "confirmed",
+              "source": "deterministic_synthetic_scenario",
+              "finality": "not_applicable",
+              "syntheticOnly": true,
+              "productionFundsMoved": false,
+              "transactionHash": null,
+              "withdrawable": false,
+              "recordedAt": "2026-11-08T00:00:00.000Z",
+              "schemaVersion": "synthetic_collateral_receipt.v1",
+              "receiptId": "0xcbc7ddc14141cec691505c3abf0df37e7a58a7d84d55dc4d12edfcadb25f572d"
+            }
+          },
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "status": "created",
+          "servicingClassification": "current",
+          "daysPastDue": 0,
+          "oldestUnpaidInstallmentId": "obligation_installment_2bcddadb9c9508e461a8178b022eb75b732b82b0805651ac69c9a672c7ac29f4",
+          "servicingEffectiveAt": "2026-11-08T00:00:00.000Z",
+          "servicingReasonCode": "obligation_created",
+          "servicingPolicyVersion": "sandbox-servicing-policy.v1",
+          "servicingOwnerCode": "sandbox_platform",
+          "writtenOffPrincipalMinor": "0",
+          "writtenOffInterestMinor": "0",
+          "writtenOffFeesMinor": "0",
+          "acceptedAt": "2026-11-08T00:00:00.000Z",
+          "createdAt": "2026-11-08T00:00:00.000Z",
+          "updatedAt": "2026-11-08T00:00:00.000Z",
+          "schemaVersion": "obligation.v2"
+        },
+        "receipt": {
+          "obligationId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c",
+          "subjectId": "subject_b3_contract_fixture",
+          "action": "confirm",
+          "termsHash": "0x19ca1167981be4743c46effe4e65542213d362fafbb93ff66952cc44477b131c",
+          "chainId": "eip155:84532",
+          "collateralAssetId": "weth",
+          "amountAssets": "80000000000000000",
+          "previousVersion": 0,
+          "version": 1,
+          "state": "confirmed",
+          "source": "deterministic_synthetic_scenario",
+          "finality": "not_applicable",
+          "syntheticOnly": true,
+          "productionFundsMoved": false,
+          "transactionHash": null,
+          "withdrawable": false,
+          "recordedAt": "2026-11-08T00:00:00.000Z",
+          "schemaVersion": "synthetic_collateral_receipt.v1",
+          "receiptId": "0xcbc7ddc14141cec691505c3abf0df37e7a58a7d84d55dc4d12edfcadb25f572d"
+        },
+        "syntheticOnly": true,
+        "productionFundsMoved": false,
+        "transactionHash": null,
+        "schemaVersion": "tenant_synthetic_collateral_confirmed.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReleaseSyntheticCollateral",
+      "replayed": false,
+      "response": {
+        "obligation": {
+          "obligationId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c",
+          "obligationHash": "0x6548132430b4a148a1c03b251982d8e64ce489235164fd091894e9d176a1160d",
+          "subjectId": "subject_b3_contract_fixture",
+          "principalId": "principal_b3_contract_fixture",
+          "creditIntentId": "credit_intent_db5b6b65-a6fc-4d0b-bf82-88e39278f08e",
+          "riskDecisionId": "risk_decision_f64f1f1120f3857cf0221c6c4ae13fd860a157db90bc23f15ff36aff7a4d1275",
+          "creditOfferId": "credit_offer_d461366d9fd9f3ff3e3840dea86f3cde3a378ea5c743378820123ad407618250",
+          "creditOfferAcceptanceId": "credit_offer_acceptance_c7fbec5dfdcbb9fb377575a67eda0a14846d385180efdb064ebd7f49d085df1e",
+          "authorityType": "consent",
+          "authorityId": "consent_b3_contract_fixture",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "originalPrincipalMinor": "12000",
+          "outstandingPrincipalMinor": "0",
+          "annualRateBps": 600,
+          "originationFeeMinor": "0",
+          "accruedInterestMinor": "0",
+          "outstandingInterestMinor": "0",
+          "accruedFeesMinor": "0",
+          "outstandingFeesMinor": "0",
+          "totalRepaidMinor": "0",
+          "repaymentFrequency": "end_of_term",
+          "installmentCount": 1,
+          "firstPaymentAt": "2026-12-08T00:00:00.000Z",
+          "maturityAt": "2026-12-08T00:00:00.000Z",
+          "scheduleVersion": "obligation_schedule.v1",
+          "scheduleHash": "0x871af1b87598eb583991667a3bc287c00874bc1d71ec732f7e970a16209dfaaa",
+          "scheduleSequence": 1,
+          "installments": [
+            {
+              "installmentId": "obligation_installment_2bcddadb9c9508e461a8178b022eb75b732b82b0805651ac69c9a672c7ac29f4",
+              "obligationId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c",
+              "installmentNumber": 1,
+              "dueAt": "2026-12-08T00:00:00.000Z",
+              "scheduledPrincipalMinor": "12000",
+              "scheduledInterestMinor": "0",
+              "scheduledFeeMinor": "0",
+              "paidPrincipalMinor": "0",
+              "paidInterestMinor": "0",
+              "paidFeeMinor": "0",
+              "status": "scheduled",
+              "scheduleVersion": "obligation_schedule.v1",
+              "scheduleSequence": 1,
+              "schemaVersion": "obligation_installment.v1"
+            }
+          ],
+          "executionStatus": "executed",
+          "syntheticCollateral": {
+            "terms": {
+              "profile": "m2_synthetic_weth_usd_cent.v1",
+              "chainId": "eip155:84532",
+              "collateralAssetId": "weth",
+              "collateralDecimals": 18,
+              "debtAssetId": "urn:ipo-one:sandbox-asset:usd-cent",
+              "principalMinor": "12000",
+              "requiredAssets": "80000000000000000",
+              "loanToValueBps": "7500",
+              "liquidationThresholdBps": "8000",
+              "scenarioPriceUsdWad": "2000000000000000000000",
+              "policyVersion": "m2_secured_pool_fixture_policy.v1",
+              "source": "deterministic_synthetic_scenario",
+              "marketPrice": false,
+              "withdrawable": false,
+              "productionFundsMoved": false,
+              "transactionHash": null,
+              "schemaVersion": "synthetic_collateral_terms.v1",
+              "termsHash": "0x19ca1167981be4743c46effe4e65542213d362fafbb93ff66952cc44477b131c"
+            },
+            "state": "released",
+            "version": 2,
+            "amountAssets": "0",
+            "finality": "not_applicable",
+            "transactionHash": null,
+            "syntheticOnly": true,
+            "productionFundsMoved": false,
+            "confirmationReceiptId": "0xcbc7ddc14141cec691505c3abf0df37e7a58a7d84d55dc4d12edfcadb25f572d",
+            "lastReceipt": {
+              "obligationId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c",
+              "subjectId": "subject_b3_contract_fixture",
+              "action": "release",
+              "termsHash": "0x19ca1167981be4743c46effe4e65542213d362fafbb93ff66952cc44477b131c",
+              "chainId": "eip155:84532",
+              "collateralAssetId": "weth",
+              "amountAssets": "80000000000000000",
+              "previousVersion": 1,
+              "version": 2,
+              "state": "released",
+              "source": "deterministic_synthetic_scenario",
+              "finality": "not_applicable",
+              "syntheticOnly": true,
+              "productionFundsMoved": false,
+              "transactionHash": null,
+              "withdrawable": false,
+              "recordedAt": "2026-11-08T00:00:00.000Z",
+              "schemaVersion": "synthetic_collateral_receipt.v1",
+              "receiptId": "0x4196c5174d810b6f14a227123827fb3f88bdd580a2d6848846d92405a69725fb"
+            },
+            "releaseReceiptId": "0x4196c5174d810b6f14a227123827fb3f88bdd580a2d6848846d92405a69725fb"
+          },
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "status": "fully_repaid",
+          "servicingClassification": "current",
+          "daysPastDue": 0,
+          "oldestUnpaidInstallmentId": "obligation_installment_2bcddadb9c9508e461a8178b022eb75b732b82b0805651ac69c9a672c7ac29f4",
+          "servicingEffectiveAt": "2026-11-08T00:00:00.000Z",
+          "servicingReasonCode": "obligation_created",
+          "servicingPolicyVersion": "sandbox-servicing-policy.v1",
+          "servicingOwnerCode": "sandbox_platform",
+          "writtenOffPrincipalMinor": "0",
+          "writtenOffInterestMinor": "0",
+          "writtenOffFeesMinor": "0",
+          "acceptedAt": "2026-11-08T00:00:00.000Z",
+          "createdAt": "2026-11-08T00:00:00.000Z",
+          "updatedAt": "2026-11-08T00:00:00.000Z",
+          "schemaVersion": "obligation.v2"
+        },
+        "receipt": {
+          "obligationId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c",
+          "subjectId": "subject_b3_contract_fixture",
+          "action": "release",
+          "termsHash": "0x19ca1167981be4743c46effe4e65542213d362fafbb93ff66952cc44477b131c",
+          "chainId": "eip155:84532",
+          "collateralAssetId": "weth",
+          "amountAssets": "80000000000000000",
+          "previousVersion": 1,
+          "version": 2,
+          "state": "released",
+          "source": "deterministic_synthetic_scenario",
+          "finality": "not_applicable",
+          "syntheticOnly": true,
+          "productionFundsMoved": false,
+          "transactionHash": null,
+          "withdrawable": false,
+          "recordedAt": "2026-11-08T00:00:00.000Z",
+          "schemaVersion": "synthetic_collateral_receipt.v1",
+          "receiptId": "0x4196c5174d810b6f14a227123827fb3f88bdd580a2d6848846d92405a69725fb"
+        },
+        "syntheticOnly": true,
+        "productionFundsMoved": false,
+        "transactionHash": null,
+        "schemaVersion": "tenant_synthetic_collateral_released.v1"
       },
       "schemaVersion": "tenant_protocol_result.v1"
     }
@@ -8469,6 +9074,303 @@
         },
         "schemaVersion": "tenant_protocol_result.v1"
       }
+    },
+    {
+      "operationId": "pilotConfirmSyntheticCollateral",
+      "replayed": false,
+      "response": {
+        "obligation": {
+          "obligationId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c",
+          "obligationHash": "0x6548132430b4a148a1c03b251982d8e64ce489235164fd091894e9d176a1160d",
+          "subjectId": "subject_b3_contract_fixture",
+          "principalId": "principal_b3_contract_fixture",
+          "creditIntentId": "credit_intent_db5b6b65-a6fc-4d0b-bf82-88e39278f08e",
+          "riskDecisionId": "risk_decision_f64f1f1120f3857cf0221c6c4ae13fd860a157db90bc23f15ff36aff7a4d1275",
+          "creditOfferId": "credit_offer_d461366d9fd9f3ff3e3840dea86f3cde3a378ea5c743378820123ad407618250",
+          "creditOfferAcceptanceId": "credit_offer_acceptance_c7fbec5dfdcbb9fb377575a67eda0a14846d385180efdb064ebd7f49d085df1e",
+          "authorityType": "consent",
+          "authorityId": "consent_b3_contract_fixture",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "originalPrincipalMinor": "12000",
+          "outstandingPrincipalMinor": "12000",
+          "annualRateBps": 600,
+          "originationFeeMinor": "0",
+          "accruedInterestMinor": "0",
+          "outstandingInterestMinor": "0",
+          "accruedFeesMinor": "0",
+          "outstandingFeesMinor": "0",
+          "totalRepaidMinor": "0",
+          "repaymentFrequency": "end_of_term",
+          "installmentCount": 1,
+          "firstPaymentAt": "2026-12-08T00:00:00.000Z",
+          "maturityAt": "2026-12-08T00:00:00.000Z",
+          "scheduleVersion": "obligation_schedule.v1",
+          "scheduleHash": "0x871af1b87598eb583991667a3bc287c00874bc1d71ec732f7e970a16209dfaaa",
+          "scheduleSequence": 1,
+          "installments": [
+            {
+              "installmentId": "obligation_installment_2bcddadb9c9508e461a8178b022eb75b732b82b0805651ac69c9a672c7ac29f4",
+              "obligationId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c",
+              "installmentNumber": 1,
+              "dueAt": "2026-12-08T00:00:00.000Z",
+              "scheduledPrincipalMinor": "12000",
+              "scheduledInterestMinor": "0",
+              "scheduledFeeMinor": "0",
+              "paidPrincipalMinor": "0",
+              "paidInterestMinor": "0",
+              "paidFeeMinor": "0",
+              "status": "scheduled",
+              "scheduleVersion": "obligation_schedule.v1",
+              "scheduleSequence": 1,
+              "schemaVersion": "obligation_installment.v1"
+            }
+          ],
+          "executionStatus": "pending",
+          "syntheticCollateral": {
+            "terms": {
+              "profile": "m2_synthetic_weth_usd_cent.v1",
+              "chainId": "eip155:84532",
+              "collateralAssetId": "weth",
+              "collateralDecimals": 18,
+              "debtAssetId": "urn:ipo-one:sandbox-asset:usd-cent",
+              "principalMinor": "12000",
+              "requiredAssets": "80000000000000000",
+              "loanToValueBps": "7500",
+              "liquidationThresholdBps": "8000",
+              "scenarioPriceUsdWad": "2000000000000000000000",
+              "policyVersion": "m2_secured_pool_fixture_policy.v1",
+              "source": "deterministic_synthetic_scenario",
+              "marketPrice": false,
+              "withdrawable": false,
+              "productionFundsMoved": false,
+              "transactionHash": null,
+              "schemaVersion": "synthetic_collateral_terms.v1",
+              "termsHash": "0x19ca1167981be4743c46effe4e65542213d362fafbb93ff66952cc44477b131c"
+            },
+            "state": "confirmed",
+            "version": 1,
+            "amountAssets": "80000000000000000",
+            "finality": "not_applicable",
+            "transactionHash": null,
+            "syntheticOnly": true,
+            "productionFundsMoved": false,
+            "confirmationReceiptId": "0xcbc7ddc14141cec691505c3abf0df37e7a58a7d84d55dc4d12edfcadb25f572d",
+            "lastReceipt": {
+              "obligationId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c",
+              "subjectId": "subject_b3_contract_fixture",
+              "action": "confirm",
+              "termsHash": "0x19ca1167981be4743c46effe4e65542213d362fafbb93ff66952cc44477b131c",
+              "chainId": "eip155:84532",
+              "collateralAssetId": "weth",
+              "amountAssets": "80000000000000000",
+              "previousVersion": 0,
+              "version": 1,
+              "state": "confirmed",
+              "source": "deterministic_synthetic_scenario",
+              "finality": "not_applicable",
+              "syntheticOnly": true,
+              "productionFundsMoved": false,
+              "transactionHash": null,
+              "withdrawable": false,
+              "recordedAt": "2026-11-08T00:00:00.000Z",
+              "schemaVersion": "synthetic_collateral_receipt.v1",
+              "receiptId": "0xcbc7ddc14141cec691505c3abf0df37e7a58a7d84d55dc4d12edfcadb25f572d"
+            }
+          },
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "status": "created",
+          "servicingClassification": "current",
+          "daysPastDue": 0,
+          "oldestUnpaidInstallmentId": "obligation_installment_2bcddadb9c9508e461a8178b022eb75b732b82b0805651ac69c9a672c7ac29f4",
+          "servicingEffectiveAt": "2026-11-08T00:00:00.000Z",
+          "servicingReasonCode": "obligation_created",
+          "servicingPolicyVersion": "sandbox-servicing-policy.v1",
+          "servicingOwnerCode": "sandbox_platform",
+          "writtenOffPrincipalMinor": "0",
+          "writtenOffInterestMinor": "0",
+          "writtenOffFeesMinor": "0",
+          "acceptedAt": "2026-11-08T00:00:00.000Z",
+          "createdAt": "2026-11-08T00:00:00.000Z",
+          "updatedAt": "2026-11-08T00:00:00.000Z",
+          "schemaVersion": "obligation.v2"
+        },
+        "receipt": {
+          "obligationId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c",
+          "subjectId": "subject_b3_contract_fixture",
+          "action": "confirm",
+          "termsHash": "0x19ca1167981be4743c46effe4e65542213d362fafbb93ff66952cc44477b131c",
+          "chainId": "eip155:84532",
+          "collateralAssetId": "weth",
+          "amountAssets": "80000000000000000",
+          "previousVersion": 0,
+          "version": 1,
+          "state": "confirmed",
+          "source": "deterministic_synthetic_scenario",
+          "finality": "not_applicable",
+          "syntheticOnly": true,
+          "productionFundsMoved": false,
+          "transactionHash": null,
+          "withdrawable": false,
+          "recordedAt": "2026-11-08T00:00:00.000Z",
+          "schemaVersion": "synthetic_collateral_receipt.v1",
+          "receiptId": "0xcbc7ddc14141cec691505c3abf0df37e7a58a7d84d55dc4d12edfcadb25f572d"
+        },
+        "syntheticOnly": true,
+        "productionFundsMoved": false,
+        "transactionHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "schemaVersion": "tenant_synthetic_collateral_confirmed.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReleaseSyntheticCollateral",
+      "replayed": false,
+      "response": {
+        "obligation": {
+          "obligationId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c",
+          "obligationHash": "0x6548132430b4a148a1c03b251982d8e64ce489235164fd091894e9d176a1160d",
+          "subjectId": "subject_b3_contract_fixture",
+          "principalId": "principal_b3_contract_fixture",
+          "creditIntentId": "credit_intent_db5b6b65-a6fc-4d0b-bf82-88e39278f08e",
+          "riskDecisionId": "risk_decision_f64f1f1120f3857cf0221c6c4ae13fd860a157db90bc23f15ff36aff7a4d1275",
+          "creditOfferId": "credit_offer_d461366d9fd9f3ff3e3840dea86f3cde3a378ea5c743378820123ad407618250",
+          "creditOfferAcceptanceId": "credit_offer_acceptance_c7fbec5dfdcbb9fb377575a67eda0a14846d385180efdb064ebd7f49d085df1e",
+          "authorityType": "consent",
+          "authorityId": "consent_b3_contract_fixture",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "originalPrincipalMinor": "12000",
+          "outstandingPrincipalMinor": "0",
+          "annualRateBps": 600,
+          "originationFeeMinor": "0",
+          "accruedInterestMinor": "0",
+          "outstandingInterestMinor": "0",
+          "accruedFeesMinor": "0",
+          "outstandingFeesMinor": "0",
+          "totalRepaidMinor": "0",
+          "repaymentFrequency": "end_of_term",
+          "installmentCount": 1,
+          "firstPaymentAt": "2026-12-08T00:00:00.000Z",
+          "maturityAt": "2026-12-08T00:00:00.000Z",
+          "scheduleVersion": "obligation_schedule.v1",
+          "scheduleHash": "0x871af1b87598eb583991667a3bc287c00874bc1d71ec732f7e970a16209dfaaa",
+          "scheduleSequence": 1,
+          "installments": [
+            {
+              "installmentId": "obligation_installment_2bcddadb9c9508e461a8178b022eb75b732b82b0805651ac69c9a672c7ac29f4",
+              "obligationId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c",
+              "installmentNumber": 1,
+              "dueAt": "2026-12-08T00:00:00.000Z",
+              "scheduledPrincipalMinor": "12000",
+              "scheduledInterestMinor": "0",
+              "scheduledFeeMinor": "0",
+              "paidPrincipalMinor": "0",
+              "paidInterestMinor": "0",
+              "paidFeeMinor": "0",
+              "status": "scheduled",
+              "scheduleVersion": "obligation_schedule.v1",
+              "scheduleSequence": 1,
+              "schemaVersion": "obligation_installment.v1"
+            }
+          ],
+          "executionStatus": "executed",
+          "syntheticCollateral": {
+            "terms": {
+              "profile": "m2_synthetic_weth_usd_cent.v1",
+              "chainId": "eip155:84532",
+              "collateralAssetId": "weth",
+              "collateralDecimals": 18,
+              "debtAssetId": "urn:ipo-one:sandbox-asset:usd-cent",
+              "principalMinor": "12000",
+              "requiredAssets": "80000000000000000",
+              "loanToValueBps": "7500",
+              "liquidationThresholdBps": "8000",
+              "scenarioPriceUsdWad": "2000000000000000000000",
+              "policyVersion": "m2_secured_pool_fixture_policy.v1",
+              "source": "deterministic_synthetic_scenario",
+              "marketPrice": false,
+              "withdrawable": false,
+              "productionFundsMoved": false,
+              "transactionHash": null,
+              "schemaVersion": "synthetic_collateral_terms.v1",
+              "termsHash": "0x19ca1167981be4743c46effe4e65542213d362fafbb93ff66952cc44477b131c"
+            },
+            "state": "released",
+            "version": 2,
+            "amountAssets": "0",
+            "finality": "not_applicable",
+            "transactionHash": null,
+            "syntheticOnly": true,
+            "productionFundsMoved": false,
+            "confirmationReceiptId": "0xcbc7ddc14141cec691505c3abf0df37e7a58a7d84d55dc4d12edfcadb25f572d",
+            "lastReceipt": {
+              "obligationId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c",
+              "subjectId": "subject_b3_contract_fixture",
+              "action": "release",
+              "termsHash": "0x19ca1167981be4743c46effe4e65542213d362fafbb93ff66952cc44477b131c",
+              "chainId": "eip155:84532",
+              "collateralAssetId": "weth",
+              "amountAssets": "80000000000000000",
+              "previousVersion": 1,
+              "version": 2,
+              "state": "released",
+              "source": "deterministic_synthetic_scenario",
+              "finality": "not_applicable",
+              "syntheticOnly": true,
+              "productionFundsMoved": false,
+              "transactionHash": null,
+              "withdrawable": false,
+              "recordedAt": "2026-11-08T00:00:00.000Z",
+              "schemaVersion": "synthetic_collateral_receipt.v1",
+              "receiptId": "0x4196c5174d810b6f14a227123827fb3f88bdd580a2d6848846d92405a69725fb"
+            },
+            "releaseReceiptId": "0x4196c5174d810b6f14a227123827fb3f88bdd580a2d6848846d92405a69725fb"
+          },
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "status": "fully_repaid",
+          "servicingClassification": "current",
+          "daysPastDue": 0,
+          "oldestUnpaidInstallmentId": "obligation_installment_2bcddadb9c9508e461a8178b022eb75b732b82b0805651ac69c9a672c7ac29f4",
+          "servicingEffectiveAt": "2026-11-08T00:00:00.000Z",
+          "servicingReasonCode": "obligation_created",
+          "servicingPolicyVersion": "sandbox-servicing-policy.v1",
+          "servicingOwnerCode": "sandbox_platform",
+          "writtenOffPrincipalMinor": "0",
+          "writtenOffInterestMinor": "0",
+          "writtenOffFeesMinor": "0",
+          "acceptedAt": "2026-11-08T00:00:00.000Z",
+          "createdAt": "2026-11-08T00:00:00.000Z",
+          "updatedAt": "2026-11-08T00:00:00.000Z",
+          "schemaVersion": "obligation.v2"
+        },
+        "receipt": {
+          "obligationId": "obligation_5c2bdb2c-b776-42ff-b786-ad322c066f7c",
+          "subjectId": "subject_b3_contract_fixture",
+          "action": "release",
+          "termsHash": "0x19ca1167981be4743c46effe4e65542213d362fafbb93ff66952cc44477b131c",
+          "chainId": "eip155:84532",
+          "collateralAssetId": "weth",
+          "amountAssets": "80000000000000000",
+          "previousVersion": 1,
+          "version": 2,
+          "state": "released",
+          "source": "deterministic_synthetic_scenario",
+          "finality": "not_applicable",
+          "syntheticOnly": true,
+          "productionFundsMoved": false,
+          "transactionHash": null,
+          "withdrawable": false,
+          "recordedAt": "2026-11-08T00:00:00.000Z",
+          "schemaVersion": "synthetic_collateral_receipt.v1",
+          "receiptId": "0x4196c5174d810b6f14a227123827fb3f88bdd580a2d6848846d92405a69725fb"
+        },
+        "syntheticOnly": true,
+        "productionFundsMoved": false,
+        "transactionHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "schemaVersion": "tenant_synthetic_collateral_released.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
     }
   ],
   "schemaVersion": "tenant_protocol_conformance.v1"

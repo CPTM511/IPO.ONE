@@ -940,6 +940,11 @@
                       <strong>USD cent · urn:ipo-one…</strong>
                     </div>
                   </div>
+                  <label class="offer-acknowledgement" for="humanCreditCollateral">
+                    <input id="humanCreditCollateral" type="checkbox" disabled />
+                    <span>Include synthetic WETH collateral</span>
+                  </label>
+                  <p class="helper" id="syntheticCollateralAvailability">Synthetic collateral is not enabled in this environment.</p>
                   <div class="application-submit-row">
                     <button class="primary application-submit" id="submitHumanCreditBtn" type="submit">Request & evaluate credit</button>
                   </div>
@@ -1048,12 +1053,30 @@
                     <button class="primary" id="acceptHumanOfferBtn" type="button" disabled>Confirm &amp; create sandbox Obligation</button>
                   </div>
                   <p class="offer-boundary" id="humanOfferBoundary">Acceptance creates one auditable Obligation and deterministic schedule. No production funds can move.</p>
+                  <p class="offer-boundary" id="humanOfferCollateralDisclosure" hidden></p>
                 </aside>
                 <section class="obligation-card" id="humanObligationCard" tabindex="-1" aria-labelledby="humanObligationTitle" hidden>
                   <div class="obligation-card-heading">
                       <div><span>04</span><div><small>Your sandbox credit plan</small><strong id="humanObligationTitle">Obligation created</strong></div></div>
                     <em id="humanObligationExecution">Pending execution</em>
                   </div>
+                  <section id="syntheticCollateralPanel" class="panel" aria-labelledby="syntheticCollateralTitle" hidden>
+                    <h3 id="syntheticCollateralTitle">Synthetic collateral</h3>
+                    <p id="syntheticCollateralState" role="status">Awaiting synthetic collateral confirmation</p>
+                    <dl class="offer-terms">
+                      <div><dt>Required synthetic WETH</dt><dd id="syntheticCollateralRequired">—</dd></div>
+                      <div><dt>Confirmed synthetic WETH</dt><dd id="syntheticCollateralRemaining">—</dd></div>
+                      <div><dt>Scenario network</dt><dd>Base Sepolia</dd></div>
+                      <div><dt>Scenario valuation</dt><dd>2,000 USD / WETH · 75% LTV</dd></div>
+                    </dl>
+                    <p>Synthetic scenario only. No wallet balance is reserved, no funds move, and no blockchain transaction is submitted.</p>
+                    <p>Confirm collateral before execution. Release is available only after full repayment.</p>
+                    <div class="button-row">
+                      <button class="primary" id="confirmSyntheticCollateralBtn" type="button" disabled>Confirm synthetic collateral</button>
+                      <button class="secondary" id="releaseSyntheticCollateralBtn" type="button" disabled>Release synthetic collateral after repayment</button>
+                    </div>
+                    <details><summary>Synthetic collateral receipt</summary><code id="syntheticCollateralReceipt">—</code></details>
+                  </section>
                   <div class="obligation-card-layout">
                     <div class="obligation-state-column">
                       <dl>

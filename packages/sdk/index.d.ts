@@ -119,6 +119,7 @@ export class IpoOneAgentPilotCaseClient {
 }
 
 export interface AgentCreditRequest {
+  collateralProfile?: "m2_synthetic_weth_usd_cent.v1";
   assetId: string;
   installmentCount: number;
   purposeCode: string;
@@ -554,4 +555,15 @@ export class IpoOneSecuredPoolClient {
       { operationId: SecuredPoolAgentOperationId }
     >
   ): Promise<import("@ipo-one/api-contract").TenantProtocolResult>;
+}
+
+export const SYNTHETIC_COLLATERAL_AGENT_OPERATION_IDS: readonly import("@ipo-one/api-contract").TenantProtocolOperationId[];
+export class IpoOneSyntheticCollateralSdkError extends Error {
+  constructor(code: string, message: string);
+  readonly code: string;
+}
+export class IpoOneSyntheticCollateralClient {
+  constructor(options: { execute: AgentTenantProtocolExecute; transportProfile: "local_in_process" });
+  listOperations(): import("@ipo-one/api-contract").TenantProtocolOperationId[];
+  executeOperation(request: TenantProtocolRequest): Promise<TenantProtocolResult>;
 }

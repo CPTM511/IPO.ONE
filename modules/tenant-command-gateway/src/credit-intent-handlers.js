@@ -37,8 +37,9 @@ function normalizeCreditIntentPayload(payload) {
     !payload ||
     typeof payload !== "object" ||
     Array.isArray(payload) ||
-    Object.keys(payload).length !== ALLOWED_PAYLOAD_KEYS.size ||
-    Object.keys(payload).some((key) => !ALLOWED_PAYLOAD_KEYS.has(key))
+    ![ALLOWED_PAYLOAD_KEYS.size, ALLOWED_PAYLOAD_KEYS.size + 1].includes(Object.keys(payload).length) ||
+    [...ALLOWED_PAYLOAD_KEYS].some(key => !Object.hasOwn(payload, key)) ||
+    Object.keys(payload).some((key) => !ALLOWED_PAYLOAD_KEYS.has(key) && key !== "collateralProfile")
   ) {
     throw new DomainError("invalid_tenant_command_payload", "Credit Intent payload is invalid");
   }
@@ -66,6 +67,7 @@ export function summarizeCreditIntent(intent) {
     authorityId: intent.authorityRef,
     assetId: intent.assetId,
     requestedPrincipalMinor: intent.requestedPrincipalMinor,
+    ...(intent.collateralProfile ? { collateralProfile: intent.collateralProfile } : {}),
     purposeCode: intent.purposeCode,
     requestedTermDays: intent.requestedTermDays,
     repaymentFrequency: intent.repaymentFrequency,
@@ -166,6 +168,7 @@ export async function resolveCreditIntentAuthority({
     authorityRef: input.authorityId,
     assetId: input.assetId,
     requestedPrincipalMinor: input.requestedPrincipalMinor,
+    collateralProfile: input.collateralProfile,
     purposeCode: input.purposeCode,
     requestedTermDays: input.requestedTermDays,
     repaymentFrequency: input.repaymentFrequency,
@@ -202,7 +205,7 @@ async function loadCreditIntentResourceBaselines({ client, coreRepository }) {
   };
 }
 
-export function requestCreditIntentCommandHandler() {
+export function requestCreditIntentCommandHandler({ syntheticCollateralEnabled = false } = {}) {
   return Object.freeze({
     operationId: "pilotRequestCredit",
     kind: "command",
@@ -220,6 +223,9 @@ export function requestCreditIntentCommandHandler() {
       requestId,
       correlationId
     }) {
+      if (payload.collateralProfile !== undefined && !syntheticCollateralEnabled) {
+        throw new DomainError("synthetic_collateral_disabled", "Synthetic collateral is not enabled in this environment");
+      }
       if (authorizationDecision.resourceType !== "subject") unavailable();
       const { intent } = await resolveCreditIntentAuthority({
         client,
@@ -342,9 +348,9 @@ export function readCreditApplicationQueryHandler() {
   });
 }
 
-export function createCreditIntentHandlers() {
+export function createCreditIntentHandlers(options) {
   return Object.freeze([
-    requestCreditIntentCommandHandler(),
+    requestCreditIntentCommandHandler(options),
     readCreditApplicationQueryHandler()
   ]);
 }

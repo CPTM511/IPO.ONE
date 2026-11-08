@@ -22,6 +22,13 @@ export function workspaceSessionPresentation(expectedKind, receivedKind) {
   };
 }
 export const PRODUCT_ERROR_COPY = Object.freeze({
+  synthetic_collateral_disabled: "Synthetic collateral is not enabled in this environment.",
+  synthetic_collateral_unavailable: "Synthetic collateral unavailable",
+  synthetic_collateral_profile_invalid: "Synthetic collateral unavailable",
+  synthetic_collateral_not_confirmed: "Confirm synthetic collateral before executing this Obligation.",
+  synthetic_collateral_terms_mismatch: "The collateral details changed. Reload the current record and review it again.",
+  synthetic_collateral_state_conflict: "The collateral state changed. Refresh the record before trying again.",
+  synthetic_collateral_release_blocked: "Full repayment is required before releasing synthetic collateral.",
   session: "Your secure session ended. Sign in again, then reload your record before retrying an action.",
   access: "This record is unavailable or you do not have permission to access it. Check the selected account and role.",
   stale: "The reviewed terms or server state changed. Reload and review the current terms before confirming again.",

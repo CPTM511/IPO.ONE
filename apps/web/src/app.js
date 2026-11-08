@@ -1,3 +1,4 @@
+import { createSyntheticCollateralPresentation, syntheticCollateralAmount } from "./synthetic-collateral-presentation.js";
 import { installProductLocalization } from "./product-localization.js";
 import { authenticationErrorCopy, productErrorCopy, workspaceKindLabel, workspaceSessionPresentation } from "./product-error-presentation.js";
 import { PRODUCT_LANGUAGES, formatMinorAmount, formatProductDate } from "./product-i18n.js";
@@ -150,6 +151,7 @@ let serverCatalogSnapshot = null;
 let explicitWalletReleaseInProgress = false;
 let mobileWalletAccess;
 const tenantPilot = {
+  syntheticCollateralEnabled: false,
   humanSelf: null,
   checked: false,
   connected: false,
@@ -1959,7 +1961,7 @@ function requestEconomicActionConfirmation({
   }
   if (
     !tenantPilot.connected ||
-    !["accept_offer", "execute_obligation", "post_repayment"].includes(actionType) ||
+    !["accept_offer", "execute_obligation", "post_repayment", "confirm_synthetic_collateral", "release_synthetic_collateral"].includes(actionType) ||
     typeof title !== "string" ||
     !exactResourceId(resourceId) ||
     !/^0x[0-9a-f]{64}$/.test(resourceHash ?? "") ||
@@ -2026,7 +2028,7 @@ function requestEconomicActionConfirmation({
   el("economicActionCopy").textContent = walletConfirmation
     ? "Your connected wallet will sign the exact five-minute sandbox instruction. Rejecting the wallet request submits nothing."
     : "Your authenticated account requires an explicit second click for this exact five-minute sandbox instruction.";
-  el("economicActionType").textContent = titleize(actionType);
+  el("economicActionType").textContent = ({ confirm_synthetic_collateral: "Confirm synthetic collateral", release_synthetic_collateral: "Release synthetic collateral after repayment" })[actionType] ?? titleize(actionType);
   el("economicActionMethod").textContent = walletConfirmation
     ? `Wallet signature · ${shortWalletAddress(accessState.walletAddress)}`
     : "Authenticated account confirmation";
@@ -2894,6 +2896,7 @@ function requestedCreditTerms() {
     throw new Error("Installment count must be between 1 and 3.");
   }
   return {
+    ...(el("humanCreditCollateral").checked ? { collateralProfile: "m2_synthetic_weth_usd_cent.v1" } : {}),
     assetId: "urn:ipo-one:sandbox-asset:usd-cent",
     requestedPrincipalMinor: String(Math.round(amount * 100)),
     purposeCode: el("humanCreditPurpose").value,
@@ -2913,6 +2916,7 @@ function currentHumanCreditReviewInput() {
 }
 
 function restoreHumanCreditRequest(creditRequest) {
+  el("humanCreditCollateral").checked = creditRequest.collateralProfile === "m2_synthetic_weth_usd_cent.v1";
   const principalMinor = /^[1-9][0-9]*$/.test(
     creditRequest?.requestedPrincipalMinor ?? ""
   )
@@ -8805,6 +8809,11 @@ function renderTenantPilot() {
         ? "Reconnect wallet to continue"
         : "Confirm & create sandbox Obligation";
 
+  const collateralTerms = tenantPilot.offer?.collateralTerms;
+  el("humanOfferCollateralDisclosure").hidden = !collateralTerms;
+  el("humanOfferCollateralDisclosure").textContent = collateralTerms
+    ? `${syntheticCollateralAmount(collateralTerms.requiredAssets)} synthetic WETH collateral · scenario network Base Sepolia · no real funds or blockchain transaction.`
+    : "";
   const obligationCard = el("humanObligationCard");
   obligationCard.hidden = !obligation;
   el("humanObligationExecution").textContent = obligation
@@ -8833,9 +8842,10 @@ function renderTenantPilot() {
     obligation?.sandboxExecutionReceiptId ?? "Not executed";
   el("humanExecutionReceipt").textContent = executionReference;
   el("humanExecutionReceipt").title = executionReference === "Not executed" ? "" : executionReference;
+  renderSyntheticCollateral(obligation, privateBusy);
   el("executeHumanObligationBtn").hidden = !obligation || obligationExecuted;
   el("executeHumanObligationBtn").disabled =
-    privateBusy || !tenantPilot.connected || !obligation || obligationExecuted;
+    privateBusy || !tenantPilot.connected || !obligation || obligationExecuted || (createSyntheticCollateralPresentation(obligation).executionBlocked || (obligation?.syntheticCollateral && !tenantPilot.syntheticCollateralEnabled));
   el("executeHumanObligationBtn").textContent = obligationExecuted
     ? obligationRepaid
       ? "Lifecycle complete"
@@ -10148,6 +10158,13 @@ async function refreshHumanActivationState() {
   if (!subjectId || !hasHumanBorrowerWorkspace()) return;
   const result = await tenantApi("pilotReadHumanSelf", { idempotent: false, resource: { resourceType: "subject", resourceId: subjectId } });
   tenantPilot.humanSelf = result.response;
+  tenantPilot.syntheticCollateralEnabled = false;
+  if (serverCatalogOperations.has("pilotReadSyntheticCollateralProfile")) {
+    const profile = await tenantApi("pilotReadSyntheticCollateralProfile", {
+      resource: { resourceType: "subject", resourceId: subjectId }, payload: {}, idempotent: false
+    });
+    tenantPilot.syntheticCollateralEnabled = profile.response.enabled === true;
+  }
 }
 
 async function activateSandboxHumanProfile() {
@@ -10521,6 +10538,53 @@ async function acceptHumanCreditOffer() {
     },
     "Offer accepted. One shared sandbox Obligation and deterministic schedule were created; signed sandbox execution is ready."
   );
+}
+
+function renderSyntheticCollateral(obligation, busy) {
+  const presentation = createSyntheticCollateralPresentation(obligation);
+  const enabled = tenantPilot.syntheticCollateralEnabled === true;
+  el("humanCreditCollateral").disabled = busy || !enabled || !tenantPilot.connected;
+  el("syntheticCollateralAvailability").textContent = enabled
+    ? "Optional synthetic scenario: 75% LTV and a fixed test price of 2,000 USD per WETH. Review exact collateral in the Offer."
+    : "Synthetic collateral is not enabled in this environment.";
+  el("syntheticCollateralPanel").hidden = !presentation.present;
+  if (!presentation.present) return;
+  el("syntheticCollateralState").textContent = presentation.state;
+  el("syntheticCollateralRequired").textContent = presentation.amount;
+  el("syntheticCollateralRemaining").textContent = presentation.remaining;
+  el("syntheticCollateralReceipt").textContent = presentation.receipt;
+  el("confirmSyntheticCollateralBtn").disabled = busy || !enabled || !presentation.confirm;
+  el("releaseSyntheticCollateralBtn").disabled = busy || !tenantPilot.connected || !presentation.release;
+}
+
+async function submitSyntheticCollateral(action) {
+  const button = el(action === "confirm" ? "confirmSyntheticCollateralBtn" : "releaseSyntheticCollateralBtn");
+  await runTenantAction(button, async () => {
+    const obligation = tenantPilot.obligation, c = obligation?.syntheticCollateral;
+    if (!c) throw new Error("Synthetic collateral unavailable");
+    const operationId = action === "confirm" ? "pilotConfirmSyntheticCollateral" : "pilotReleaseSyntheticCollateral";
+    const requestId = tenantRequestToken("web_synthetic_collateral");
+    const payload = { expectedVersion: c.version, termsHash: c.terms.termsHash,
+      chainId: c.terms.chainId, amountAssets: c.terms.requiredAssets };
+    const actionConfirmation = await requestEconomicActionConfirmation({
+      actionType: action === "confirm" ? "confirm_synthetic_collateral" : "release_synthetic_collateral",
+      title: action === "confirm" ? "Confirm synthetic collateral" : "Release synthetic collateral after repayment",
+      resourceId: obligation.obligationId, resourceHash: obligation.obligationHash,
+      payloadHash: await sha256Hex(JSON.stringify(payload)), requestId,
+      effect: `${syntheticCollateralAmount(c.terms.requiredAssets)} synthetic WETH collateral · scenario network Base Sepolia · no real funds or blockchain transaction.`
+    });
+    if (!actionConfirmation) throw Object.assign(new Error("Action cancelled. Nothing was submitted."), { code: "user_action_cancelled" });
+    const result = await tenantApi(operationId, {
+      resource: { resourceType: "obligation", resourceId: obligation.obligationId },
+      payload: { ...payload, actionConfirmation }, requestId,
+      idempotencyKey: tenantRequestToken("synthetic_collateral_idempotency")
+    });
+    tenantPilot.obligation = result.response.obligation;
+    await refreshOwnedEvidenceAfterCommittedAction(obligation.obligationId, {
+      eventType: action === "confirm" ? "synthetic_collateral_confirmed" : "synthetic_collateral_released",
+      occurredAt: result.response.receipt.recordedAt
+    });
+  }, action === "confirm" ? "Synthetic collateral confirmed" : "Synthetic collateral released");
 }
 
 async function executeHumanSandboxObligation() {
@@ -14163,6 +14227,8 @@ function bindActions() {
   el("acceptHumanOfferBtn").addEventListener("click", acceptHumanCreditOffer);
   el("newHumanApplicationBtn").addEventListener("click", startAnotherHumanApplication);
   el("executeHumanObligationBtn").addEventListener("click", executeHumanSandboxObligation);
+  el("confirmSyntheticCollateralBtn").addEventListener("click", () => submitSyntheticCollateral("confirm"));
+  el("releaseSyntheticCollateralBtn").addEventListener("click", () => submitSyntheticCollateral("release"));
   el("postHumanRepaymentBtn").addEventListener("click", postHumanSandboxRepayment);
   el("postServicingRepaymentBtn").addEventListener("click", () => postHumanSandboxRepayment({
     amountInputId: "servicingRepaymentAmount",
@@ -14383,6 +14449,7 @@ function bindActions() {
   }
   for (const control of [
     el("humanCreditAmount"),
+    el("humanCreditCollateral"),
     el("humanCreditTerm"),
     el("humanInstallments"),
     el("humanCreditPurpose"),

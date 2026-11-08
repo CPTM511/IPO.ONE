@@ -134,7 +134,10 @@
         "venueReadExecution",
         "pilotReadOwnSecuredPool",
         "pilotReviewSecuredPoolAction",
-        "pilotReadSecuredPoolRisk"
+        "pilotReadSecuredPoolRisk",
+        "pilotReadSyntheticCollateralProfile",
+        "pilotConfirmSyntheticCollateral",
+        "pilotReleaseSyntheticCollateral"
       ]
     },
     "replayed": {
@@ -1516,9 +1519,451 @@
           "$ref": "https://schemas.ipo.one/v2/tenant-metered-usage-admitted.schema.json"
         }
       }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "pilotReadSyntheticCollateralProfile"
+        },
+        "response": {
+          "$ref": "#/$defs/syntheticCollateralProfile"
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "pilotConfirmSyntheticCollateral"
+        },
+        "response": {
+          "$ref": "#/$defs/syntheticCollateralTransition"
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "pilotReleaseSyntheticCollateral"
+        },
+        "response": {
+          "$ref": "#/$defs/syntheticCollateralReleased"
+        }
+      }
     }
   ],
   "$defs": {
+    "syntheticCollateralProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "profile",
+        "exampleTerms",
+        "syntheticOnly",
+        "productionFundsMoved",
+        "transactionHash",
+        "schemaVersion"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "profile": {
+          "const": "m2_synthetic_weth_usd_cent.v1"
+        },
+        "exampleTerms": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "profile",
+            "chainId",
+            "collateralAssetId",
+            "collateralDecimals",
+            "debtAssetId",
+            "principalMinor",
+            "requiredAssets",
+            "loanToValueBps",
+            "liquidationThresholdBps",
+            "scenarioPriceUsdWad",
+            "policyVersion",
+            "source",
+            "marketPrice",
+            "withdrawable",
+            "productionFundsMoved",
+            "transactionHash",
+            "schemaVersion",
+            "termsHash"
+          ],
+          "properties": {
+            "profile": {
+              "const": "m2_synthetic_weth_usd_cent.v1"
+            },
+            "chainId": {
+              "const": "eip155:84532"
+            },
+            "collateralAssetId": {
+              "const": "weth"
+            },
+            "collateralDecimals": {
+              "const": 18
+            },
+            "debtAssetId": {
+              "const": "urn:ipo-one:sandbox-asset:usd-cent"
+            },
+            "principalMinor": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 78
+            },
+            "requiredAssets": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 78
+            },
+            "loanToValueBps": {
+              "const": "7500"
+            },
+            "liquidationThresholdBps": {
+              "const": "8000"
+            },
+            "scenarioPriceUsdWad": {
+              "const": "2000000000000000000000"
+            },
+            "policyVersion": {
+              "const": "m2_secured_pool_fixture_policy.v1"
+            },
+            "source": {
+              "const": "deterministic_synthetic_scenario"
+            },
+            "marketPrice": {
+              "const": false
+            },
+            "withdrawable": {
+              "const": false
+            },
+            "productionFundsMoved": {
+              "const": false
+            },
+            "transactionHash": {
+              "type": "null"
+            },
+            "schemaVersion": {
+              "const": "synthetic_collateral_terms.v1"
+            },
+            "termsHash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            }
+          }
+        },
+        "syntheticOnly": {
+          "const": true
+        },
+        "productionFundsMoved": {
+          "const": false
+        },
+        "transactionHash": {
+          "type": "null"
+        },
+        "schemaVersion": {
+          "const": "tenant_synthetic_collateral_profile.v1"
+        }
+      }
+    },
+    "syntheticCollateralTransition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "obligation",
+        "receipt",
+        "syntheticOnly",
+        "productionFundsMoved",
+        "transactionHash",
+        "schemaVersion"
+      ],
+      "properties": {
+        "obligation": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/sharedObligation"
+            },
+            {
+              "type": "object",
+              "required": [
+                "syntheticCollateral"
+              ],
+              "properties": {
+                "syntheticCollateral": {
+                  "type": "object",
+                  "required": [
+                    "state",
+                    "version"
+                  ],
+                  "properties": {
+                    "state": {
+                      "const": "confirmed"
+                    },
+                    "version": {
+                      "const": 1
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "receipt": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "obligationId",
+            "subjectId",
+            "action",
+            "termsHash",
+            "chainId",
+            "collateralAssetId",
+            "amountAssets",
+            "previousVersion",
+            "version",
+            "state",
+            "source",
+            "finality",
+            "syntheticOnly",
+            "productionFundsMoved",
+            "transactionHash",
+            "withdrawable",
+            "recordedAt",
+            "schemaVersion",
+            "receiptId"
+          ],
+          "properties": {
+            "obligationId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "subjectId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "action": {
+              "const": "confirm"
+            },
+            "termsHash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "chainId": {
+              "const": "eip155:84532"
+            },
+            "collateralAssetId": {
+              "const": "weth"
+            },
+            "amountAssets": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 78
+            },
+            "previousVersion": {
+              "const": 0
+            },
+            "version": {
+              "const": 1
+            },
+            "state": {
+              "const": "confirmed"
+            },
+            "source": {
+              "const": "deterministic_synthetic_scenario"
+            },
+            "finality": {
+              "const": "not_applicable"
+            },
+            "syntheticOnly": {
+              "const": true
+            },
+            "productionFundsMoved": {
+              "const": false
+            },
+            "transactionHash": {
+              "type": "null"
+            },
+            "withdrawable": {
+              "const": false
+            },
+            "recordedAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "schemaVersion": {
+              "const": "synthetic_collateral_receipt.v1"
+            },
+            "receiptId": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            }
+          }
+        },
+        "syntheticOnly": {
+          "const": true
+        },
+        "productionFundsMoved": {
+          "const": false
+        },
+        "transactionHash": {
+          "type": "null"
+        },
+        "schemaVersion": {
+          "const": "tenant_synthetic_collateral_confirmed.v1"
+        }
+      }
+    },
+    "syntheticCollateralReleased": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "obligation",
+        "receipt",
+        "syntheticOnly",
+        "productionFundsMoved",
+        "transactionHash",
+        "schemaVersion"
+      ],
+      "properties": {
+        "obligation": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/sharedObligation"
+            },
+            {
+              "type": "object",
+              "required": [
+                "syntheticCollateral"
+              ],
+              "properties": {
+                "syntheticCollateral": {
+                  "type": "object",
+                  "required": [
+                    "state",
+                    "version"
+                  ],
+                  "properties": {
+                    "state": {
+                      "const": "released"
+                    },
+                    "version": {
+                      "const": 2
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "receipt": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "obligationId",
+            "subjectId",
+            "action",
+            "termsHash",
+            "chainId",
+            "collateralAssetId",
+            "amountAssets",
+            "previousVersion",
+            "version",
+            "state",
+            "source",
+            "finality",
+            "syntheticOnly",
+            "productionFundsMoved",
+            "transactionHash",
+            "withdrawable",
+            "recordedAt",
+            "schemaVersion",
+            "receiptId"
+          ],
+          "properties": {
+            "obligationId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "subjectId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "action": {
+              "const": "release"
+            },
+            "termsHash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "chainId": {
+              "const": "eip155:84532"
+            },
+            "collateralAssetId": {
+              "const": "weth"
+            },
+            "amountAssets": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 78
+            },
+            "previousVersion": {
+              "const": 1
+            },
+            "version": {
+              "const": 2
+            },
+            "state": {
+              "const": "released"
+            },
+            "source": {
+              "const": "deterministic_synthetic_scenario"
+            },
+            "finality": {
+              "const": "not_applicable"
+            },
+            "syntheticOnly": {
+              "const": true
+            },
+            "productionFundsMoved": {
+              "const": false
+            },
+            "transactionHash": {
+              "type": "null"
+            },
+            "withdrawable": {
+              "const": false
+            },
+            "recordedAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "schemaVersion": {
+              "const": "synthetic_collateral_receipt.v1"
+            },
+            "receiptId": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            }
+          }
+        },
+        "syntheticOnly": {
+          "const": true
+        },
+        "productionFundsMoved": {
+          "const": false
+        },
+        "transactionHash": {
+          "type": "null"
+        },
+        "schemaVersion": {
+          "const": "tenant_synthetic_collateral_released.v1"
+        }
+      }
+    },
     "localApprovalCommand": {
       "oneOf": [
         {
@@ -3758,6 +4203,244 @@
         },
         "schemaVersion": {
           "const": "obligation.v2"
+        },
+        "syntheticCollateral": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "terms",
+            "state",
+            "version",
+            "amountAssets",
+            "finality",
+            "transactionHash",
+            "syntheticOnly",
+            "productionFundsMoved"
+          ],
+          "properties": {
+            "terms": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "profile",
+                "chainId",
+                "collateralAssetId",
+                "collateralDecimals",
+                "debtAssetId",
+                "principalMinor",
+                "requiredAssets",
+                "loanToValueBps",
+                "liquidationThresholdBps",
+                "scenarioPriceUsdWad",
+                "policyVersion",
+                "source",
+                "marketPrice",
+                "withdrawable",
+                "productionFundsMoved",
+                "transactionHash",
+                "schemaVersion",
+                "termsHash"
+              ],
+              "properties": {
+                "profile": {
+                  "const": "m2_synthetic_weth_usd_cent.v1"
+                },
+                "chainId": {
+                  "const": "eip155:84532"
+                },
+                "collateralAssetId": {
+                  "const": "weth"
+                },
+                "collateralDecimals": {
+                  "const": 18
+                },
+                "debtAssetId": {
+                  "const": "urn:ipo-one:sandbox-asset:usd-cent"
+                },
+                "principalMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$",
+                  "maxLength": 78
+                },
+                "requiredAssets": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$",
+                  "maxLength": 78
+                },
+                "loanToValueBps": {
+                  "const": "7500"
+                },
+                "liquidationThresholdBps": {
+                  "const": "8000"
+                },
+                "scenarioPriceUsdWad": {
+                  "const": "2000000000000000000000"
+                },
+                "policyVersion": {
+                  "const": "m2_secured_pool_fixture_policy.v1"
+                },
+                "source": {
+                  "const": "deterministic_synthetic_scenario"
+                },
+                "marketPrice": {
+                  "const": false
+                },
+                "withdrawable": {
+                  "const": false
+                },
+                "productionFundsMoved": {
+                  "const": false
+                },
+                "transactionHash": {
+                  "type": "null"
+                },
+                "schemaVersion": {
+                  "const": "synthetic_collateral_terms.v1"
+                },
+                "termsHash": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-f]{64}$"
+                }
+              }
+            },
+            "state": {
+              "enum": [
+                "awaiting_confirmation",
+                "confirmed",
+                "released"
+              ]
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2
+            },
+            "amountAssets": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 78
+            },
+            "finality": {
+              "const": "not_applicable"
+            },
+            "transactionHash": {
+              "type": "null"
+            },
+            "syntheticOnly": {
+              "const": true
+            },
+            "productionFundsMoved": {
+              "const": false
+            },
+            "confirmationReceiptId": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "releaseReceiptId": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "lastReceipt": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "obligationId",
+                "subjectId",
+                "action",
+                "termsHash",
+                "chainId",
+                "collateralAssetId",
+                "amountAssets",
+                "previousVersion",
+                "version",
+                "state",
+                "source",
+                "finality",
+                "syntheticOnly",
+                "productionFundsMoved",
+                "transactionHash",
+                "withdrawable",
+                "recordedAt",
+                "schemaVersion",
+                "receiptId"
+              ],
+              "properties": {
+                "obligationId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "subjectId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "action": {
+                  "enum": [
+                    "confirm",
+                    "release"
+                  ]
+                },
+                "termsHash": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-f]{64}$"
+                },
+                "chainId": {
+                  "const": "eip155:84532"
+                },
+                "collateralAssetId": {
+                  "const": "weth"
+                },
+                "amountAssets": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$",
+                  "maxLength": 78
+                },
+                "previousVersion": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2
+                },
+                "state": {
+                  "enum": [
+                    "confirmed",
+                    "released"
+                  ]
+                },
+                "source": {
+                  "const": "deterministic_synthetic_scenario"
+                },
+                "finality": {
+                  "const": "not_applicable"
+                },
+                "syntheticOnly": {
+                  "const": true
+                },
+                "productionFundsMoved": {
+                  "const": false
+                },
+                "transactionHash": {
+                  "type": "null"
+                },
+                "withdrawable": {
+                  "const": false
+                },
+                "recordedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "schemaVersion": {
+                  "const": "synthetic_collateral_receipt.v1"
+                },
+                "receiptId": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-f]{64}$"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -4374,6 +5057,9 @@
         },
         "updatedAt": {
           "$ref": "#/$defs/timestamp"
+        },
+        "collateralProfile": {
+          "const": "m2_synthetic_weth_usd_cent.v1"
         }
       }
     },
@@ -4795,7 +5481,7 @@
           "$ref": "#/$defs/identifier"
         },
         "termsVersion": {
-          "const": "credit_terms.v1"
+          "enum": ["credit_terms.v1", "credit_terms.synthetic_secured.v1"]
         },
         "validUntil": {
           "$ref": "#/$defs/timestamp"
@@ -4829,6 +5515,91 @@
         },
         "updatedAt": {
           "$ref": "#/$defs/timestamp"
+        },
+        "collateralTerms": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "profile",
+            "chainId",
+            "collateralAssetId",
+            "collateralDecimals",
+            "debtAssetId",
+            "principalMinor",
+            "requiredAssets",
+            "loanToValueBps",
+            "liquidationThresholdBps",
+            "scenarioPriceUsdWad",
+            "policyVersion",
+            "source",
+            "marketPrice",
+            "withdrawable",
+            "productionFundsMoved",
+            "transactionHash",
+            "schemaVersion",
+            "termsHash"
+          ],
+          "properties": {
+            "profile": {
+              "const": "m2_synthetic_weth_usd_cent.v1"
+            },
+            "chainId": {
+              "const": "eip155:84532"
+            },
+            "collateralAssetId": {
+              "const": "weth"
+            },
+            "collateralDecimals": {
+              "const": 18
+            },
+            "debtAssetId": {
+              "const": "urn:ipo-one:sandbox-asset:usd-cent"
+            },
+            "principalMinor": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 78
+            },
+            "requiredAssets": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 78
+            },
+            "loanToValueBps": {
+              "const": "7500"
+            },
+            "liquidationThresholdBps": {
+              "const": "8000"
+            },
+            "scenarioPriceUsdWad": {
+              "const": "2000000000000000000000"
+            },
+            "policyVersion": {
+              "const": "m2_secured_pool_fixture_policy.v1"
+            },
+            "source": {
+              "const": "deterministic_synthetic_scenario"
+            },
+            "marketPrice": {
+              "const": false
+            },
+            "withdrawable": {
+              "const": false
+            },
+            "productionFundsMoved": {
+              "const": false
+            },
+            "transactionHash": {
+              "type": "null"
+            },
+            "schemaVersion": {
+              "const": "synthetic_collateral_terms.v1"
+            },
+            "termsHash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            }
+          }
         }
       }
     },

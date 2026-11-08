@@ -1,4 +1,6 @@
 import {
+  assertSyntheticCollateralProvenance,
+  assertSyntheticCollateralAllowsExecution,
   CreditAuthorityType,
   CreditEventType,
   CreditLineStatus,
@@ -82,7 +84,7 @@ function normalizeRepaymentPayload(payload) {
   return structuredClone(payload);
 }
 
-async function loadObligationContext({
+export async function loadObligationContext({
   client,
   coreRepository,
   authorizationDecision,
@@ -191,6 +193,7 @@ async function loadObligationContext({
       "Offer, Policy, Acceptance, or Facility provenance is unavailable"
     );
   }
+  assertSyntheticCollateralProvenance({ intent: intentState.value, offer: offerState.value, obligation });
   return {
     state,
     obligation,
@@ -354,7 +357,8 @@ async function planAgentLockboxCreation({
 }
 
 export function executeSandboxObligationCommandHandler({
-  sandboxRailAdapter = LOCAL_SIGNED_SANDBOX_RAIL
+  sandboxRailAdapter = LOCAL_SIGNED_SANDBOX_RAIL,
+  syntheticCollateralEnabled = false
 } = {}) {
   if (
     !sandboxRailAdapter || typeof sandboxRailAdapter.execute !== "function" ||
@@ -447,6 +451,10 @@ export function executeSandboxObligationCommandHandler({
           })
         : undefined;
       if (creditLine) assertAgentProviderTarget({ input, authority, creditLine });
+      assertSyntheticCollateralAllowsExecution(obligation);
+      if (obligation.syntheticCollateral && !syntheticCollateralEnabled) {
+        throw new DomainError("synthetic_collateral_disabled", "Synthetic collateral is not enabled in this environment");
+      }
       const adapterRequest = {
         obligationId: obligation.obligationId,
         assetId: obligation.assetId,

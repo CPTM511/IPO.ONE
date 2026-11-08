@@ -7,7 +7,7 @@ import {
   verify as verifyMessage
 } from "node:crypto";
 import test from "node:test";
-import { privateKeyToAccount } from "viem/accounts";
+import { privateKeyToAccount, generatePrivateKey } from "viem/accounts";
 import {
   CreditEventType,
   createCapitalPartnerProfile,
@@ -8048,5 +8048,169 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
     } finally {
       await ownerPool.end();
     }
+  }
+});
+
+// B3 owns fresh Tenants and an unprivileged role; it does not change the existing lifecycle fixture.
+test("B3 PostgreSQL synthetic collateral closes one shared Human and Agent lifecycle", { timeout: 180_000 }, async () => {
+  assert.ok(CONNECTION_STRING, "DATABASE_URL is required");
+  const owner = createPostgresPool({ connectionString: CONNECTION_STRING, max: 4 });
+  const raw = createPostgresPool({ connectionString: CONNECTION_STRING, max: 8 });
+  const role = `ipo_b3_${RUN_ID}`;
+  const app = {
+    async connect() { const c = await raw.connect(); await c.query(`SET ROLE ${role}`); return c; },
+    async query(sql, params) { const c = await this.connect(); try { return await c.query(sql, params); } finally { c.release(); } }
+  };
+  try {
+    await migrateUp({ pool: owner });
+    await owner.query(`CREATE ROLE ${role} NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS`);
+    await owner.query(`GRANT USAGE ON SCHEMA public TO ${role}`);
+    await owner.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ${role}`);
+    const harness = createAuthorizationHarness();
+    const tenant = `tenant_b3_${RUN_ID}`, otherTenant = `tenant_b3_other_${RUN_ID}`;
+    await seedTenant(owner, tenant); await seedTenant(owner, otherTenant);
+    const common = [PilotCapability.SUBJECT_READ_SELF, PilotCapability.CREDIT_REQUEST,
+      PilotCapability.CREDIT_READ_SELF, PilotCapability.CREDIT_EVALUATE_SELF,
+      PilotCapability.CREDIT_OFFER_ACCEPT_SELF, PilotCapability.CREDIT_EXECUTE_SANDBOX_SELF,
+      PilotCapability.REPAYMENT_POST_SANDBOX_SELF, PilotCapability.OBLIGATION_READ_OWNED,
+      PilotCapability.EVIDENCE_READ_OWNED];
+    const borrower = harness.addIdentity({ tenantId: tenant, actorId: `actor_b3_human_${RUN_ID}`,
+      actorType: ActorType.HUMAN, roleBundle: RoleBundle.HUMAN_BORROWER,
+      capabilities: [...common, PilotCapability.HUMAN_SUBJECT_CREATE_SELF, PilotCapability.CONSENT_CREATE_SELF,
+        PilotCapability.CONSENT_READ_SELF, PilotCapability.IDENTITY_REFERENCE_READ_SELF], now: IDENTITY_NOW });
+    const controller = harness.addIdentity({ tenantId: tenant, actorId: `actor_b3_controller_${RUN_ID}`,
+      actorType: ActorType.HUMAN, roleBundle: RoleBundle.PRINCIPAL_CONTROLLER,
+      capabilities: [PilotCapability.AGENT_CREATE, PilotCapability.AGENT_MANAGE_OWNED,
+        PilotCapability.AGENT_ACCOUNT_CHALLENGE_CREATE_OWNED, PilotCapability.AGENT_ACCOUNT_BINDING_READ_SELF,
+        PilotCapability.MANDATE_DRAFT_CREATE, PilotCapability.MANDATE_ACTIVATE_OWNED,
+        PilotCapability.INTEGRATION_READ_OWNED], now: IDENTITY_NOW });
+    const agentIdentity = harness.addIdentity({ tenantId: tenant, actorId: `actor_b3_agent_${RUN_ID}`,
+      actorType: ActorType.AGENT, roleBundle: RoleBundle.AGENT_RUNTIME,
+      capabilities: [...common, PilotCapability.AGENT_ACCOUNT_PROOF_SUBMIT_SELF,
+        PilotCapability.AGENT_ACCOUNT_BINDING_READ_SELF], now: IDENTITY_NOW });
+    const outsider = harness.addIdentity({ tenantId: otherTenant, actorId: `actor_b3_outsider_${RUN_ID}`,
+      actorType: ActorType.HUMAN, roleBundle: RoleBundle.HUMAN_BORROWER, capabilities: common, now: IDENTITY_NOW });
+    for (const identity of [borrower, controller, outsider]) await seedIdentity(owner, identity.authenticationContext.tenantId, identity);
+    await seedIdentity(owner, tenant, agentIdentity, { controllerActorId: controller.authenticationContext.actorId });
+    const { IpoOneSyntheticCollateralClient } = await import("../../../packages/sdk/src/synthetic-collateral-client.js");
+    const { createSyntheticCollateralMcpAdapter } = await import("../../../apps/agent-mcp/src/synthetic-collateral-mcp-adapter.js");
+    const { createAuthenticatedProtocolActionConfirmation } = await import("../src/economic-action-confirmation.js");
+    const viaMcp = async (client, command) => {
+      const sdk = new IpoOneSyntheticCollateralClient({transportProfile:"local_in_process",execute:request=>client.execute(request)});
+      const adapter = createSyntheticCollateralMcpAdapter({client:sdk});
+      const name = {pilotReadSyntheticCollateralProfile:'ipo_one_read_synthetic_collateral_profile',
+        pilotConfirmSyntheticCollateral:'ipo_one_confirm_synthetic_collateral',pilotReleaseSyntheticCollateral:'ipo_one_release_synthetic_collateral'}[command.operationId];
+      const payload = command.operationId === 'pilotReadSyntheticCollateralProfile' ? command.payload : {
+        ...command.payload,actionConfirmation:createAuthenticatedProtocolActionConfirmation(command)};
+      const result = await adapter.callTool(name,{resourceId:command.resource.resourceId,payload,
+        requestId:command.requestId,correlationId:command.correlationId,...(command.idempotencyKey?{idempotencyKey:command.idempotencyKey}:{})});
+      return result.structuredContent;
+    };
+    const handlers = () => createTenantFoundationHandlers({ syntheticCollateralEnabled: true });
+    let runtime = gateway(app, harness, handlers());
+    const human = humanClient(runtime, borrower.authenticationContext);
+    const principal = humanClient(runtime, controller.authenticationContext);
+    const agent = agentClient(runtime, agentIdentity.authenticationContext);
+    const denied = humanClient(runtime, outsider.authenticationContext);
+    const id = label => `b3-${RUN_ID}-${label}-0001`;
+    const envelope = label => ({ idempotencyKey: id(label), requestId: `request-${id(label)}`, correlationId: `correlation-${id(label)}` });
+    const subject = (await human.createHumanSubject(envelope('subject'))).response;
+    const consent = (await human.createConsent(createConsentCommand({ subjectId: subject.subjectId,
+      idempotencyKey: id('consent'), overrides: { purposes: ['credit_application','credit_decision','credit_offer_acceptance','obligation_servicing','identity_reference_use'] } }))).response.consent;
+    await seedSyntheticIdentityReference({ pool: app, tenantId: tenant, identity: borrower,
+      subjectId: subject.subjectId, principalId: subject.principalId, consentId: consent.consentId,
+      purposeCodes: ['identity_reference_use','credit_decision','credit_offer_acceptance'] });
+    const createdAgent = (await principal.createAgentSubject(createCommand({
+      subjectActorId: agentIdentity.authenticationContext.actorId, displayName: 'B3 synthetic Agent', idempotencyKey: id('agent-subject')
+    }))).response;
+    await proveAndActivateAgentAccount({ controller: principal, agent, subjectId: createdAgent.subjectId,
+      privateKey: generatePrivateKey(), label: `b3-${RUN_ID}` });
+    const mandate = (await principal.createDraftMandate(createMandateCommand({ subjectId: createdAgent.subjectId, idempotencyKey: id('mandate'), overrides:{capabilities:['request_credit','accept_credit_offer','execute_sandbox_credit','provider_spend','capture_revenue','route_repayment']} }))).response;
+    for (const [mode, client, identity, subjectId, authorityId] of [
+      ['human', human, borrower, subject.subjectId, consent.consentId],
+      ['agent', agent, agentIdentity, createdAgent.subjectId, mandate.mandateId]
+    ]) {
+      const profileRequest={operationId:'pilotReadSyntheticCollateralProfile',resource:{resourceType:'subject',resourceId:subjectId},payload:{},requestId:`request-${id(`${mode}-profile`)}`,correlationId:`correlation-${id(`${mode}-profile`)}`};
+      const profile = mode === 'agent' ? await viaMcp(client,profileRequest) : await client.execute(profileRequest);
+      assert.equal(profile.response.enabled,true);
+      const requested = await client.requestCredit(requestCreditCommand({ subjectId, authorityId,
+        idempotencyKey: id(`${mode}-request`), overrides: { collateralProfile: 'm2_synthetic_weth_usd_cent.v1' } }));
+      const evaluated = await client.evaluateCreditApplication({ creditIntentId: requested.response.creditIntent.creditIntentId, ...envelope(`${mode}-evaluate`) });
+      const offer = evaluated.response.offer;
+      const readApplication = await client.getCreditApplication({creditIntentId:requested.response.creditIntent.creditIntentId,
+        requestId:`request-${id(`${mode}-read-application`)}`,correlationId:`correlation-${id(`${mode}-read-application`)}`});
+      assert.equal(readApplication.response.creditIntent.collateralProfile,'m2_synthetic_weth_usd_cent.v1');
+      assert.equal(readApplication.response.offer.collateralTerms.termsHash,offer.collateralTerms.termsHash);
+      assert.equal(offer.collateralTerms.requiredAssets, '80000000000000000');
+      if (mode === 'agent') {
+        const view = await principal.getMandate({mandateId:authorityId,requestId:`request-${id('mandate-view')}`,correlationId:`correlation-${id('mandate-view')}`});
+        await principal.activateSandboxMandate({mandateId:authorityId,payload:{
+          expectedMandateHash:view.response.mandate.mandateHash,
+          acknowledgedTermsHash:view.response.mandate.termsHash,
+          acknowledgementCode:'principal_authorizes_sandbox_credit_v1'
+        },...envelope('activate')});
+      }
+      const accepted = await client.acceptCreditOffer({ creditOfferId: offer.creditOfferId,
+        payload: { expectedOfferHash: offer.creditOfferHash, expectedTermsHash: offer.termsHash, acknowledgementHash: hashId('b3-acknowledgement', offer.termsHash) }, ...envelope(`${mode}-accept`) });
+      const obligationId = accepted.response.obligation.obligationId;
+      const compatibleOff = mode === 'human' ? humanClient(gateway(app,harness),identity.authenticationContext) : agentClient(gateway(app,harness),identity.authenticationContext);
+      await assert.rejects(compatibleOff.executeSandboxObligation({obligationId,
+        ...(mode === 'agent' ? {providerId:'provider_gateway_compute',providerCategory:'compute'} : {}),
+        ...envelope(`${mode}-compatible-rollback-guard`) }),{code:'synthetic_collateral_not_confirmed'});
+      const resource = { resourceType: 'obligation', resourceId: obligationId };
+      const terms = accepted.response.obligation.syntheticCollateral.terms;
+      const payload = { expectedVersion: 0, termsHash: terms.termsHash, chainId: terms.chainId, amountAssets: terms.requiredAssets };
+      await assert.rejects(client.executeSandboxObligation({ obligationId, ...(mode === 'agent' ? {providerId:'provider_gateway_compute',providerCategory:'compute'} : {}), ...envelope(`${mode}-before-confirm`) }), { code: 'synthetic_collateral_not_confirmed' });
+      const command = { operationId:'pilotConfirmSyntheticCollateral', resource, payload, ...envelope(`${mode}-confirm`) };
+      await assert.rejects(denied.execute(command));
+      await assert.rejects(client.execute({ ...command, ...envelope(`${mode}-wrong-chain`), payload: {...payload, chainId:'eip155:56'} }));
+      const confirmed = await executeConcurrentDuplicate(() => mode === 'agent' ? viaMcp(client,command) : client.execute(command));
+      assert.equal(confirmed.filter(r => r.replayed).length, 1);
+      assert.equal(confirmed[0].response.receipt.receiptId, confirmed[1].response.receipt.receiptId);
+      assert.equal(confirmed[0].response.receipt.transactionHash, null);
+      runtime = gateway(app, harness, handlers());
+      const fresh = mode === 'human' ? humanClient(runtime, identity.authenticationContext) : agentClient(runtime, identity.authenticationContext);
+      const recovered = await fresh.getOwnObligation({ obligationId, requestId:`request-${id(`${mode}-recover`)}`, correlationId:`correlation-${id(`${mode}-recover`)}` });
+      assert.equal(recovered.response.obligation.syntheticCollateral.state, 'confirmed');
+      await assert.rejects(compatibleOff.executeSandboxObligation({obligationId,
+        ...(mode === 'agent' ? {providerId:'provider_gateway_compute',providerCategory:'compute'} : {}),
+        ...envelope(`${mode}-off-confirmed-execute`)}),{code:'synthetic_collateral_disabled'});
+      await assert.rejects(owner.query('UPDATE obligations SET synthetic_collateral=NULL WHERE id=$1',[obligationId]),{code:'P0001'});
+      await assert.rejects(fresh.execute({ operationId:'pilotReleaseSyntheticCollateral', resource,
+        payload:{...payload,expectedVersion:1}, ...envelope(`${mode}-release-early`) }), {code:'synthetic_collateral_release_blocked'});
+      await fresh.executeSandboxObligation({ obligationId,
+        ...(mode === 'agent' ? {providerId:'provider_gateway_compute',providerCategory:'compute'} : {}), ...envelope(`${mode}-execute`) });
+      const repaid = await fresh.postSandboxRepayment({ obligationId,
+        payload:{amountMinor:'12000',sourceCode:'synthetic_wallet'}, ...envelope(`${mode}-repay`) });
+      assert.equal(repaid.response.obligation.status,'fully_repaid');
+      const releaseCommand = {operationId:'pilotReleaseSyntheticCollateral',resource,
+        payload:{...payload,expectedVersion:1},...envelope(`${mode}-release`)};
+      const released = mode === 'agent' ? await viaMcp(compatibleOff,releaseCommand) : await compatibleOff.execute(releaseCommand);
+      assert.equal(released.response.obligation.syntheticCollateral.state,'released');
+      assert.equal(released.response.obligation.syntheticCollateral.amountAssets,'0');
+      assert.equal(released.response.obligation.syntheticCollateral.confirmationReceiptId, confirmed[0].response.receipt.receiptId);
+      const disabled = mode === 'human' ? humanClient(gateway(app,harness),identity.authenticationContext) : agentClient(gateway(app,harness),identity.authenticationContext);
+      const final = await disabled.getOwnObligation({obligationId,requestId:`request-${id(`${mode}-disabled-read`)}`,correlationId:`correlation-${id(`${mode}-disabled-read`)}`});
+      assert.equal(final.response.obligation.syntheticCollateral.state,'released');
+      const context = createTenantSecurityContext({tenantId:tenant,actorId:identity.authenticationContext.actorId,
+        policyVersion:identity.authenticationContext.policyVersion,source:'local_test'});
+      const events = new PostgresEventRepository({pool:app,tenantContext:context});
+      const core = new PostgresCoreRepository({pool:app,eventRepository:events});
+      assert.equal((await core.verifyProjection(CoreProjectionType.OBLIGATION,obligationId)).matches,true);
+      await core.repairProjection({entityType:CoreProjectionType.OBLIGATION,entityId:obligationId,
+        approvedBy:identity.authenticationContext.actorId,reason:'B3 isolated synthetic snapshot replay acceptance',
+        idempotencyKey:id(`${mode}-snapshot-replay`)});
+      assert.equal((await core.verifyProjection(CoreProjectionType.OBLIGATION,obligationId)).matches,true);
+      assert.equal((await core.getCanonicalProjection(CoreProjectionType.OBLIGATION,obligationId))
+        .syntheticCollateral.releaseReceiptId,released.response.receipt.receiptId);
+
+      console.log(`B3 durable ${mode}: confirmed, executed, fully repaid, released and recovered`);
+      await assert.rejects(disabled.execute({...command,...envelope(`${mode}-disabled-write`)}),{code:'synthetic_collateral_disabled'});
+    }
+  } finally {
+    await raw.end();
+    const exists = await owner.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[role]);
+    if (exists.rowCount) {await owner.query(`DROP OWNED BY ${role}`);await owner.query(`DROP ROLE ${role}`);}
+    await owner.end();
   }
 });

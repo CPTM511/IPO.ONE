@@ -84,6 +84,16 @@ test("production environment supports reviewed wallet-only access without an OID
     configuration.gatewayPool.end(),
     configuration.authenticationPool.end()
   ]));
+  assert.equal(configuration.syntheticCollateralEnabled, false);
+  const enabled = await loadProductionClosedPilotEnvironment({...environment,
+    IPO_ONE_SYNTHETIC_COLLATERAL_PROFILE: "m2_synthetic_weth_usd_cent.v1"});
+  assert.equal(enabled.syntheticCollateralEnabled, true);
+  await Promise.all([enabled.gatewayPool.end(),enabled.authenticationPool.end()]);
+  await assert.rejects(loadProductionClosedPilotEnvironment({...environment,
+    IPO_ONE_SYNTHETIC_COLLATERAL_PROFILE: "unknown"}),{code:"invalid_production_environment"});
+  await assert.rejects(loadProductionClosedPilotEnvironment({...environment,
+    IPO_ONE_DEPLOYMENT_PROFILE:"vercel_sandbox",IPO_ONE_VERCEL_PROJECT_ROLE:"risk",
+    IPO_ONE_SYNTHETIC_COLLATERAL_PROFILE: "m2_synthetic_weth_usd_cent.v1"}),{code:"invalid_production_environment"});
   assert.equal(configuration.walletConnectProjectId, "a".repeat(32));
   assert.deepEqual(configuration.proofAdapters.map((adapter) => adapter.descriptor().chainId),
     ["eip155:84532", "eip155:1952", "eip155:97", "eip155:56"]);

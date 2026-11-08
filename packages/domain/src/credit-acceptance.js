@@ -20,6 +20,8 @@ import {
   assertPositiveMinorUnits
 } from "./validators.js";
 
+import { assertSyntheticCollateralProvenance, initialSyntheticCollateral } from "./synthetic-collateral.js";
+
 const HASH_PATTERN = /^0x[0-9a-f]{64}$/;
 const DAY_MS = 86_400_000;
 const INTERVAL_DAYS = Object.freeze({
@@ -54,6 +56,7 @@ function assertOfferChain({ offer, intent, decision }) {
   ) {
     throw new DomainError("offer_not_available", "Offer provenance is unavailable or inconsistent");
   }
+  assertSyntheticCollateralProvenance({ intent, offer });
 }
 
 export function assertConsentAuthorizesCreditOfferAcceptance(consent, { offer, intent, now = new Date() }) {
@@ -311,6 +314,7 @@ export function createAcceptedOfferObligation({ offer, intent, decision, accepta
     scheduleHash: schedule.scheduleHash,
     installments: schedule.installments,
     executionStatus: ObligationExecutionStatus.PENDING,
+    ...(offer.collateralTerms ? { syntheticCollateral: initialSyntheticCollateral(offer.collateralTerms) } : {}),
     sandboxOnly: true,
     productionFundsMoved: false,
     status: ObligationStatus.CREATED,

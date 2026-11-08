@@ -1583,11 +1583,13 @@ test("TRUST-002 keeps latest Evidence visible through bounded read-only refreshe
   assert.ok(js.includes("Checking the owner-authorized Agent Evidence timeline from authenticated server truth"));
   assert.equal(
     js.match(/refreshOwnedEvidenceAfterCommittedAction\(/g)?.length,
-    4,
-    "Human acceptance, execution and repayment must each have one safe follow-up read"
+    5,
+    "The four mutation handlers (including shared collateral confirm/release) each have one follow-up read"
   );
   for (const economicOperation of [
     "pilotAcceptCreditOffer",
+    "pilotConfirmSyntheticCollateral",
+    "pilotReleaseSyntheticCollateral",
     "pilotExecuteSandboxObligation",
     "pilotPostSandboxRepayment",
     "accept_offer",

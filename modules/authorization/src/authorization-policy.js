@@ -916,6 +916,24 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     liveChecks: ["credit_offer_state"]
   }),
   tenantOperation({
+    operationId: "pilotReadSyntheticCollateralProfile", action: "credit.collateral.synthetic.read.self", resourceType: "subject",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.CREDIT_REQUEST, ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED
+  }),
+  tenantOperation({
+    operationId: "pilotConfirmSyntheticCollateral", action: "credit.collateral.synthetic.confirm.self", resourceType: "obligation",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.CREDIT_EXECUTE_SANDBOX_SELF, ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
+    operationId: "pilotReleaseSyntheticCollateral", action: "credit.collateral.synthetic.release.self", resourceType: "obligation",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.REPAYMENT_POST_SANDBOX_SELF, ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
     operationId: "pilotExecuteSandboxObligation",
     action: "credit.execute.sandbox.self",
     resourceType: "obligation",

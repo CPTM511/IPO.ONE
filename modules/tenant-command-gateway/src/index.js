@@ -46,3 +46,5 @@ export * from "./wallet-execution-handlers.js";
 export * from "./venue-execution-handlers.js";
 export * from "./pool-obligation-integration.js";
 export * from "./secured-pool-workspace-handlers.js";
+
+export { createSyntheticCollateralHandlers } from "./synthetic-collateral-handlers.js";

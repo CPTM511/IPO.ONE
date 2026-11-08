@@ -220,3 +220,5 @@ export class IpoOneClient {
     return payload;
   }
 }
+
+export * from "./synthetic-collateral-client.js";

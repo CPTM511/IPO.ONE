@@ -118,8 +118,8 @@
     },
     "operations": {
       "type": "array",
-      "minItems": 122,
-      "maxItems": 122,
+      "minItems": 125,
+      "maxItems": 125,
       "uniqueItems": true,
       "items": {
         "$ref": "#/$defs/operation"
@@ -260,130 +260,7 @@
       ],
       "properties": {
         "operationId": {
-          "enum": [
-            "pilotProposeApproval",
-            "pilotReadApproval",
-            "pilotDecideApproval",
-            "pilotCancelApproval",
-            "pilotReadApprovalInbox",
-            "pilotReadRiskAgentDirectory",
-            "pilotAcceptCreditOffer",
-            "pilotActivateSandboxMandate",
-            "pilotCreateAgentAccountChallenge",
-            "pilotCreateAgentSubject",
-            "pilotCreateConsent",
-            "pilotActivateSandboxHumanSubject",
-            "pilotCreateHumanSubject",
-            "pilotCreateDraftMandate",
-            "pilotCreateCreditPassportArtifact",
-            "pilotCreateOfficialReport",
-            "pilotEvaluateCreditApplication",
-            "pilotPersistAgentContinuationReceipt",
-            "pilotExecuteSandboxObligation",
-            "pilotFreezeSubject",
-            "pilotPostSandboxRepayment",
-            "pilotRepurchaseSandboxObligation",
-            "pilotRestructureSandboxObligation",
-            "pilotRequestCredit",
-            "pilotReadAgentSelf",
-            "pilotReadAgentAccountBinding",
-            "pilotReadCreditApplication",
-            "pilotReadCreditRegistryEvidence",
-            "pilotReadOwnCreditPassportArtifact",
-            "pilotReadOfficialReport",
-            "pilotRetrieveOfficialReport",
-            "pilotVerifyCreditPassportArtifact",
-            "pilotReadConsent",
-            "pilotReadHumanSelf",
-            "pilotReadWorkspaceResume",
-            "pilotReadCapitalPartnerSelf",
-            "pilotReadCapitalPartnerPassportInbox",
-            "pilotReadTenantRiskPortfolioReference",
-            "pilotReadServicingQueueReference",
-            "pilotReadIdentityReference",
-            "pilotReadMandate",
-            "pilotReadTenantRisk",
-            "pilotReadPilotHealth",
-            "pilotReadPilotFeedbackSummary",
-            "pilotReadClosedPilotReadiness",
-            "pilotReadServicingQueue",
-            "pilotReadEvidence",
-            "pilotReadOwnObligation",
-            "pilotReadOwnCreditState",
-            "pilotReadOwnObligationEvidence",
-            "pilotRevokeConsent",
-            "pilotRevokeDraftMandate",
-            "pilotRevokeCreditPassportArtifact",
-            "pilotRevokeOfficialReport",
-            "pilotAuthorCapitalPartnerOffer",
-            "pilotTransitionCapitalPartnerOffer",
-            "pilotReadCapitalPartnerFacility",
-            "pilotReadCapitalPartnerPortfolio",
-            "pilotSubmitAgentAccountProof",
-            "pilotSubmitPilotFeedback",
-            "pilotFileCase",
-            "pilotListOwnCases",
-            "pilotReadCaseQueue",
-            "pilotTransitionCase",
-            "pilotWriteOffSandboxObligation",
-            "workerAdvanceSandboxServicing",
-            "pilotReadProviderIntent",
-            "pilotAcknowledgeProviderIntent",
-            "workerProcessInbox",
-            "workerAdmitMeteredUsage",
-            "tradingCreateAccountBindingChallenge",
-            "tradingImportHyperliquidHistory",
-            "tradingFinalizeEvidenceSnapshot",
-            "tradingReadCreditProfile",
-            "tradingCreateCapitalRequest",
-            "tradingCreateProviderMandate",
-            "tradingListCompatibleMandates",
-            "tradingCreateMatchProposal",
-            "tradingAcceptMatchAsProvider",
-            "tradingAcceptMatchAsSubject",
-            "tradingCreateFacility",
-            "tradingContributeSubjectCollateral",
-            "tradingRecordProviderFunding",
-            "tradingActivateFacility",
-            "tradingSubmitOrderIntent",
-            "tradingCancelOrderIntent",
-            "tradingReadFacilityState",
-            "tradingEvaluateRisk",
-            "tradingPauseNewRisk",
-            "tradingFlattenFacility",
-            "tradingRequestClose",
-            "tradingRunSettlement",
-            "tradingReadSettlement",
-            "tradingIssuePerformanceProof",
-            "tradingReadFacilityEvidence",
-            "agentCreateSecuredFacilityAuthorization",
-            "agentReadSecuredFacilityAuthorization",
-            "agentRevokeSecuredFacilityAuthorization",
-            "walletPrepareAccountBinding",
-            "walletSubmitAccountBinding",
-            "walletReadAccountBindings",
-            "walletRevokeAccountBinding",
-            "walletDiscoverCapabilities",
-            "walletPrepareGrant",
-            "walletActivateGrant",
-            "walletReadGrant",
-            "walletRevokeGrant",
-            "walletPrepareExecution",
-            "walletApproveExecution",
-            "walletSubmitExecution",
-            "walletReadExecution",
-            "venueDiscoverCapabilities",
-            "venueReadBinding",
-            "venuePrepareDelegate",
-            "venueActivateDelegate",
-            "venueRevokeDelegate",
-            "venuePrepareExecution",
-            "venueSubmitExecution",
-            "venueReadExecution",
-            "pilotReadOwnSecuredPool",
-            "pilotReviewSecuredPoolAction",
-            "pilotReadSecuredPoolRisk"
-          ]
+          "enum": ["pilotProposeApproval", "pilotReadApproval", "pilotDecideApproval", "pilotCancelApproval", "pilotReadApprovalInbox", "pilotReadRiskAgentDirectory", "pilotAcceptCreditOffer", "pilotActivateSandboxMandate", "pilotCreateAgentAccountChallenge", "pilotCreateAgentSubject", "pilotCreateConsent", "pilotActivateSandboxHumanSubject", "pilotCreateHumanSubject", "pilotCreateDraftMandate", "pilotCreateCreditPassportArtifact", "pilotCreateOfficialReport", "pilotEvaluateCreditApplication", "pilotPersistAgentContinuationReceipt", "pilotExecuteSandboxObligation", "pilotFreezeSubject", "pilotPostSandboxRepayment", "pilotRepurchaseSandboxObligation", "pilotRestructureSandboxObligation", "pilotRequestCredit", "pilotReadAgentSelf", "pilotReadAgentAccountBinding", "pilotReadCreditApplication", "pilotReadCreditRegistryEvidence", "pilotReadOwnCreditPassportArtifact", "pilotReadOfficialReport", "pilotRetrieveOfficialReport", "pilotVerifyCreditPassportArtifact", "pilotReadConsent", "pilotReadHumanSelf", "pilotReadWorkspaceResume", "pilotReadCapitalPartnerSelf", "pilotReadCapitalPartnerPassportInbox", "pilotReadTenantRiskPortfolioReference", "pilotReadServicingQueueReference", "pilotReadIdentityReference", "pilotReadMandate", "pilotReadTenantRisk", "pilotReadPilotHealth", "pilotReadPilotFeedbackSummary", "pilotReadClosedPilotReadiness", "pilotReadServicingQueue", "pilotReadEvidence", "pilotReadOwnObligation", "pilotReadOwnCreditState", "pilotReadOwnObligationEvidence", "pilotRevokeConsent", "pilotRevokeDraftMandate", "pilotRevokeCreditPassportArtifact", "pilotRevokeOfficialReport", "pilotAuthorCapitalPartnerOffer", "pilotTransitionCapitalPartnerOffer", "pilotReadCapitalPartnerFacility", "pilotReadCapitalPartnerPortfolio", "pilotSubmitAgentAccountProof", "pilotSubmitPilotFeedback", "pilotFileCase", "pilotListOwnCases", "pilotReadCaseQueue", "pilotTransitionCase", "pilotWriteOffSandboxObligation", "workerAdvanceSandboxServicing", "pilotReadProviderIntent", "pilotAcknowledgeProviderIntent", "workerProcessInbox", "workerAdmitMeteredUsage", "tradingCreateAccountBindingChallenge", "tradingImportHyperliquidHistory", "tradingFinalizeEvidenceSnapshot", "tradingReadCreditProfile", "tradingCreateCapitalRequest", "tradingCreateProviderMandate", "tradingListCompatibleMandates", "tradingCreateMatchProposal", "tradingAcceptMatchAsProvider", "tradingAcceptMatchAsSubject", "tradingCreateFacility", "tradingContributeSubjectCollateral", "tradingRecordProviderFunding", "tradingActivateFacility", "tradingSubmitOrderIntent", "tradingCancelOrderIntent", "tradingReadFacilityState", "tradingEvaluateRisk", "tradingPauseNewRisk", "tradingFlattenFacility", "tradingRequestClose", "tradingRunSettlement", "tradingReadSettlement", "tradingIssuePerformanceProof", "tradingReadFacilityEvidence", "agentCreateSecuredFacilityAuthorization", "agentReadSecuredFacilityAuthorization", "agentRevokeSecuredFacilityAuthorization", "walletPrepareAccountBinding", "walletSubmitAccountBinding", "walletReadAccountBindings", "walletRevokeAccountBinding", "walletDiscoverCapabilities", "walletPrepareGrant", "walletActivateGrant", "walletReadGrant", "walletRevokeGrant", "walletPrepareExecution", "walletApproveExecution", "walletSubmitExecution", "walletReadExecution", "venueDiscoverCapabilities", "venueReadBinding", "venuePrepareDelegate", "venueActivateDelegate", "venueRevokeDelegate", "venuePrepareExecution", "venueSubmitExecution", "venueReadExecution", "pilotReadOwnSecuredPool", "pilotReviewSecuredPoolAction", "pilotReadSecuredPoolRisk", "pilotReadSyntheticCollateralProfile", "pilotConfirmSyntheticCollateral", "pilotReleaseSyntheticCollateral"]
         },
         "kind": {
           "enum": [
@@ -705,7 +582,10 @@
             "tenant_venue_execution_view.v1",
             "tenant_secured_pool_workspace.v1",
             "tenant_secured_pool_action_review.v1",
-            "tenant_secured_pool_risk_view.v1"
+            "tenant_secured_pool_risk_view.v1",
+            "tenant_synthetic_collateral_profile.v1",
+            "tenant_synthetic_collateral_confirmed.v1",
+            "tenant_synthetic_collateral_released.v1"
           ]
         },
         "public": {
@@ -3796,6 +3676,99 @@
             "actorTypes": { "const": ["risk_operator", "operations_operator", "auditor"] }, "resourceType": { "const": "risk_portfolio" },
             "requiredCapability": { "const": "pool.risk.read.tenant" }, "idempotency": { "const": "prohibited" },
             "quotaClass": { "const": "read" }, "responseSchemaVersion": { "const": "tenant_secured_pool_risk_view.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": {
+              "const": "pilotReadSyntheticCollateralProfile"
+            },
+            "kind": {
+              "const": "query"
+            },
+            "actorTypes": {
+              "const": [
+                "human",
+                "agent"
+              ]
+            },
+            "resourceType": {
+              "const": "subject"
+            },
+            "requiredCapability": {
+              "const": "credit.request"
+            },
+            "idempotency": {
+              "const": "prohibited"
+            },
+            "quotaClass": {
+              "const": "read"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_synthetic_collateral_profile.v1"
+            }
+          }
+        },
+        {
+          "properties": {
+            "operationId": {
+              "const": "pilotConfirmSyntheticCollateral"
+            },
+            "kind": {
+              "const": "command"
+            },
+            "actorTypes": {
+              "const": [
+                "human",
+                "agent"
+              ]
+            },
+            "resourceType": {
+              "const": "obligation"
+            },
+            "requiredCapability": {
+              "const": "credit.execute.sandbox.self"
+            },
+            "idempotency": {
+              "const": "required"
+            },
+            "quotaClass": {
+              "const": "economic"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_synthetic_collateral_confirmed.v1"
+            }
+          }
+        },
+        {
+          "properties": {
+            "operationId": {
+              "const": "pilotReleaseSyntheticCollateral"
+            },
+            "kind": {
+              "const": "command"
+            },
+            "actorTypes": {
+              "const": [
+                "human",
+                "agent"
+              ]
+            },
+            "resourceType": {
+              "const": "obligation"
+            },
+            "requiredCapability": {
+              "const": "repayment.post.sandbox.self"
+            },
+            "idempotency": {
+              "const": "required"
+            },
+            "quotaClass": {
+              "const": "economic"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_synthetic_collateral_released.v1"
+            }
           }
         }
       ]

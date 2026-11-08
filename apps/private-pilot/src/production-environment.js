@@ -495,6 +495,12 @@ export async function loadProductionClosedPilotEnvironment(environment = process
     throw configError("NODE_ENV must be production");
   }
   const vercelSandbox = environment.IPO_ONE_DEPLOYMENT_PROFILE === "vercel_sandbox";
+  const collateralProfile = environment.IPO_ONE_SYNTHETIC_COLLATERAL_PROFILE;
+  if (collateralProfile !== undefined &&
+    (collateralProfile !== "m2_synthetic_weth_usd_cent.v1" ||
+      (vercelSandbox && environment.IPO_ONE_VERCEL_PROJECT_ROLE !== "primary"))) {
+    throw configError("Synthetic collateral requires the exact no-funds Primary profile");
+  }
   if (
     environment.IPO_ONE_DEPLOYMENT_PROFILE !== undefined && !vercelSandbox
   ) throw configError("IPO_ONE_DEPLOYMENT_PROFILE is invalid");
@@ -633,6 +639,7 @@ export async function loadProductionClosedPilotEnvironment(environment = process
   return Object.freeze({
     gatewayPool,
     authenticationPool,
+    syntheticCollateralEnabled: collateralProfile !== undefined,
     ...(agentAccountAddress === undefined ? {} : { agentAccountAddress }),
     browserOrigin: browserOrigin.origin,
     ...(environment.IPO_ONE_WALLETCONNECT_PROJECT_ID === undefined ? {} : {

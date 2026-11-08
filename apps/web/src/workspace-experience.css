@@ -555,3 +555,6 @@ body.product-experience .risk-authority-row > span.eligible strong { color: var(
 body.product-experience .owned-position-picker { background: var(--b-surface); border-color: var(--b-line); }
 body.product-experience .credit-passport-issue-card.unavailable :is(.credit-passport-source,.credit-passport-recipient,.credit-passport-claims) { opacity: 1; }
 body.product-experience :is(input,textarea)::placeholder { color: var(--b-soft); opacity: 1; }
+
+/* B3: expanded protocol receipts remain readable within narrow workspaces. */
+#syntheticCollateralReceipt { display: block; min-width: 0; max-width: 100%; overflow-wrap: anywhere; }

@@ -70,6 +70,7 @@ const CONFIG_KEYS = new Set([
   "referenceHashMode",
   "releaseId",
   "runtimeConfig",
+  "syntheticCollateralEnabled",
   "systemActorId",
   "tenantId",
   "verifyEdgeRequest",
@@ -165,6 +166,9 @@ async function composeProductionClosedPilotRuntime(input) {
     !input.authenticationPool?.query ||
     !input.machineResolver?.keyResolver ||
     !DEPLOYMENT_ROLES.has(input.deploymentRole) ||
+    (input.syntheticCollateralEnabled !== undefined && typeof input.syntheticCollateralEnabled !== "boolean") ||
+    (input.syntheticCollateralEnabled === true && (input.deploymentRole === "risk" ||
+      launchPolicy.profiles.public_authenticated_no_funds_beta.capabilities.realFundsEnabled !== false)) ||
     (input.agentAccountAddress !== undefined &&
       !EVM_ACCOUNT.test(input.agentAccountAddress)) ||
     typeof input.createNetworkContext !== "function" ||
@@ -257,6 +261,7 @@ async function composeProductionClosedPilotRuntime(input) {
     pool: input.gatewayPool,
     handlers: new TenantCommandHandlerRegistry(createTenantFoundationHandlers({
       proofAdapters: input.proofAdapters,
+      syntheticCollateralEnabled: input.syntheticCollateralEnabled === true,
       hyperliquidInfoAdapter: new HyperliquidTestnetInfoAdapter(),
       hyperliquidBindingProofVerifier:
         new HyperliquidBindingProofVerifier(),

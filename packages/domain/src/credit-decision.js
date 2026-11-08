@@ -311,6 +311,7 @@ export function createDeterministicCreditDecisionOutcome({
     riskDecisionId: decision.riskDecisionId,
     assetId: intent.assetId,
     approvedPrincipalMinor: intent.requestedPrincipalMinor,
+    collateralProfile: intent.collateralProfile,
     annualRateBps,
     originationFeeMinor: SANDBOX_CREDIT_DECISION_POLICY.originationFeeMinor,
     repaymentFrequency: intent.repaymentFrequency,

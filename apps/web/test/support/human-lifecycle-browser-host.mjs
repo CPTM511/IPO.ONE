@@ -14,7 +14,7 @@ import {
   createTenantWebAssetHandler
 } from "../../../tenant-api/src/index.js";
 import {
-  DomainError,
+  DomainError, createSyntheticCollateralTerms, SYNTHETIC_COLLATERAL_PROFILE,
   createOfficialReportArtifact,
   officialReportEffectiveStatus,
   revokeOfficialReportArtifact
@@ -613,6 +613,14 @@ function officialReportView(report, now = new Date()) {
 }
 
 function resultFor(command) {
+  if (command.operationId === "pilotReadSyntheticCollateralProfile") return protocolResult(command.operationId, {
+    enabled: false, profile: SYNTHETIC_COLLATERAL_PROFILE,
+    exampleTerms: createSyntheticCollateralTerms({profile:SYNTHETIC_COLLATERAL_PROFILE,
+      assetId:"urn:ipo-one:sandbox-asset:usd-cent",principalMinor:"12000"}),
+    syntheticOnly:true,productionFundsMoved:false,transactionHash:null,
+    schemaVersion:"tenant_synthetic_collateral_profile.v1"
+  });
+
   const { operationId } = command;
   if (operationId === "pilotFreezeSubject") {
     throw new DomainError("authorization_denied", "The requested operation is not available.");

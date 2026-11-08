@@ -11,7 +11,9 @@ import {
 export const EconomicActionType = Object.freeze({
   ACCEPT_OFFER: "accept_offer",
   EXECUTE_OBLIGATION: "execute_obligation",
-  POST_REPAYMENT: "post_repayment"
+  POST_REPAYMENT: "post_repayment",
+  CONFIRM_SYNTHETIC_COLLATERAL: "confirm_synthetic_collateral",
+  RELEASE_SYNTHETIC_COLLATERAL: "release_synthetic_collateral"
 });
 
 export const EconomicActionConfirmationMethod = Object.freeze({
@@ -23,7 +25,9 @@ export const EconomicActionConfirmationMethod = Object.freeze({
 const ACTION_BY_OPERATION = Object.freeze({
   pilotAcceptCreditOffer: EconomicActionType.ACCEPT_OFFER,
   pilotExecuteSandboxObligation: EconomicActionType.EXECUTE_OBLIGATION,
-  pilotPostSandboxRepayment: EconomicActionType.POST_REPAYMENT
+  pilotPostSandboxRepayment: EconomicActionType.POST_REPAYMENT,
+  pilotConfirmSyntheticCollateral: EconomicActionType.CONFIRM_SYNTHETIC_COLLATERAL,
+  pilotReleaseSyntheticCollateral: EconomicActionType.RELEASE_SYNTHETIC_COLLATERAL
 });
 
 const HASH_PATTERN = /^0x[0-9a-f]{64}$/;

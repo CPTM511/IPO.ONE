@@ -176,7 +176,8 @@ function invalidBinding() {
 
 function validCreditRequest(request) {
   return (
-    hasExactDataKeys(request, CREDIT_REQUEST_KEYS) &&
+    hasExactDataKeys(request, request.collateralProfile === undefined ? CREDIT_REQUEST_KEYS : [...CREDIT_REQUEST_KEYS, "collateralProfile"]) &&
+    (request.collateralProfile === undefined || request.collateralProfile === "m2_synthetic_weth_usd_cent.v1") &&
     IDENTIFIER.test(request.assetId ?? "") &&
     POSITIVE_MINOR.test(request.requestedPrincipalMinor ?? "") &&
     PURPOSE.test(request.purposeCode ?? "") &&
@@ -193,6 +194,7 @@ function validCreditRequest(request) {
 function creditRequestFromIntent(intent) {
   return {
     assetId: intent.assetId,
+    ...(intent.collateralProfile ? { collateralProfile: intent.collateralProfile } : {}),
     installmentCount: intent.installmentCount,
     purposeCode: intent.purposeCode,
     repaymentFrequency: intent.repaymentFrequency,
@@ -277,7 +279,8 @@ function assertOfferReceipt(receipt, entryMode, profile) {
     offer.repaymentFrequency !== intent.repaymentFrequency ||
     offer.installmentCount !== intent.installmentCount ||
     !IDENTIFIER.test(offer.disclosureRef ?? "") ||
-    offer.termsVersion !== "credit_terms.v1" ||
+    offer.termsVersion !== (creditRequest.collateralProfile ? "credit_terms.synthetic_secured.v1" : "credit_terms.v1") ||
+    offer.collateralTerms?.profile !== creditRequest.collateralProfile ||
     !HASH.test(offer.creditOfferHash ?? "") ||
     !HASH.test(offer.termsHash ?? "") ||
     offer.sandboxOnly !== true ||
@@ -321,6 +324,7 @@ export function createRequestCreditReviewBinding(input) {
       maturityAt: offer.maturityAt,
       disclosureRef: offer.disclosureRef,
       termsVersion: offer.termsVersion,
+      ...(offer.collateralTerms ? { collateralTerms: structuredClone(offer.collateralTerms) } : {}),
       validUntil: offer.validUntil
     },
     serverReceipts: input.receipt.steps.map((step) => ({
@@ -349,7 +353,7 @@ function recoveredOfferCommon({ recovery, creditRequest, now }) {
   const decision = recovery.decision;
   const offer = recovery.offer;
   const expectedTermsVersion = recovery.offerSchemaVersion === "credit_offer.v1"
-    ? "credit_terms.v1"
+    ? (creditRequest.collateralProfile ? "credit_terms.synthetic_secured.v1" : "credit_terms.v1")
     : recovery.offerSchemaVersion === "credit_offer.v2"
       ? "credit_terms.v2"
       : undefined;
@@ -389,6 +393,7 @@ function recoveredOfferCommon({ recovery, creditRequest, now }) {
     offer.assetId !== intent.assetId ||
     offer.approvedPrincipalMinor !== decision.approvedPrincipalMinor ||
     offer.termsVersion !== expectedTermsVersion ||
+    offer.collateralTerms?.profile !== creditRequest.collateralProfile ||
     !POSITIVE_MINOR.test(offer.approvedPrincipalMinor ?? "") ||
     BigInt(offer.approvedPrincipalMinor) > BigInt(intent.requestedPrincipalMinor) ||
     !Number.isInteger(offer.annualRateBps) ||
@@ -503,7 +508,7 @@ export function assertRecoveredHumanCreditReviewUnchanged(binding, recovery, opt
 }
 
 function sameCreditRequest(left, right) {
-  return CREDIT_REQUEST_KEYS.every((key) => left[key] === right[key]);
+  return left.collateralProfile === right.collateralProfile && CREDIT_REQUEST_KEYS.every((key) => left[key] === right[key]);
 }
 
 export function evaluateRequestCreditReviewBinding(binding, current) {

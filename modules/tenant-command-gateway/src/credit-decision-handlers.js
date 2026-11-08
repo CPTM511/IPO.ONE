@@ -95,6 +95,7 @@ export function summarizeCreditOffer(offer) {
     creditOfferId: offer.creditOfferId,
     creditOfferHash: offer.creditOfferHash,
     termsHash: offer.termsHash,
+    ...(offer.collateralTerms ? { collateralTerms: offer.collateralTerms } : {}),
     creditIntentId: offer.creditIntentId,
     riskDecisionId: offer.riskDecisionId,
     subjectId: offer.subjectId,

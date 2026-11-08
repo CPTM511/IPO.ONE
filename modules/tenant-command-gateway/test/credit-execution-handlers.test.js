@@ -27,7 +27,7 @@ import {
 const START = new Date("2026-07-16T00:00:00.000Z");
 const ASSET_ID = "urn:ipo-one:sandbox-asset:usd-cent";
 
-function humanFixture() {
+function humanFixture(collateralProfile) {
   const subject = {
     subjectId: "subject_human_sandbox_execution",
     subjectType: "human",
@@ -66,6 +66,7 @@ function humanFixture() {
     authorityRef: consent.consentId,
     assetId: ASSET_ID,
     requestedPrincipalMinor: "10000",
+    collateralProfile,
     purposeCode: "working_capital",
     requestedTermDays: 60,
     repaymentFrequency: "monthly",
@@ -395,4 +396,32 @@ test("trusted worker default and dual-controlled restructure produce one atomic 
     }),
     (error) => error.code === "stale_servicing_state"
   );
+});
+
+
+test("B3 Gateway confirms one exact synthetic profile; execution guard runs before rail side effect", async () => {
+  const { createSyntheticCollateralHandlers } = await import("../src/synthetic-collateral-handlers.js");
+  const f = humanFixture("m2_synthetic_weth_usd_cent.v1");
+  let calls = 0;
+  const handler = executeSandboxObligationCommandHandler({ sandboxRailAdapter: {
+    async execute() { calls += 1; throw new Error("must not execute"); }, verify() {}
+  } });
+  const base = { ...context(f.obligation, START), coreRepository: repository(f) };
+  await assert.rejects(handler.plan(base), { code: "synthetic_collateral_not_confirmed" });
+  assert.equal(calls, 0);
+  const resource = { resourceType: "obligation", resourceId: f.obligation.obligationId };
+  const c = f.obligation.syntheticCollateral;
+  const payload = { expectedVersion: 0, termsHash: c.terms.termsHash, chainId: c.terms.chainId, amountAssets: c.terms.requiredAssets };
+  const op = "pilotConfirmSyntheticCollateral";
+  const proof = createAuthenticatedProtocolActionConfirmation({ operationId: op, payload, resource, requestId: base.requestId });
+  const command = createSyntheticCollateralHandlers({ syntheticCollateralEnabled: true }).find(h => h.operationId === op);
+  const result = await command.plan({ ...base, payload: { ...payload, actionConfirmation: proof } });
+  assert.equal(result.events.length, 1);
+  assert.equal(result.writes.length, 1);
+  assert.equal(result.response.obligation.syntheticCollateral.state, "confirmed");
+  assert.equal(result.response.receipt.transactionHash, null);
+  assert.equal(result.response.schemaVersion, "tenant_synthetic_collateral_confirmed.v1");
+  const disabled = createSyntheticCollateralHandlers().find(h => h.operationId === op);
+  await assert.rejects(disabled.plan({ ...base, payload: { ...payload, actionConfirmation: proof } }), { code: "synthetic_collateral_disabled" });
+  await assert.rejects(command.plan({ ...base, payload: { ...payload, amountAssets: "1", actionConfirmation: proof } }), { code: "economic_action_confirmation_invalid" });
 });

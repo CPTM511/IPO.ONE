@@ -74,7 +74,8 @@ function minorUnitsAtMost(value, limit) {
 }
 
 function assertCreditRequest(request) {
-  if (!hasExactDataKeys(request, CREDIT_REQUEST_KEYS)) invalidReceipt();
+  if (!hasExactDataKeys(request, request.collateralProfile === undefined ? CREDIT_REQUEST_KEYS : [...CREDIT_REQUEST_KEYS, "collateralProfile"]) ||
+    (request.collateralProfile !== undefined && request.collateralProfile !== "m2_synthetic_weth_usd_cent.v1")) invalidReceipt();
   if (
     !IDENTIFIER.test(request.assetId) ||
     !PURPOSE_CODE.test(request.purposeCode) ||
@@ -116,6 +117,7 @@ function assertIntent(intent, subjectId, consentId, request, statuses) {
     intent.requestedTermDays !== request.requestedTermDays ||
     intent.repaymentFrequency !== request.repaymentFrequency ||
     intent.installmentCount !== request.installmentCount ||
+    intent.collateralProfile !== request.collateralProfile ||
     intent.sandboxOnly !== true ||
     intent.productionFundsRequested !== false ||
     !statuses.has(intent.status)

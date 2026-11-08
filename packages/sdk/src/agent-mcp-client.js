@@ -161,7 +161,8 @@ function assertClientConfig(input) {
 function assertWorkflowInput(input, manifest) {
   if (!hasExactDataKeys(input, WORKFLOW_INPUT_KEYS)) invalidWorkflow();
   if (!WORKFLOW_ID.test(input.workflowId)) invalidWorkflow();
-  if (!hasExactDataKeys(input.creditRequest, CREDIT_REQUEST_KEYS)) invalidWorkflow();
+  if (!hasExactDataKeys(input.creditRequest, input.creditRequest?.collateralProfile === undefined ? CREDIT_REQUEST_KEYS : [...CREDIT_REQUEST_KEYS, "collateralProfile"]) ||
+    (input.creditRequest.collateralProfile !== undefined && input.creditRequest.collateralProfile !== "m2_synthetic_weth_usd_cent.v1")) invalidWorkflow();
   const request = input.creditRequest;
   if (
     !IDENTIFIER.test(request.assetId) ||
@@ -268,6 +269,7 @@ function assertIntent(intent, manifest, request, expectedStatus) {
     intent.requestedTermDays !== request.requestedTermDays ||
     intent.repaymentFrequency !== request.repaymentFrequency ||
     intent.installmentCount !== request.installmentCount ||
+    intent.collateralProfile !== request.collateralProfile ||
     intent.sandboxOnly !== true ||
     intent.productionFundsRequested !== false ||
     !expectedStatus.has(intent.status)

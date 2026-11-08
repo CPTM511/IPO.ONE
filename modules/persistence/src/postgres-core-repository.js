@@ -1,4 +1,5 @@
 import {
+  restoreSyntheticCollateralOfferTerms,
   CreditLineStatus,
   DomainError,
   ObligationStatus,
@@ -966,6 +967,7 @@ function mapObligation(row, installments = []) {
       scheduleSequence: row.schedule_sequence,
       installments: installments.map(mapObligationInstallment),
       executionStatus: row.execution_status,
+      ...(row.synthetic_collateral ? { syntheticCollateral: clone(row.synthetic_collateral) } : {}),
       ...(row.pool_obligation_binding_id
         ? { poolObligationBindingId: row.pool_obligation_binding_id }
         : {}),
@@ -1197,7 +1199,7 @@ function mapCreditIntent(row) {
 
 function mapCreditOffer(row) {
   if (!row) return undefined;
-  return {
+  return restoreSyntheticCollateralOfferTerms({
     creditOfferId: row.id,
     creditOfferHash: row.offer_hash,
     termsHash: row.terms_hash,
@@ -1240,7 +1242,7 @@ function mapCreditOffer(row) {
     createdAt: timestamp(row.created_at),
     updatedAt: timestamp(row.updated_at),
     schemaVersion: row.schema_version
-  };
+  });
 }
 
 function mapCreditOfferAcceptance(row) {
@@ -6635,7 +6637,7 @@ export class PostgresCoreRepository {
          schedule_sequence, servicing_owner_code, resolution_type,
          resolution_reason_code, resolution_at, written_off_principal_minor,
          written_off_interest_minor, written_off_fees_minor,
-         pool_obligation_binding_id, pool_execution_receipt_id
+         pool_obligation_binding_id, pool_execution_receipt_id, synthetic_collateral
        ) VALUES (
          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
          NULL, NULL, $11, 1, '[]'::jsonb, '[]'::jsonb, $12, $13, $14, $15,
@@ -6643,7 +6645,7 @@ export class PostgresCoreRepository {
          $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38,
          $39, $40, $41, $42, $43,
          $44, $45, $46, $47, $48, $49, $50, $51, $52, $53,
-         $54, $55, $56, $57, $58, $59
+         $54, $55, $56, $57, $58, $59, $60::jsonb
        )
        ON CONFLICT (id) DO UPDATE
          SET outstanding_minor = EXCLUDED.outstanding_minor,
@@ -6654,6 +6656,7 @@ export class PostgresCoreRepository {
              outstanding_fees_minor = EXCLUDED.outstanding_fees_minor,
              total_repaid_minor = EXCLUDED.total_repaid_minor,
              execution_status = EXCLUDED.execution_status,
+             synthetic_collateral = EXCLUDED.synthetic_collateral,
              sandbox_execution_receipt_id = EXCLUDED.sandbox_execution_receipt_id,
              executed_at = EXCLUDED.executed_at,
              last_accrued_at = EXCLUDED.last_accrued_at,
@@ -6746,7 +6749,8 @@ export class PostgresCoreRepository {
         value.writtenOffInterestMinor ?? "0",
         value.writtenOffFeesMinor ?? "0",
         value.poolObligationBindingId ?? null,
-        value.poolExecutionReceiptId ?? null
+        value.poolExecutionReceiptId ?? null,
+        value.syntheticCollateral ? json(value.syntheticCollateral) : null
       ]
     );
     if (result.rowCount !== 1) {

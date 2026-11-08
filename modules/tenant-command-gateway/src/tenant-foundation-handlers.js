@@ -3,6 +3,7 @@ import { createAgentSubjectHandlers } from "./agent-subject-handlers.js";
 import { createAgentAccountProofHandlers } from "./agent-account-proof-handlers.js";
 import { createExecutionAccountBindingHandlers } from "./execution-account-binding-handlers.js";
 import { createAgentSecuredFacilityAuthorizationHandlers } from "./agent-secured-facility-authorization-handlers.js";
+import { createSyntheticCollateralHandlers } from "./synthetic-collateral-handlers.js";
 import { createCreditIntentHandlers } from "./credit-intent-handlers.js";
 import { createCreditDecisionHandlers } from "./credit-decision-handlers.js";
 import { createCreditPassportHandlers } from "./credit-passport-handlers.js";
@@ -72,7 +73,8 @@ export function createTenantFoundationHandlers(options) {
       deploymentProfile: options?.securedPoolDeploymentProfile,
       readAdapter: options?.securedPoolReadAdapter
     }),
-    ...createCreditIntentHandlers(),
+    ...createCreditIntentHandlers(options),
+    ...createSyntheticCollateralHandlers(options),
     ...createHumanSubjectHandlers(options),
     ...createWorkspaceResumeHandlers(),
     ...createWorkspaceContinuationHandlers(),

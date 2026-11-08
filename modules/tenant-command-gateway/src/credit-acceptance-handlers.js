@@ -172,6 +172,7 @@ export function summarizeSharedObligation(obligation) {
     scheduleSequence: obligation.scheduleSequence,
     installments: obligation.installments.map((row) => ({ ...row })),
     executionStatus: obligation.executionStatus,
+    ...(obligation.syntheticCollateral ? { syntheticCollateral: structuredClone(obligation.syntheticCollateral) } : {}),
     ...(obligation.sandboxExecutionReceiptId
       ? { sandboxExecutionReceiptId: obligation.sandboxExecutionReceiptId }
       : {}),

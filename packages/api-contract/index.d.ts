@@ -1,4 +1,7 @@
 export type TenantProtocolOperationId =
+  | "pilotReadSyntheticCollateralProfile"
+  | "pilotConfirmSyntheticCollateral"
+  | "pilotReleaseSyntheticCollateral"
   | "pilotProposeApproval"
   | "pilotReadApproval"
   | "pilotDecideApproval"
@@ -1005,7 +1008,8 @@ export interface EvaluateCreditApplicationRequest extends TenantProtocolRequestB
 
 export interface PersistAgentContinuationReceiptRequest extends TenantProtocolRequestBase {
   operationId: "pilotPersistAgentContinuationReceipt";
-  payload: { receipt: AgentCreditOfferWorkflowReceipt };
+  payload: {
+    collateralProfile?: "m2_synthetic_weth_usd_cent.v1"; receipt: AgentCreditOfferWorkflowReceipt };
   resource: { resourceType: "credit_offer"; resourceId: string };
   idempotencyKey: string;
 }
@@ -1990,6 +1994,9 @@ export interface ReadRiskAgentDirectoryRequest extends TenantProtocolRequestBase
 }
 
 export type TenantProtocolRequest =
+  | ReadSyntheticCollateralProfileRequest
+  | ConfirmSyntheticCollateralRequest
+  | ReleaseSyntheticCollateralRequest
   | ProposeApprovalRequest
   | ReadApprovalRequest
   | DecideApprovalRequest
@@ -2253,6 +2260,7 @@ export interface AgentSubjectViewResponse {
 }
 
 export interface CreditIntentSummary {
+  collateralProfile?: "m2_synthetic_weth_usd_cent.v1";
   creditIntentId: string;
   creditIntentHash: string;
   subjectId: string;
@@ -2343,6 +2351,7 @@ export interface CreditDecisionSummary {
 }
 
 export interface CreditOfferSummary {
+  collateralTerms?: SyntheticCollateralTerms;
   creditOfferId: string;
   creditOfferHash: string;
   termsHash: string;
@@ -2358,7 +2367,7 @@ export interface CreditOfferSummary {
   firstPaymentAt: string;
   maturityAt: string;
   disclosureRef: string;
-  termsVersion: "credit_terms.v1";
+  termsVersion: "credit_terms.v1" | "credit_terms.synthetic_secured.v1";
   validUntil: string;
   reasonCodes: string[];
   sandboxOnly: true;
@@ -2442,6 +2451,7 @@ export interface ObligationInstallmentSummary {
 }
 
 export interface SharedObligationSummary {
+  syntheticCollateral?: SyntheticCollateralState;
   obligationId: string;
   obligationHash: string;
   subjectId: string;
@@ -5129,6 +5139,9 @@ export interface LocalRiskAgentDirectoryResponse {
 }
 
 export type TenantProtocolResult =
+  | TenantProtocolResultBase<"pilotReadSyntheticCollateralProfile", SyntheticCollateralProfileResponse>
+  | TenantProtocolResultBase<"pilotConfirmSyntheticCollateral", SyntheticCollateralTransitionResponse<"tenant_synthetic_collateral_confirmed.v1">>
+  | TenantProtocolResultBase<"pilotReleaseSyntheticCollateral", SyntheticCollateralTransitionResponse<"tenant_synthetic_collateral_released.v1">>
   | TenantProtocolResultBase<"pilotProposeApproval", LocalApprovalResponse>
   | TenantProtocolResultBase<"pilotReadApproval", LocalApprovalResponse>
   | TenantProtocolResultBase<"pilotDecideApproval", LocalApprovalResponse>
@@ -6396,3 +6409,64 @@ export class ApiBoundaryError extends Error {
 export function createRequestId(headers?: Record<string, string | string[]>): string;
 export function createProblemDetails(error: unknown, input: { requestId: string }): Record<string, unknown>;
 export function isValidRequestId(value: unknown): value is string;
+
+export interface SyntheticCollateralTerms {
+  profile: "m2_synthetic_weth_usd_cent.v1";
+  chainId: "eip155:84532";
+  collateralAssetId: "weth";
+  collateralDecimals: 18;
+  debtAssetId: "urn:ipo-one:sandbox-asset:usd-cent";
+  principalMinor: string;
+  requiredAssets: string;
+  loanToValueBps: "7500";
+  liquidationThresholdBps: "8000";
+  scenarioPriceUsdWad: "2000000000000000000000";
+  policyVersion: "m2_secured_pool_fixture_policy.v1";
+  source: "deterministic_synthetic_scenario";
+  marketPrice: false;
+  withdrawable: false;
+  productionFundsMoved: false;
+  transactionHash: null;
+  schemaVersion: "synthetic_collateral_terms.v1";
+  termsHash: string;
+}
+export interface SyntheticCollateralReceipt {
+  receiptId: string; obligationId: string; subjectId: string;
+  action: "confirm" | "release"; state: "confirmed" | "released";
+  termsHash: string; chainId: "eip155:84532"; collateralAssetId: "weth";
+  amountAssets: string; previousVersion: number; version: number;
+  source: "deterministic_synthetic_scenario"; finality: "not_applicable";
+  syntheticOnly: true; productionFundsMoved: false; transactionHash: null;
+  withdrawable: false; recordedAt: string; schemaVersion: "synthetic_collateral_receipt.v1";
+}
+export interface SyntheticCollateralState {
+  terms: SyntheticCollateralTerms; state: "awaiting_confirmation" | "confirmed" | "released";
+  version: number; amountAssets: string; finality: "not_applicable"; transactionHash: null;
+  syntheticOnly: true; productionFundsMoved: false; confirmationReceiptId?: string;
+  releaseReceiptId?: string; lastReceipt?: SyntheticCollateralReceipt;
+}
+export interface ReadSyntheticCollateralProfileRequest extends TenantProtocolRequestBase {
+  operationId: "pilotReadSyntheticCollateralProfile";
+  payload: Record<string, never>; resource: { resourceType: "subject"; resourceId: string };
+}
+export type SyntheticCollateralCommandPayload = {
+  expectedVersion: number; termsHash: string; chainId: "eip155:84532"; amountAssets: string;
+  actionConfirmation: Record<string, unknown>;
+}
+export interface ConfirmSyntheticCollateralRequest extends TenantProtocolRequestBase {
+  operationId: "pilotConfirmSyntheticCollateral"; payload: SyntheticCollateralCommandPayload;
+  resource: { resourceType: "obligation"; resourceId: string }; idempotencyKey: string;
+}
+export interface ReleaseSyntheticCollateralRequest extends TenantProtocolRequestBase {
+  operationId: "pilotReleaseSyntheticCollateral"; payload: SyntheticCollateralCommandPayload;
+  resource: { resourceType: "obligation"; resourceId: string }; idempotencyKey: string;
+}
+export interface SyntheticCollateralProfileResponse {
+  enabled: boolean; profile: "m2_synthetic_weth_usd_cent.v1"; exampleTerms: SyntheticCollateralTerms;
+  syntheticOnly: true; productionFundsMoved: false; transactionHash: null;
+  schemaVersion: "tenant_synthetic_collateral_profile.v1";
+}
+export interface SyntheticCollateralTransitionResponse<Version extends "tenant_synthetic_collateral_confirmed.v1" | "tenant_synthetic_collateral_released.v1"> {
+  obligation: SharedObligationSummary; receipt: SyntheticCollateralReceipt;
+  syntheticOnly: true; productionFundsMoved: false; transactionHash: null; schemaVersion: Version;
+}

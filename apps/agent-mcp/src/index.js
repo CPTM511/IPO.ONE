@@ -8,3 +8,5 @@ export * from "./stdio-server.js";
 export * from "./wallet-execution-mcp-adapter.js";
 export * from "./venue-execution-mcp-adapter.js";
 export * from "./secured-pool-mcp-adapter.js";
+
+export * from "./synthetic-collateral-mcp-adapter.js";
