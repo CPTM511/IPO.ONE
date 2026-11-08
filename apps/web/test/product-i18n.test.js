@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { PRODUCT_COPY } from "../src/product-copy.js";
 import { PRODUCT_LANGUAGES, LANGUAGE_STORAGE_KEY, resolveLanguage, supportedLanguage,
   translateCopy, validateProductCopy, formatMinorAmount, formatProductDate } from "../src/product-i18n.js";
@@ -8,6 +9,20 @@ import { walletSignInErrorMessage } from "../src/wallet-sign-in-attempt.js";
 import { ownedCopyCandidate } from "../src/product-localization.js";
 import { walletProviderDiscoveryCopy, walletSignInSummaryCopy, walletSelectedCopy } from "../src/authentication-availability-presentation.js";
 import { mobileWalletAvailability } from "../src/mobile-wallet-access.js";
+
+test("redacted deployed Human recovery, metered profile, Evidence and single-record history copy is covered", async () => {
+  const fixture = JSON.parse(await readFile(new URL("./fixtures/durable-human-runtime-copy.v1.json", import.meta.url), "utf8"));
+  for (const source of fixture.examples.filter(ownedCopyCandidate)) {
+    for (const { code } of PRODUCT_LANGUAGES) {
+      const result = translateCopy(source, code);
+      assert.equal(result.translated, true, `${code}: ${source}`);
+      for (const bound of source.match(/\$\d+\.\d{2}|0x[\da-f.…]+|servicing_current/g) ?? [])
+        assert.ok(result.text.includes(bound), `${code}: altered bound value ${bound}`);
+    }
+  }
+  for (const { code } of PRODUCT_LANGUAGES)
+    assert.equal(translateCopy("provider_gateway_compute · inference_tokens / token", code).text, "provider_gateway_compute · inference_tokens / token");
+});
 
 test("durable resume without a historical Offer preserves resource counts and obligation schedule versions in all languages", () => {
   for (const { code } of PRODUCT_LANGUAGES) {

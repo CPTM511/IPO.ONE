@@ -22,6 +22,8 @@ const decode = value => value.replace(/&(?:amp|lt|gt|quot|apos|nbsp);|&#(?:x[\da
   return String.fromCodePoint(entity[2].toLowerCase() === "x" ? parseInt(entity.slice(3, -1), 16) : Number(entity.slice(2, -1)));
 });
 const copy = new Set(Object.values(PRODUCT_ERROR_COPY));
+const durableRuntimeCopy = JSON.parse(await readFile(new URL("../apps/web/test/fixtures/durable-human-runtime-copy.v1.json", import.meta.url), "utf8"));
+for (const source of durableRuntimeCopy.examples) copy.add(source);
 copy.add("Secure session ended. Private browser state was cleared.");
 for (const label of ["Human Borrower", "Principal Controller", "Workspace"]) copy.add(walletSignInSummaryCopy(label));
 for (const name of ["Binance Wallet", "OKX Wallet", "Untrusted wallet name"]) copy.add(walletSelectedCopy(name));

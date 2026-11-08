@@ -12,6 +12,10 @@ Scope: presentation copy for existing durable recovery and overview branches,
 plus a source inventory and browser regression for an owned Obligation returned
 without its historical Intent/Offer. Likely files: product-copy.js,
 check-product-i18n.mjs, product-i18n.test.js, record-recovery-local.spec.mjs.
+The same account's other five core views exposed existing metered-profile,
+Evidence-event and singular history-result copy. Cover these presentation-only
+sources too; keep substituted examples in durable-human-runtime-copy.v1.json,
+without Actor, session, record identifiers or original hashes/timestamps.
 No protocol, authorization, funds, fees, wallets, dependencies, schema or hosting
 configuration changes. Additional labels remain within the shared overview;
 this does not declare Agent operator workspaces fully translated.
