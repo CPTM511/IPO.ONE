@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { PRODUCT_LANGUAGES, translateCopy } from "../../src/product-i18n.js";
 
 test("Borrower reaches every final-credit-loop destination with visible clicks", async ({ page }) => {
   await page.goto("/");
@@ -277,6 +278,36 @@ test("restored SIWE session exposes wallet reconnect before Obligation creation"
   await expect(page.getByRole("button", {
     name: "Confirm & create sandbox Obligation"
   })).toBeEnabled();
+});
+
+test("restored SIWE Offer reconnect stays localized in every product language", async ({ page }) => {
+  await page.addInitScript({
+    path: "apps/web/test/support/wallet-provider-browser-init.js"
+  });
+  await page.goto("/?browser_qa_workspace=siwe_reconnect#request-credit");
+  await page.getByRole("button", { name: "Request fresh Offer" }).click();
+  await expect(page.locator("#humanApplicationStatus")).toHaveText("Offer ready");
+  await page.locator("#humanOfferAcknowledge").check();
+
+  const label = "Reconnect wallet to continue";
+  const boundary = "Reconnect the SIWE wallet in this tab before creating the sandbox Obligation. No server write occurs until the exact wallet confirmation succeeds.";
+  for (const { code } of PRODUCT_LANGUAGES) {
+    await page.locator(".workspace-options > summary").click();
+    await page.locator("#productLanguage").selectOption(code);
+    await page.locator(".workspace-options > summary").click();
+    await expect(page.locator("#acceptHumanOfferBtn")).toHaveText(translateCopy(label, code).text);
+    await expect(page.locator("#humanOfferBoundary")).toHaveText(translateCopy(boundary, code).text);
+    await expect(page.locator("#productTranslationWarning")).toBeHidden();
+    await expect(page.locator("#acceptHumanOfferBtn")).toBeEnabled();
+    await expect(page.locator("#humanObligationCard")).toBeHidden();
+    const overview = page.locator('.nav-item[data-view="overview"]');
+    if (!await overview.isVisible()) await page.getByRole("button", {
+      name: translateCopy("More tools", code).text, exact: true
+    }).click();
+    await overview.click();
+    await expect(page.locator("#productTranslationWarning")).toBeHidden();
+    await page.locator('.nav-item[data-view="request-credit"]').click();
+  }
 });
 
 

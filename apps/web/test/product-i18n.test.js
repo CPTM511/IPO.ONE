@@ -135,6 +135,19 @@ test("minor-unit formatting never rounds through floating point", () => {
   assert.throws(() => formatMinorAmount("1", "<img>"));
 });
 
+test("Offer summary localizes known states while preserving exact localized money", () => {
+  for (const { code } of PRODUCT_LANGUAGES) {
+    const money = formatMinorAmount("12000", "USD", code);
+    for (const state of ["Approved", "Offered", "Accepted"]) {
+      const result = translateCopy(`${state} · ${money}`, code);
+      assert.equal(result.translated, true, `${code}/${state}`);
+      assert.equal(result.text, `${translateCopy(state, code).text} · ${money}`.replace(/\s+/g, " "));
+    }
+  }
+  assert.equal(translateCopy("Approved · An unknown blocking message", "zh").translated, false);
+  assert.equal(translateCopy("Unknown state · US$120.00", "zh").translated, false);
+});
+
 test("due dates use explicit UTC across locales without changing the source timestamp", () => {
   const date = new Date("2026-11-07T23:59:00.000Z");
   for (const { code, locale } of PRODUCT_LANGUAGES) {

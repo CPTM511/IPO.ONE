@@ -66,6 +66,22 @@ test('B3 visible Human lifecycle uses durable services, recovers and is localize
       await click('walletSignInBtn');await expect(page.locator('#walletAddressStatus')).not.toHaveText('Not connected');
       await click('accessCloseBtn');
     };
+    const checkOfferLanguages=async()=>{
+      await page.setViewportSize({width:390,height:1000});
+      for(const language of ['en','zh','es','fr','ru','vi']){
+        await page.locator('.workspace-options > summary').click();
+        await page.locator('#productLanguage').selectOption(language);
+        await page.locator('.workspace-options > summary').click();
+        await expect.poll(async()=>(await page.evaluate(async()=>
+          (await import('/product-localization.js')).productLocalizationAudit())).missing).toEqual([]);
+        await expect(page.locator('html')).toHaveAttribute('data-product-translation-missing','0');
+        await expect(page.locator('#productTranslationWarning')).toBeHidden();
+      }
+      await page.locator('.workspace-options > summary').click();
+      await page.locator('#productLanguage').selectOption('en');
+      await page.locator('.workspace-options > summary').click();
+      await page.setViewportSize({width:1440,height:1000});
+    };
     await page.goto(`${origin}/#request-credit`);await login();await reconnect();
     await click('createHumanSubjectBtn');await expect(page.locator('#createHumanConsentBtn')).toBeEnabled();
     await click('createHumanConsentBtn');await expect(page.locator('#submitHumanCreditBtn')).toBeEnabled();
@@ -74,9 +90,12 @@ test('B3 visible Human lifecycle uses durable services, recovers and is localize
     await expect(page.locator('#humanOfferCollateralDisclosure')).toContainText('0.08');
     await page.reload();await expect(page.locator('#humanCreditCollateral')).toBeChecked();
     await expect(page.locator('#humanOfferCollateralDisclosure')).toContainText('0.08');
+    await expect(page.locator('#acceptHumanOfferBtn')).toHaveText('Reconnect wallet to continue');
+    await checkOfferLanguages();
     await reconnect();
     await page.locator('#humanOfferAcknowledge').check();await click('acceptHumanOfferBtn');await confirm();
     await expect(page.locator('#syntheticCollateralPanel')).toBeVisible();
+    await checkOfferLanguages();
     await expect(page.locator('#executeHumanObligationBtn')).toBeDisabled();
     await click('confirmSyntheticCollateralBtn');await confirm();
     await expect(page.locator('#syntheticCollateralState')).toHaveText('Synthetic collateral confirmed');

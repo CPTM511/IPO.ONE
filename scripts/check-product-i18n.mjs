@@ -34,6 +34,15 @@ for (const origin of ["http://127.0.0.1:4332", "https://ipo.one"]) for (const pr
 // Inventory the existing gateway status labels, including ternary branches.
 // Only quoted assignment results enter the copy gate; protocol comparisons do not.
 const appSource = await readFile(new URL("../apps/web/src/app.js", import.meta.url), "utf8");
+// Restored SIWE sessions keep server authority but must reconnect the wallet
+// before Offer acceptance. Inventory both visible branches, including text
+// that is absent from the initial HTML and connected-wallet happy path.
+for (const match of appSource.matchAll(/el\("(?:acceptHumanOfferBtn|humanOfferBoundary)"\)\.textContent\s*=\s*([^;]+);/g)) {
+  for (const literal of match[1].matchAll(/"(?:[^"\\]|\\.)*"/g)) {
+    const source = JSON.parse(literal[0]);
+    if (ownedCopyCandidate(source)) copy.add(source);
+  }
+}
 // Include every authored history-controller state, not only its settled pages.
 const historySource = await readFile(new URL("../apps/web/src/obligation-history-browser.js", import.meta.url), "utf8");
 const mobileSource = await readFile(new URL("../apps/web/src/mobile-wallet-access.js", import.meta.url), "utf8");
@@ -66,6 +75,9 @@ for (const count of [0, 1, 4, 513]) {
   copy.add(`${count} partial`);
   copy.add(`Repayment complete · ${count} partial Evidence events`);
   copy.add(`${count} partial Evidence events loaded`);
+}
+for (const state of ["Approved", "Offered", "Accepted"]) {
+  copy.add(`${state} · US$120.00`);
 }
 for (const state of ["Created", "Active", "Fully Repaid", "Defaulted", "Written Off"])
   for (const version of [1, 12]) copy.add(`${state} · schedule v${version}`);

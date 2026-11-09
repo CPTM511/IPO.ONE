@@ -52,6 +52,9 @@ const localizablePlaceholders = new Set(["state", "frequency", "scope", "outcome
 const datePlaceholders = new Set(["date", "asOf", "attempt"]);
 const knownRow = value => typeof value === "string" ? exact.get(value) ?? folded.get(value.toLowerCase()) : undefined;
 const dateFallbacks = new Set(["—", "Unavailable", "Not available"]);
+// USD display values emitted by formatMinorAmount in the six product locales.
+// Do not treat arbitrary prose following a known state as a monetary value.
+const moneyValue = value => /^(?:(?:US)?\$\s*-?[0-9][0-9.,\s]*|-?[0-9][0-9.,\s]*\s*(?:US\$|\$US|\$))$/u.test(value);
 const dateValue = value => dateFallbacks.has(value) || /\d/.test(value) && (
   /^\d{4}-\d{2}-\d{2}/.test(value) || /^\d{1,4}[/.]\d{1,2}[/.]\d{1,4}/.test(value) ||
   /\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec|ene|abr|ago|dic|janv|févr|mars|avr|mai|juin|juil|août|déc)\.?\b/i.test(value) ||
@@ -83,6 +86,8 @@ export function translateCopy(source, language = "en") {
     const candidate = Object.fromEntries(template.names.map((name, i) => [name, match[i + 1]]));
     if (template.names.some(name => localizablePlaceholders.has(name) && !knownRow(candidate[name]) ||
         datePlaceholders.has(name) && !dateValue(candidate[name]) ||
+        name === "money" && !moneyValue(candidate[name]) ||
+        name === "rate" && !/^[0-9]+(?:[.,][0-9]+)?$/.test(candidate[name]) ||
         name === "reference" && !/^[A-Za-z0-9][A-Za-z0-9_:.%/…-]{0,255}$/.test(candidate[name]))) continue;
     row = template.row;
     values = candidate;
