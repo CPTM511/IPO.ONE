@@ -7,6 +7,7 @@ import {mkdir,readFile,writeFile} from 'node:fs/promises';
 import {chromium,expect} from '@playwright/test';
 import {generatePrivateKey,privateKeyToAccount} from 'viem/accounts';
 import {createPrivatePilotRuntime} from '../../private-pilot/src/private-pilot-runtime.js';
+import {translateCopy} from '../src/product-i18n.js';
 
 const origin='http://127.0.0.1:8891';
 test('B3 visible Human lifecycle uses durable services, recovers and is localized', {timeout:180000}, async()=>{
@@ -66,8 +67,9 @@ test('B3 visible Human lifecycle uses durable services, recovers and is localize
       await click('walletSignInBtn');await expect(page.locator('#walletAddressStatus')).not.toHaveText('Not connected');
       await click('accessCloseBtn');
     };
-    const checkOfferLanguages=async()=>{
+    const checkOfferLanguages=async({history=false}={})=>{
       await page.setViewportSize({width:390,height:1000});
+      if(history) await expect(page.locator('#humanApplicationOptions button')).toHaveCount(1);
       for(const language of ['en','zh','es','fr','ru','vi']){
         await page.locator('.workspace-options > summary').click();
         await page.locator('#productLanguage').selectOption(language);
@@ -76,6 +78,10 @@ test('B3 visible Human lifecycle uses durable services, recovers and is localize
           (await import('/product-localization.js')).productLocalizationAudit())).missing).toEqual([]);
         await expect(page.locator('html')).toHaveAttribute('data-product-translation-missing','0');
         await expect(page.locator('#productTranslationWarning')).toBeHidden();
+        if(history){
+          await expect(page.locator('#humanApplicationOptions button').first()).toContainText(translateCopy('Review Offer',language).text);
+          if(language!=='en') await expect(page.locator('#humanApplicationOptions button').first()).not.toContainText('payments');
+        }
       }
       await page.locator('.workspace-options > summary').click();
       await page.locator('#productLanguage').selectOption('en');
@@ -91,7 +97,7 @@ test('B3 visible Human lifecycle uses durable services, recovers and is localize
     await page.reload();await expect(page.locator('#humanCreditCollateral')).toBeChecked();
     await expect(page.locator('#humanOfferCollateralDisclosure')).toContainText('0.08');
     await expect(page.locator('#acceptHumanOfferBtn')).toHaveText('Reconnect wallet to continue');
-    await checkOfferLanguages();
+    await checkOfferLanguages({history:true});
     await reconnect();
     await page.locator('#humanOfferAcknowledge').check();await click('acceptHumanOfferBtn');await confirm();
     await expect(page.locator('#syntheticCollateralPanel')).toBeVisible();

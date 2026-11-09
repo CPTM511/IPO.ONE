@@ -55,7 +55,9 @@ const dateFallbacks = new Set(["—", "Unavailable", "Not available"]);
 // USD display values emitted by formatMinorAmount in the six product locales.
 // Do not treat arbitrary prose following a known state as a monetary value.
 const moneyValue = value => /^(?:(?:US)?\$\s*-?[0-9][0-9.,\s]*|-?[0-9][0-9.,\s]*\s*(?:US\$|\$US|\$))$/u.test(value);
-const dateValue = value => dateFallbacks.has(value) || /\d/.test(value) && (
+// A date cannot contain a monetary amount or percentage. Otherwise generic
+// dated-status templates can hide untranslated Offer labels after a price.
+const dateValue = value => dateFallbacks.has(value) || /\d/.test(value) && !/[$€₽£%]/.test(value) && (
   /^\d{4}-\d{2}-\d{2}/.test(value) || /^\d{1,4}[/.]\d{1,2}[/.]\d{1,4}/.test(value) ||
   /\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec|ene|abr|ago|dic|janv|févr|mars|avr|mai|juin|juil|août|déc)\.?\b/i.test(value) ||
   /(?:年|月|thg|янв|фев|мар|апр|мая|май|июн|июл|авг|сен|окт|ноя|дек)/i.test(value)

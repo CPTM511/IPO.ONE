@@ -148,6 +148,20 @@ test("Offer summary localizes known states while preserving exact localized mone
   assert.equal(translateCopy("Unknown state · US$120.00", "zh").translated, false);
 });
 
+test("Offer history text cannot be partially accepted as a generic dated status", () => {
+  for (const { code } of PRODUCT_LANGUAGES) {
+    const money = formatMinorAmount("12000", "USD", code);
+    const date = formatProductDate(new Date("2026-11-09T01:35:36Z"), code,
+      {month: "short", day: "numeric", hour: "numeric", minute: "2-digit", second: "2-digit"});
+    const source = `Sandbox evaluation · ${money} · 9% APR · 2 payments · ${date} · Review Offer`;
+    const result = translateCopy(source, code);
+    assert.equal(result.translated, true);
+    assert.ok(result.text.endsWith(translateCopy("Review Offer", code).text), `${code}: ${result.text}`);
+    if (code !== "en") assert.ok(!result.text.includes("payments"), code);
+    assert.equal(translateCopy(`Sandbox evaluation · ${money} · Unknown action · ${date}`, code).translated, false);
+  }
+});
+
 test("due dates use explicit UTC across locales without changing the source timestamp", () => {
   const date = new Date("2026-11-07T23:59:00.000Z");
   for (const { code, locale } of PRODUCT_LANGUAGES) {
