@@ -14665,6 +14665,8 @@ document.addEventListener("ipo-product-language-change", () => {
   const inputs = ids.map(id => el(id)).filter(Boolean).map(node => ({ node, value: node.value }));
   // Re-present cached server truth; render performs no network operation.
   render();
+  // Reformat recovered Offer dates and amounts from the same cached records.
+  renderHumanApplicationInbox();
   for (const { node, value } of inputs) node.value = value;
   obligationHistoryBrowser.refreshPresentation();
   productLocalization.refresh();

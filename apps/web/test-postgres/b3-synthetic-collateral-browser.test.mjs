@@ -7,7 +7,7 @@ import {mkdir,readFile,writeFile} from 'node:fs/promises';
 import {chromium,expect} from '@playwright/test';
 import {generatePrivateKey,privateKeyToAccount} from 'viem/accounts';
 import {createPrivatePilotRuntime} from '../../private-pilot/src/private-pilot-runtime.js';
-import {translateCopy} from '../src/product-i18n.js';
+import {PRODUCT_LANGUAGES,normalizeCopy,translateCopy} from '../src/product-i18n.js';
 
 const origin='http://127.0.0.1:8891';
 test('B3 visible Human lifecycle uses durable services, recovers and is localized', {timeout:180000}, async()=>{
@@ -67,9 +67,14 @@ test('B3 visible Human lifecycle uses durable services, recovers and is localize
       await click('walletSignInBtn');await expect(page.locator('#walletAddressStatus')).not.toHaveText('Not connected');
       await click('accessCloseBtn');
     };
+    let recoveredHistoryOffer;
     const checkOfferLanguages=async({history=false}={})=>{
       await page.setViewportSize({width:390,height:1000});
-      if(history) await expect(page.locator('#humanApplicationOptions button')).toHaveCount(1);
+      if(history){
+        await expect(page.locator('#humanApplicationOptions button')).toHaveCount(1);
+        await page.locator('#humanCreditAmount').fill('123');
+      }
+      const requestCount=requests.length;
       for(const language of ['en','zh','es','fr','ru','vi']){
         await page.locator('.workspace-options > summary').click();
         await page.locator('#productLanguage').selectOption(language);
@@ -79,11 +84,20 @@ test('B3 visible Human lifecycle uses durable services, recovers and is localize
         await expect(page.locator('html')).toHaveAttribute('data-product-translation-missing','0');
         await expect(page.locator('#productTranslationWarning')).toBeHidden();
         if(history){
-          await expect(page.locator('#humanApplicationOptions button').first()).toContainText(translateCopy('Review Offer',language).text);
+          const locale=PRODUCT_LANGUAGES.find(item=>item.code===language).locale;
+          const money=new Intl.NumberFormat(locale,{style:'currency',currency:'USD'}).format(120);
+          const date=new Intl.DateTimeFormat(locale,{timeZone:'UTC',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',second:'2-digit'}).format(new Date(recoveredHistoryOffer.createdAt));
+          const expected=translateCopy(`Sandbox evaluation · ${money} · 9% APR · 2 payments · ${date} · Review Offer`,language).text;
+          await expect.poll(async()=>normalizeCopy(await page.locator('#humanApplicationOptions button').innerText())).toBe(normalizeCopy(expected));
+          await expect(page.locator('#humanApplicationOptions button')).toHaveAttribute('aria-pressed','true');
+          await expect(page.locator('#humanOfferTermsHash')).toHaveAttribute('title',recoveredHistoryOffer.termsHash);
+          await expect(page.locator('#humanCreditAmount')).toHaveValue('123');
           if(language!=='en') await expect(page.locator('#humanApplicationOptions button').first()).not.toContainText('payments');
         }
       }
+      assert.equal(requests.length,requestCount,'Changing language must not send protocol operations');
       await page.locator('.workspace-options > summary').click();
+      if(history) await page.locator('#humanCreditAmount').fill('120');
       await page.locator('#productLanguage').selectOption('en');
       await page.locator('.workspace-options > summary').click();
       await page.setViewportSize({width:1440,height:1000});
@@ -94,7 +108,14 @@ test('B3 visible Human lifecycle uses durable services, recovers and is localize
     await expect(page.locator('#humanCreditCollateral')).toBeEnabled();await page.locator('#humanCreditCollateral').check();
     await click('submitHumanCreditBtn');await expect(page.locator('#humanOfferAcknowledge')).toBeEnabled();
     await expect(page.locator('#humanOfferCollateralDisclosure')).toContainText('0.08');
-    await page.reload();await expect(page.locator('#humanCreditCollateral')).toBeChecked();
+    const resumeResponse=page.waitForResponse(response=>response.url().endsWith('/tenant/v1/operations')&&response.request().postDataJSON()?.operationId==='pilotReadWorkspaceResume');
+    await page.reload();
+    const resume=(await (await resumeResponse).json()).response;
+    recoveredHistoryOffer=resume.humanOfferReviews[0].offer;
+    assert.equal(recoveredHistoryOffer.approvedPrincipalMinor,'12000');
+    assert.equal(recoveredHistoryOffer.annualRateBps,900);
+    assert.equal(recoveredHistoryOffer.installmentCount,2);
+    await expect(page.locator('#humanCreditCollateral')).toBeChecked();
     await expect(page.locator('#humanOfferCollateralDisclosure')).toContainText('0.08');
     await expect(page.locator('#acceptHumanOfferBtn')).toHaveText('Reconnect wallet to continue');
     await checkOfferLanguages({history:true});
