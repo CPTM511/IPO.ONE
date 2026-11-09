@@ -109,6 +109,8 @@ B2 的直接回退基线为已验收 B1 bcce697 / dpl_3HJLd2Xi8EPA5eadzLqCtfaBxF
 
 **B4当前结果：PASS — LOCAL VERIFIED。** Founder已批准A额外单列费用及B4-F1本地源信用扩展；整数计算、借还/费用、受保护源信用及冲回、冻结UTC月结、Agent占用/信用归因、六语可见流程和数据库恢复已按L0目标通过。[B4契约与授权](../codex/tasks/B4_SYNTHETIC_FEE_POLICY_ALIGNMENT.md)及[逐项结果](../../output/b4-fee-policy-20261109/RESULT.md)。本地体验http://127.0.0.1:8907/#request-credit；F1执行在独立测试profile验证，Founder入口待真实独立审阅钱包绑定而保持关闭。尚无B4生产发布/验收或真实收费权限；若推进上线，先审阅精确发布与兼容回退方案。
 
+**B4托管准备（2026-11-09）：准备核实完成，功能发布 NO-GO。** 本轮确认ipo.one仍为56f2718；0f95f14本地费用政策绑定L0，托管运行时/机构授权/F1 HTTPS与MFA及追加schema尚未适配。精确0f95托管包239项通过但仍仅79迁移，不能启用B4。先按[B4任务第12节](../codex/tasks/B4_SYNTHETIC_FEE_POLICY_ALIGNMENT.md#12-托管准备与-b4-h-待审范围2026-11-09)审阅默认停用的本地托管适配，之后才有可审的真实新SHA/CI及迁移后兼容回退目标；本轮未修改生产或应用代码。详见[发布/回退清单](../../output/b4-hosted-preparation-20261109/RELEASE_CHECKLIST.md)。
+
 并行准备三个明确决策包，不要求它们先阻断普通国际化工作：
 
 - **移动钱包：** 三钱包和续批已明确；QR 按 Founder 当前指令暂缓，公开激活撤回。直接钱包剩余组合保留版本、网络、身份隔离与恢复验收，伙伴回跳契约仍待补齐。
