@@ -138,6 +138,21 @@ test('B4 visible Human lifecycle uses durable services, recovers and is localize
     await expect(page.locator('#acceptHumanOfferBtn')).toHaveText('Reconnect wallet to continue');
     await checkOfferLanguages({history:true});
     await reconnect();
+    // Dialog text is independently checked, not inferred from translated Offer
+    // labels. Cancelling each preview must not accept the exact Offer.
+    for(const language of ['en','zh','es','fr','ru','vi']){
+      await page.locator('.workspace-options > summary').click();await page.locator('#productLanguage').selectOption(language);await page.locator('.workspace-options > summary').click();
+      await page.locator('#humanOfferAcknowledge').check();await click('acceptHumanOfferBtn');
+      await expect(page.locator('#economicActionLayer')).toBeVisible();
+      const {formatMinorAmount}=await import('../src/product-i18n.js');
+      const source=`Net proceeds ${formatMinorAmount('12000','USD',language)}; platform service fee ${formatMinorAmount('12','USD',language)}; repay principal plus the fee and accrued interest. Synthetic only.`;
+      await expect(page.locator('#economicActionEffect')).toHaveText(translateCopy(source,language).text);
+      const dialogAudit=await page.evaluate(async()=>(await import('/product-localization.js')).productLocalizationAudit());if(dialogAudit.missing.length)console.log('B4 dialog missing copy',dialogAudit.missing);
+      await expect(page.locator('html')).toHaveAttribute('data-product-translation-missing','0');
+      await click('economicActionCancelBtn');await expect(page.locator('#economicActionLayer')).toBeHidden();await expect(page.locator('#acceptHumanOfferBtn')).toBeEnabled();
+    }
+    assert.equal(requests.includes('pilotAcceptCreditOffer'),false);
+    await page.locator('.workspace-options > summary').click();await page.locator('#productLanguage').selectOption('en');await page.locator('.workspace-options > summary').click();
     await page.locator('#humanOfferAcknowledge').check();await click('acceptHumanOfferBtn');await confirm();
     await expect(page.locator('#syntheticCollateralPanel')).toBeVisible();
     await checkOfferLanguages();
@@ -216,14 +231,20 @@ test('B4 visible Human lifecycle uses durable services, recovers and is localize
     await cp.reload();await cp.locator('#syntheticFeeMonth').fill('2026-10');await cp.locator('#loadSyntheticFeeStatementBtn').click();
     await expect(cp.locator('#syntheticFeeStatementReference')).toHaveText(statementId);
     await expect(cp.locator('#syntheticFeeSettled')).toHaveText('$0.00');
-    for(const language of ['en','zh','es','fr','ru','vi'])for(const theme of ['light','dark']){
-      await cp.setViewportSize({width:390,height:1000});
+    for(const language of ['en','zh','es','fr','ru','vi'])for(const theme of ['light','dark'])for(const width of [1440,390]){
+      await cp.setViewportSize({width,height:1000});
       await cp.locator('.workspace-options > summary').click();await cp.locator('#productLanguage').selectOption(language);await cp.locator('.workspace-options > summary').click();
       await cp.locator('#web009AppContext .b-theme select').selectOption(theme);
       const audit=await cp.evaluate(async()=>(await import('/product-localization.js')).productLocalizationAudit());if(audit.missing.length)console.log('B4 institution missing copy',audit.missing);
       await expect(cp.locator('html')).toHaveAttribute('data-product-translation-missing','0');
+      await expect(cp.locator('#syntheticFeeSettlementTitle')).toHaveText(translateCopy('Institution service fee',language).text);
+      await expect(cp.locator('#loadSyntheticFeeStatementBtn')).toHaveText(translateCopy('View monthly statement',language).text);
+      await expect(cp.locator('#closeSyntheticFeeStatementBtn')).toHaveText(translateCopy('Freeze completed monthly statement',language).text);
+      // Pending fees admitted now belong to the current UTC month, not this
+      // October statement. Its previously verified 98 cents must stay fixed.
+      const {formatMinorAmount}=await import('../src/product-i18n.js');await expect(cp.locator('#syntheticFeeAdditions')).toHaveText(formatMinorAmount('98','USD',language));
       assert.ok(await cp.locator('#syntheticFeeSettlementPanel').evaluate(e=>e.scrollWidth-e.clientWidth)<=1);
-      await cp.locator('#syntheticFeeSettlementPanel').screenshot({path:`output/playwright/b4-institution-${language}-${theme}.png`});
+      await cp.locator('#syntheticFeeSettlementPanel').screenshot({path:`output/playwright/b4-institution-${language}-${theme}-${width}.png`});
     }
     await cp.locator("#topbarSignOutBtn").click();await expect(cp.locator("#syntheticFeeSettlementPanel")).toBeHidden();
     await cp.close();

@@ -1,14 +1,13 @@
-import { formatMinorAmount, translateCopy } from "./product-i18n.js";
+import { formatMinorAmount } from "./product-i18n.js";
 
 const language = () => document.getElementById("productLanguage")?.value || "en";
 const money = value => formatMinorAmount(String(value), "USD", language());
-const copy = value => translateCopy(value, language()).text;
 const el = id => document.getElementById(id);
 
 export function syntheticFeeEffect(value) {
   const terms = value?.feeTerms ?? value?.syntheticFees?.terms;
   if (!terms) return "";
-  return copy(`Net proceeds ${money(terms.netProceedsMinor)}; platform service fee ${money(terms.borrowerFeeAtFullFundingMinor)}; repay principal plus the fee and accrued interest. Synthetic only.`);
+  return `Net proceeds ${money(terms.netProceedsMinor)}; platform service fee ${money(terms.borrowerFeeAtFullFundingMinor)}; repay principal plus the fee and accrued interest. Synthetic only.`;
 }
 
 export function syntheticSourceCreditClosureLabel(obligation) {
@@ -90,7 +89,7 @@ export function initializeSyntheticFeeControls({ query, currentObligation }) {
     statement=value;
     for (const [id, field] of Object.entries({ syntheticFeeOpening:"openingMinor",syntheticFeeAdditions:"additionsMinor",syntheticFeeReversals:"reversalsMinor",syntheticFeeSettled:"settledMinor",syntheticFeeClosing:"closingMinor" })) el(id).textContent=money(value[field]);
     el("syntheticFeeStatementReference").textContent=value.statementId;
-    el("syntheticFeeSettlementStatus").textContent=copy(value.closed?"Statement frozen; payment remains separate.":"Statement preview; no payment recorded.");
+    el("syntheticFeeSettlementStatus").textContent=value.closed?"Statement frozen; payment remains separate.":"Statement preview; no payment recorded.";
     el("closeSyntheticFeeStatementBtn").disabled=value.closed || new Date(value.periodEnd)>new Date();
   };
   const load=async()=>{
@@ -103,8 +102,8 @@ export function initializeSyntheticFeeControls({ query, currentObligation }) {
       el("syntheticFeePendingAmount").textContent=money(pendingPreview.pendingAssessmentMinor);
       el("reconcileSyntheticFeesBtn").disabled=!pendingPreview.enabled || pendingPreview.pendingAssessmentMinor==="0";
       show(result.response.statement);el("syntheticFeeStatementValues").hidden=false;
-      if(pendingPreview.pendingBaseMinor!=="0") {el("closeSyntheticFeeStatementBtn").disabled=true;el("syntheticFeeSettlementStatus").textContent=copy("Pending interest receipts must be assessed before this period can be frozen.");}
-    } catch { if(current===generation)el("syntheticFeeSettlementStatus").textContent=copy("Local synthetic institution settlement is unavailable for this account."); }
+      if(pendingPreview.pendingBaseMinor!=="0") {el("closeSyntheticFeeStatementBtn").disabled=true;el("syntheticFeeSettlementStatus").textContent="Pending interest receipts must be assessed before this period can be frozen.";}
+    } catch { if(current===generation)el("syntheticFeeSettlementStatus").textContent="Local synthetic institution settlement is unavailable for this account."; }
   };
   el("loadSyntheticFeeStatementBtn").addEventListener("click",load);
   el("reconcileSyntheticFeesBtn").addEventListener("click",()=>{
@@ -120,7 +119,7 @@ export function initializeSyntheticFeeControls({ query, currentObligation }) {
       const expectedStateHash=pendingPreview.pendingAssessmentStateHash;
       await query("pilotReconcileSyntheticFees",{payload:{expectedStateHash},idempotencyKey:`b4-assess-${expectedStateHash}`,requestId:`request_${crypto.randomUUID()}`,correlationId:`correlation_${crypto.randomUUID()}`});
       el("syntheticFeeReconcileDialog").close();await load();
-    } catch {el("syntheticFeeSettlementStatus").textContent=copy("Fee assessment could not be confirmed. Reload the current preview before retrying.");el("syntheticFeeReconcileDialog").close();}
+    } catch {el("syntheticFeeSettlementStatus").textContent="Fee assessment could not be confirmed. Reload the current preview before retrying.";el("syntheticFeeReconcileDialog").close();}
     finally {button.disabled=false;}
   });
   month.addEventListener("change",()=>{generation++;statement=undefined;el("syntheticFeeStatementValues").hidden=true;el("closeSyntheticFeeStatementBtn").disabled=true;});
@@ -137,7 +136,7 @@ export function initializeSyntheticFeeControls({ query, currentObligation }) {
         idempotencyKey:`b4-fee-statement-${selected}`,requestId:`request_${crypto.randomUUID()}`,correlationId:`correlation_${crypto.randomUUID()}`});
       if(month.value===selected)show(result.response.statement);
       el("syntheticFeeCloseDialog").close();
-    } catch { el("syntheticFeeSettlementStatus").textContent=copy("Statement could not be frozen. No payment was made; reload and retry.");el("syntheticFeeCloseDialog").close(); }
+    } catch { el("syntheticFeeSettlementStatus").textContent="Statement could not be frozen. No payment was made; reload and retry.";el("syntheticFeeCloseDialog").close(); }
     finally {button.disabled=false;}
   });
   el("syntheticFeeCloseCancelBtn").addEventListener("click",()=>el("syntheticFeeCloseDialog").close());

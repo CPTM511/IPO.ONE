@@ -2031,9 +2031,14 @@ function requestEconomicActionConfirmation({
     ? "Your connected wallet will sign the exact five-minute sandbox instruction. Rejecting the wallet request submits nothing."
     : "Your authenticated account requires an explicit second click for this exact five-minute sandbox instruction.";
   el("economicActionType").textContent = ({ confirm_synthetic_collateral: "Confirm synthetic collateral", release_synthetic_collateral: "Release synthetic collateral after repayment" })[actionType] ?? titleize(actionType);
-  el("economicActionMethod").textContent = walletConfirmation
-    ? `Wallet signature · ${shortWalletAddress(accessState.walletAddress)}`
-    : "Authenticated account confirmation";
+  const methodLabel = document.createElement("span");
+  methodLabel.textContent = walletConfirmation ? "Wallet signature" : "Authenticated account confirmation";
+  el("economicActionMethod").replaceChildren(methodLabel);
+  if (walletConfirmation) {
+    const address = document.createElement("code");
+    address.textContent = shortWalletAddress(accessState.walletAddress);
+    el("economicActionMethod").append(document.createTextNode(" · "), address);
+  }
   el("economicActionResource").textContent = resourceId;
   el("economicActionResource").title = resourceId;
   el("economicActionEffect").textContent = effect;

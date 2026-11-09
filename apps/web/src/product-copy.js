@@ -2,6 +2,7 @@
 // identifiers, protocol enums, receipts and economic values are never translated.
 // Columns: en, zh, es, fr, ru, vi. Placeholders must match in every language.
 export const PRODUCT_COPY = [
+  ["Wallet signature", "钱包签名", "Firma de cartera", "Signature du portefeuille", "Подпись кошелька", "Chữ ký ví"],
   ["Cleared by source credit","已通过来源信用调整结清","Saldado mediante abono de origen","Soldé par crédit source","Закрыто корректировкой источника","Đã tất toán bằng điều chỉnh nguồn"],
   ["Synthetic source credit", "合成来源信用调整", "Abono de fuente sintética", "Crédit sur source synthétique", "Коррекция синтетического источника", "Điều chỉnh tín dụng nguồn tổng hợp"],
   ["Synthetic credit only. No payment or cash refund is recorded. Prior interest is not repriced.", "仅记合成信用调整，不记录付款或现金退款，不追溯重新计息。", "Solo abono sintético. No registra pagos ni reembolsos en efectivo. No recalcula intereses previos.", "Crédit synthétique uniquement. Aucun paiement ni remboursement en espèces enregistré. Les intérêts antérieurs ne sont pas recalculés.", "Только синтетическая корректировка. Платёж или денежный возврат не регистрируется. Прошлые проценты не пересчитываются.", "Chỉ điều chỉnh tín dụng tổng hợp. Không ghi nhận thanh toán hay hoàn tiền mặt. Không tính lại lãi trước đó."],
