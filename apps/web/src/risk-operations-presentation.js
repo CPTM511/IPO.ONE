@@ -47,7 +47,7 @@ function closedRecord(value, required) {
 
 function uniqueIdentifiers(values) {
   return Array.isArray(values) &&
-    values.length <= 128 &&
+    values.length <= 132 &&
     new Set(values).size === values.length &&
     values.every((value) => typeof value === "string" && IDENTIFIER.test(value));
 }

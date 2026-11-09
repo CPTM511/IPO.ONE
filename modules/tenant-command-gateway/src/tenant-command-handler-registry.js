@@ -1,5 +1,9 @@
+import { TENANT_OPERATION_POLICIES } from "../../authorization/src/index.js";
 import { DomainError } from "../../../packages/domain/src/index.js";
 
+// Capacity follows the explicit versioned operation policy set; authorization
+// and the closed protocol catalog continue to reject unknown operations.
+const MAX_HANDLERS = Math.max(128, TENANT_OPERATION_POLICIES.length);
 const HANDLER_KINDS = new Set(["command", "query"]);
 
 function assertIdentifier(name, value) {
@@ -18,7 +22,7 @@ export class TenantCommandHandlerRegistry {
   #handlers;
 
   constructor(handlers) {
-    if (!Array.isArray(handlers) || handlers.length === 0 || handlers.length > 128) {
+    if (!Array.isArray(handlers) || handlers.length === 0 || handlers.length > MAX_HANDLERS) {
       throw new DomainError(
         "invalid_tenant_command_handler",
         "tenant command handlers must be a non-empty bounded list"

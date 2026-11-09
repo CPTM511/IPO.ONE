@@ -915,6 +915,18 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     idempotencyRequirement: IdempotencyRequirement.REQUIRED,
     liveChecks: ["credit_offer_state"]
   }),
+  tenantOperation({ operationId: "pilotReadSyntheticFees", action: "credit.fees.synthetic.read.owned", resourceType: "obligation",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT], requiredCapability: PilotCapability.OBLIGATION_READ_OWNED,
+    ownershipRule: OwnershipRule.ACTOR, idempotencyRequirement: IdempotencyRequirement.PROHIBITED }),
+  tenantOperation({ operationId: "pilotReadSyntheticFeeSettlement", action: "credit.fees.synthetic.settlement.read", resourceType: "workspace",
+    allowedActorTypes: [ActorType.HUMAN], requiredCapability: PilotCapability.CAPITAL_PARTNER_PORTFOLIO_READ_OWN,
+    ownershipRule: OwnershipRule.NONE, idempotencyRequirement: IdempotencyRequirement.PROHIBITED }),
+  tenantOperation({ operationId: "pilotCloseSyntheticFeeStatement", action: "credit.fees.synthetic.statement.close", resourceType: "workspace",
+    allowedActorTypes: [ActorType.HUMAN], requiredCapability: PilotCapability.CAPITAL_PARTNER_OFFER_CREATE_OWN,
+    ownershipRule: OwnershipRule.NONE, idempotencyRequirement: IdempotencyRequirement.REQUIRED }),
+  tenantOperation({ operationId: "pilotReconcileSyntheticFees", action: "credit.fees.synthetic.reconcile", resourceType: "workspace",
+    allowedActorTypes: [ActorType.HUMAN], requiredCapability: PilotCapability.CAPITAL_PARTNER_OFFER_CREATE_OWN,
+    ownershipRule: OwnershipRule.NONE, idempotencyRequirement: IdempotencyRequirement.REQUIRED }),
   tenantOperation({
     operationId: "pilotReadSyntheticCollateralProfile", action: "credit.collateral.synthetic.read.self", resourceType: "subject",
     allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
@@ -993,6 +1005,27 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     idempotencyRequirement: IdempotencyRequirement.REQUIRED,
     approvalRequirement: ApprovalRequirement.DUAL_CONTROL,
     liveChecks: ["servicing_resolution_state"],
+    requiresRecentMfaActorTypes: [ActorType.OPERATIONS_OPERATOR]
+  }),
+  tenantOperation({
+    operationId: "pilotReadSyntheticFeeCorrectionCases", action: "synthetic_fee.source.read", resourceType: "workspace",
+    allowedActorTypes: [ActorType.OPERATIONS_OPERATOR,ActorType.RISK_OPERATOR,ActorType.AUDITOR], requiredCapability: PilotCapability.APPROVAL_READ,
+    ownershipRule: OwnershipRule.NONE, idempotencyRequirement: IdempotencyRequirement.PROHIBITED,
+    requiresRecentMfaActorTypes: [ActorType.OPERATIONS_OPERATOR,ActorType.RISK_OPERATOR,ActorType.AUDITOR]
+  }),
+  tenantOperation({
+    operationId: "pilotReviewSyntheticFeeCorrection", action: "synthetic_fee.source.read", resourceType: "obligation",
+    allowedActorTypes: [ActorType.OPERATIONS_OPERATOR,ActorType.RISK_OPERATOR,ActorType.AUDITOR], requiredCapability: PilotCapability.APPROVAL_READ,
+    ownershipRule: OwnershipRule.TENANT, idempotencyRequirement: IdempotencyRequirement.PROHIBITED,
+    requiresRecentMfaActorTypes: [ActorType.OPERATIONS_OPERATOR,ActorType.RISK_OPERATOR,ActorType.AUDITOR]
+  }),
+  tenantOperation({
+    operationId: "pilotCorrectSyntheticFeeSource", action: "synthetic_fee.source.correct", resourceType: "obligation",
+    allowedActorTypes: [ActorType.OPERATIONS_OPERATOR], requiredCapability: PilotCapability.SERVICING_WRITEOFF_SANDBOX,
+    ownershipRule: OwnershipRule.TENANT, idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    reasonCodes:["synthetic_fee_source_correction"], approvalRequirement:ApprovalRequirement.DUAL_CONTROL,
+    // The executor is Operations only. Both independent reviewers still require
+    // recent MFA on pilotDecideApproval and are revalidated before execution.
     requiresRecentMfaActorTypes: [ActorType.OPERATIONS_OPERATOR]
   }),
   tenantOperation({

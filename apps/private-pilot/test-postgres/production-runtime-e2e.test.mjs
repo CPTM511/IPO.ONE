@@ -263,7 +263,7 @@ for (const walletChainId of [84532, 97, 56]) test(
         }
       };
       if (walletChainId === 84532) {
-        await migrateDown({pool:ownerPool,steps:1});
+        await migrateDown({pool:ownerPool,steps:6});
         await assert.rejects(assertProductionMigrationSet(ownerPool,{syntheticCollateralEnabled:true}),{code:"production_database_migration_mismatch"});
       }
       runtime = await createProductionClosedPilotRuntime(runtimeInput);
@@ -702,7 +702,7 @@ for (const walletChainId of [84532, 97, 56]) test(
       }
 
       if (walletChainId === 84532) {
-        assert.deepEqual(await migrateUp({pool:ownerPool}),["0089_synthetic_collateral_terms"]);
+        assert.deepEqual(await migrateUp({pool:ownerPool}),["0089_synthetic_collateral_terms","0090_local_synthetic_platform_fees","0091_local_synthetic_fee_source_credits","0092_local_b4_source_review_origins","0093_local_synthetic_principal_credit_balances","0094_local_synthetic_source_credit_schedule"]);
         assert.equal(await assertProductionMigrationSet(ownerPool,{syntheticCollateralEnabled:true}),"current");
         assert.equal((await fetch(`${baseUrl}/readyz`)).status,200);
       }

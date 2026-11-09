@@ -120,7 +120,7 @@ function exactBrowserOrigin(value, { allowLoopback = false, allowRiskLocalhost =
   const approvedLoopback =
     allowLoopback &&
     parsed.protocol === "http:" &&
-    (parsed.hostname === "127.0.0.1" || (allowRiskLocalhost && parsed.hostname === "localhost" && ["8937", "8947", "8957", "8939", "8940", "8941", "8942"].includes(parsed.port))) &&
+    (parsed.hostname === "127.0.0.1" || (allowRiskLocalhost && parsed.hostname === "localhost" && ["8937", "8947", "8957", "8939", "8940", "8941", "8942", "8967", "8968", "8969", "8970", "8981", "8982", "8983", "8984"].includes(parsed.port))) &&
     parsed.port !== "";
   if (
     (parsed.protocol !== "https:" && !approvedLoopback) ||
@@ -389,19 +389,28 @@ export async function createPostgresHumanAccessComposition(input) {
 
   if (input.localSpecialRoles !== undefined && input.localSpecialRoles !== true) throw authenticationError("authentication_deployment_gate_closed", "Special role configuration is invalid");
   const specialBindings = {
+    "http://localhost:8967":["operations_operator","client_web027m_actor_web027m_operations"],
+    "http://localhost:8968":["auditor","client_web027m_actor_web027m_auditor"],
+    "http://localhost:8969":["risk_operator","client_web027m_actor_web027m_risk_reviewer"],
+    "http://localhost:8970":["operations_operator","client_web027n_actor_web027n_operations_reviewer"],
+    "http://localhost:8981":["operations_operator","client_web027m_actor_web027m_operations"],
+    "http://localhost:8982":["auditor","client_web027m_actor_web027m_auditor"],
+    "http://localhost:8983":["risk_operator","client_web027m_actor_web027m_risk_reviewer"],
+    "http://localhost:8984":["operations_operator","client_web027n_actor_web027n_operations_reviewer"],
     "http://localhost:8939": ["operations_operator", "client_web027m_actor_web027m_operations"],
     "http://localhost:8940": ["auditor", "client_web027m_actor_web027m_auditor"],
     "http://localhost:8941": ["risk_operator", "client_web027m_actor_web027m_risk_reviewer"],
     "http://localhost:8942": ["operations_operator", "client_web027n_actor_web027n_operations_reviewer"]
   };
   if (input.localIndependentOperationsReviewer !== undefined &&
-      (input.localIndependentOperationsReviewer !== true || browserOrigin !== "http://localhost:8942" || input.localSpecialRoles !== true)) throw authenticationError("authentication_deployment_gate_closed", "Independent reviewer requires its exact local configuration");
-  if (browserOrigin === "http://localhost:8942" && input.localIndependentOperationsReviewer !== true) throw authenticationError("authentication_deployment_gate_closed", "Independent reviewer is not enabled");
+      (input.localIndependentOperationsReviewer !== true || !["http://localhost:8942","http://localhost:8970","http://localhost:8984"].includes(browserOrigin) || input.localSpecialRoles !== true)) throw authenticationError("authentication_deployment_gate_closed", "Independent reviewer requires its exact local configuration");
+  if (["http://localhost:8942","http://localhost:8970","http://localhost:8984"].includes(browserOrigin) && input.localIndependentOperationsReviewer !== true) throw authenticationError("authentication_deployment_gate_closed", "Independent reviewer is not enabled");
   if (specialBindings[browserOrigin] && input.localSpecialRoles !== true) throw authenticationError("authentication_deployment_gate_closed", "Special origin requires the exact local gate");
   if (input.localSpecialRoles) {
     const binding = specialBindings[browserOrigin];
     const database = (await input.pool.query("SELECT current_database() AS name")).rows[0]?.name;
-    if (!localProfile || !input.localPasskeys || database !== "ipo_one_web027_candidate" || !binding ||
+    const feeScope=(database==="ipo_one_b4_fee_review" && /^http:\/\/localhost:(8967|8968|8969|8970)$/.test(browserOrigin)) || (database==="b4_fee_browser_test_20261109" && /^http:\/\/localhost:(8981|8982|8983|8984)$/.test(browserOrigin));
+    if (!localProfile || !input.localPasskeys || (!feeScope && database !== "ipo_one_web027_candidate") || !binding ||
         input.localInvitedWalletRole !== binding[0] || input.wallet?.clientId !== binding[1] || runtimeConfig.localWalletSelfService === true) {
       throw authenticationError("authentication_deployment_gate_closed", "Special roles require the exact isolated identity, origin and database");
     }
@@ -413,7 +422,10 @@ export async function createPostgresHumanAccessComposition(input) {
   if (input.localPasskeys) {
     const database = (await input.pool.query("SELECT current_database() AS name")).rows[0]?.name;
     const bnbLocal = database === "ipo_one_bnb_review" && ["http://127.0.0.1:8955", "http://127.0.0.1:8956", "http://localhost:8957", "http://127.0.0.1:8958"].includes(browserOrigin);
-    if (!localProfile || (!bnbLocal && !["ipo_one_web027_candidate", "ipo_one_web027_proof"].includes(database))) throw authenticationError("authentication_deployment_gate_closed", "Passkeys require the reviewed isolated database");
+    const feeLocal=(input.localSpecialRoles===true && ((database==="ipo_one_b4_fee_review" && /^http:\/\/localhost:(8967|8968|8969|8970)$/.test(browserOrigin)) || (database==="b4_fee_browser_test_20261109" && /^http:\/\/localhost:(8981|8982|8983|8984)$/.test(browserOrigin)))) ||
+      (database==="ipo_one_b4_fee_review" && /^http:\/\/127\.0\.0\.1:(8907|8908|8909|8910)$/.test(browserOrigin)) ||
+      (database==="b4_fee_browser_test_20261109" && /^http:\/\/127\.0\.0\.1:(8921|8922|8923|8924)$/.test(browserOrigin));
+    if (!localProfile || (!feeLocal && !bnbLocal && !["ipo_one_web027_candidate", "ipo_one_web027_proof"].includes(database))) throw authenticationError("authentication_deployment_gate_closed", "Passkeys require the reviewed isolated database");
   }
   const roleBoundary = await assertPostgresAuthenticationRole(input.pool, { localPasskeys: input.localPasskeys === true });
   const tenantContext = createTenantSecurityContext({

@@ -1,4 +1,6 @@
+import {createSyntheticFeeCorrectionWorkspace,sourceCorrectionImpact} from "./synthetic-fee-source-presentation.js";
 const actions = {
+  pilotCorrectSyntheticFeeSource:{name:"Synthetic source credit",reason:"synthetic_fee_source_correction"},
   pilotRestructureSandboxObligation: { name:"Restructuring", reason:"sandbox_hardship_restructure" },
   pilotRepurchaseSandboxObligation: { name:"Repurchase", reason:"sandbox_contractual_repurchase" },
   pilotWriteOffSandboxObligation: { name:"Write-off", reason:"sandbox_uncollectible_writeoff" }
@@ -7,7 +9,7 @@ const el = id => document.getElementById(id);
 const money = value => `$${(Number(value ?? 0)/100).toFixed(2)}`;
 const date = value => new Date(value).toLocaleString();
 const roleOperations = Object.freeze({
-  operations: new Set(["pilotProposeApproval","pilotReadApproval","pilotCancelApproval","pilotReadApprovalInbox","pilotReadServicingQueueReference","pilotReadServicingQueue",...Object.keys(actions)]),
+  operations: new Set(["pilotProposeApproval","pilotReadApproval","pilotCancelApproval","pilotReadApprovalInbox","pilotReadServicingQueueReference","pilotReadServicingQueue","pilotReadSyntheticFeeCorrectionCases","pilotReviewSyntheticFeeCorrection",...Object.keys(actions)]),
   operationsReviewer: new Set(["pilotReadApproval","pilotDecideApproval","pilotReadApprovalInbox","pilotReadServicingQueueReference","pilotReadServicingQueue"]),
   riskReviewer: new Set(["pilotReadApproval","pilotDecideApproval","pilotReadApprovalInbox","pilotReadServicingQueueReference","pilotReadServicingQueue"]),
   auditor: new Set(["pilotReadApproval","pilotReadApprovalInbox","pilotReadTenantRisk","pilotReadTenantRiskPortfolioReference","pilotReadCaseQueue"]),
@@ -22,17 +24,20 @@ export function localReviewOperationAvailable(workspace, operationId, available)
 export function createLocalReviewWorkspace({ api, getState, selectAgent }) {
   let epoch = 0, busy = false, capabilities = new Set(), cases = [], agents = [], selected = null, draft = null;
   const panel = el("localReviewPanel"), directory = el("localAgentDirectory");
+  const sourceProfile=/^http:\/\/localhost:(8967|8968|8969|8970|8981|8982|8983|8984)$/.test(globalThis.location?.origin??"");
   const has = op => localReviewOperationAvailable(getState().workspace, op, capabilities);
   function message(text) { el("localReviewMessage").textContent = text; if (getState().workspace === "risk") el("localAgentDirectoryStatus").textContent = text; }
   function clearSelection() { selected = null; el("localApprovalDetail").hidden = true; el("localApprovalAcknowledge").checked = false; }
   function render() {
     const state = getState();
     panel.hidden = !state.signedIn || !["operations","riskReviewer","operationsReviewer","auditor"].includes(state.workspace);
+    sourceCredits?.render();
     directory.hidden = !state.signedIn || state.workspace !== "risk";
     el("loadLocalAgentsBtn").disabled = busy || !has("pilotReadRiskAgentDirectory");
     el("refreshLocalApprovalsBtn").disabled = busy || !has("pilotReadApprovalInbox");
     el("loadLocalServicingBtn").disabled = busy || !has("pilotReadServicingQueue");
-    el("localServicingForm").hidden = !has("pilotProposeApproval");
+    el("localServicingForm").hidden = sourceProfile || !has("pilotProposeApproval");
+    el("loadLocalServicingBtn").hidden=sourceProfile;
     el("localServicingPosition").disabled = busy || !cases.length;
     const action = el("localServicingAction").value;
     el("localServicingTermField").hidden = action !== "pilotRestructureSandboxObligation";
@@ -61,7 +66,7 @@ export function createLocalReviewWorkspace({ api, getState, selectAgent }) {
     el("localApprovalDetail").hidden = false;
     el("localApprovalTitle").textContent = `${actions[p.operationId].name} · ${p.status}`;
     el("localApprovalTerms").textContent = `Principal ${money(plan.outstandingPrincipalMinor)} · Interest ${money(plan.outstandingInterestMinor)} · Fees ${money(plan.outstandingFeesMinor)} · Schedule ${plan.scheduleSequence} · Expires ${date(p.expiresAt)}`;
-    el("localApprovalImpact").textContent = p.operationId === "pilotRestructureSandboxObligation"
+    el("localApprovalImpact").textContent = value.sourceCorrectionReview ? sourceCorrectionImpact(value.sourceCorrectionReview) : p.operationId === "pilotRestructureSandboxObligation"
       ? `Extend by ${value.command.payload.additionalTermDays} days. The original schedule remains in the record.`
       : p.operationId === "pilotRepurchaseSandboxObligation" ? `Transfer servicing to ${value.command.payload.servicingOwnerCode === "sandbox_originator" ? "the originator" : "the platform"}. This does not record a payment.`
         : "Write off the outstanding balance. This is not a repayment and remains visible in the credit history.";
@@ -157,6 +162,7 @@ export function createLocalReviewWorkspace({ api, getState, selectAgent }) {
       button.addEventListener("click",()=>{if(!busy && agents.includes(agent))selectAgent(agent);});list.append(button);}
     el("localAgentDirectoryStatus").textContent=agents.length ? `Verified ${date(result.asOf)} · ${result.hasMore ? "Latest 25 eligible Agents" : `${agents.length} eligible Agents`}. Selection does not freeze an Agent.` : "No active or pending Agents are available for protective review.";
   }));
+  const sourceCredits=createSyntheticFeeCorrectionWorkspace({api,getState,has,run,showReview});
   return Object.freeze({
     setCatalog(operations){capabilities=new Set(operations);render();},
     hasAgent(id){return agents.some(agent=>agent.subjectId===id);},
@@ -165,7 +171,7 @@ export function createLocalReviewWorkspace({ api, getState, selectAgent }) {
       for(const button of el("localAgentList").children) if(button.dataset.localRiskAgent===id) button.remove();
       el("localAgentDirectoryStatus").textContent="The selected Agent is suspended. Refresh to review the remaining eligible Agents.";
     },
-    clear(){epoch++;busy=false;cases=[];agents=[];draft=null;capabilities=new Set();clearSelection();el("localApprovalList").replaceChildren();el("localAgentList").replaceChildren();render();panel.hidden=true;directory.hidden=true;},
+    clear(){sourceCredits.clear();epoch++;busy=false;cases=[];agents=[];draft=null;capabilities=new Set();clearSelection();el("localApprovalList").replaceChildren();el("localAgentList").replaceChildren();render();panel.hidden=true;directory.hidden=true;},
     render
   });
 }

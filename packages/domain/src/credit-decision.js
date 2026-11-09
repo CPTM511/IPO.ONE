@@ -268,6 +268,7 @@ export function createDeterministicCreditDecisionOutcome({
   denialCode,
   frozen = false,
   riskFeatureSnapshot,
+  feeProfile,
   now = new Date()
 }) {
   assertIntent(intent);
@@ -312,6 +313,7 @@ export function createDeterministicCreditDecisionOutcome({
     assetId: intent.assetId,
     approvedPrincipalMinor: intent.requestedPrincipalMinor,
     collateralProfile: intent.collateralProfile,
+    feeProfile,
     annualRateBps,
     originationFeeMinor: SANDBOX_CREDIT_DECISION_POLICY.originationFeeMinor,
     repaymentFrequency: intent.repaymentFrequency,
@@ -337,6 +339,7 @@ export function createEvidenceDerivedCreditDecisionOutcome({
   eligibilityFacts,
   sourceEvidence,
   riskState,
+  feeProfile,
   now = new Date()
 }) {
   assertIntent(intent);
@@ -353,6 +356,7 @@ export function createEvidenceDerivedCreditDecisionOutcome({
     intent,
     denialCode,
     frozen,
+    feeProfile,
     riskFeatureSnapshot,
     now
   });

@@ -63,6 +63,11 @@ const classifications = [
     requiredApproverRoleBundles: [RoleBundle.RISK_OPERATOR, RoleBundle.OPERATIONS_OPERATOR]
   },
   {
+    operationId: "pilotCorrectSyntheticFeeSource",
+    classification: ApprovalRequirement.DUAL_CONTROL,
+    requiredApproverRoleBundles: [RoleBundle.RISK_OPERATOR, RoleBundle.OPERATIONS_OPERATOR]
+  },
+  {
     operationId: "pilotWriteOffSandboxObligation",
     classification: ApprovalRequirement.DUAL_CONTROL,
     requiredApproverRoleBundles: [RoleBundle.RISK_OPERATOR, RoleBundle.OPERATIONS_OPERATOR]

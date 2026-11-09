@@ -8063,7 +8063,7 @@ test("B3 PostgreSQL synthetic collateral closes one shared Human and Agent lifec
   };
   try {
     await migrateUp({ pool: owner });
-    await migrateDown({pool:owner,steps:1});
+    await migrateDown({pool:owner,steps:6});
     await owner.query(`CREATE ROLE ${role} NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS`);
     await owner.query(`GRANT USAGE ON SCHEMA public TO ${role}`);
     await owner.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ${role}`);
@@ -8136,7 +8136,7 @@ test("B3 PostgreSQL synthetic collateral closes one shared Human and Agent lifec
       payload:{amountMinor:'12000',sourceCode:'synthetic_wallet'},...envelope('legacy-repay')});
     assert.equal(legacyRepaid.response.obligation.status,'fully_repaid');
     assert.equal(legacyRepaid.response.obligation.syntheticCollateral,undefined);
-    assert.deepEqual(await migrateUp({pool:owner}),['0089_synthetic_collateral_terms']);
+    assert.deepEqual(await migrateUp({pool:owner}),['0089_synthetic_collateral_terms','0090_local_synthetic_platform_fees','0091_local_synthetic_fee_source_credits','0092_local_b4_source_review_origins','0093_local_synthetic_principal_credit_balances','0094_local_synthetic_source_credit_schedule']);
     const legacyRecovered=await legacyHuman.getOwnObligation({obligationId:legacyId,
       requestId:`request-${id('legacy-after-migration')}`,correlationId:`correlation-${id('legacy-after-migration')}`});
     assert.equal(legacyRecovered.response.obligation.totalRepaidMinor,'12000');
@@ -8228,6 +8228,329 @@ test("B3 PostgreSQL synthetic collateral closes one shared Human and Agent lifec
       console.log(`B3 durable ${mode}: confirmed, executed, fully repaid, released and recovered`);
       await assert.rejects(disabled.execute({...command,...envelope(`${mode}-disabled-write`)}),{code:'synthetic_collateral_disabled'});
     }
+  } finally {
+    await raw.end();
+    const exists = await owner.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[role]);
+    if (exists.rowCount) {await owner.query(`DROP OWNED BY ${role}`);await owner.query(`DROP ROLE ${role}`);}
+    await owner.end();
+  }
+});
+
+// B4 owns fresh Tenants and an unprivileged role; it does not change the existing lifecycle fixture.
+test("B4 PostgreSQL synthetic collateral closes one shared Human and Agent lifecycle", { timeout: 180_000 }, async () => {
+  const RUN_ID = randomBytes(5).toString("hex");
+  assert.ok(CONNECTION_STRING, "DATABASE_URL is required");
+  const owner = createPostgresPool({ connectionString: CONNECTION_STRING, max: 4 });
+  const raw = createPostgresPool({ connectionString: CONNECTION_STRING, max: 8 });
+  const role = `ipo_b4_${RUN_ID}`;
+  const app = {
+    async connect() { const c = await raw.connect(); await c.query(`SET ROLE ${role}`); return c; },
+    async query(sql, params) { const c = await this.connect(); try { return await c.query(sql, params); } finally { c.release(); } }
+  };
+  try {
+    await migrateUp({ pool: owner });
+    await owner.query(`CREATE ROLE ${role} NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS`);
+    await owner.query(`GRANT USAGE ON SCHEMA public TO ${role}`);
+    await owner.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ${role}`);
+    const harness = createAuthorizationHarness();
+    const tenant = `tenant_b4_${RUN_ID}`, otherTenant = `tenant_b4_other_${RUN_ID}`;
+    await seedTenant(owner, tenant); await seedTenant(owner, otherTenant);
+    const common = [PilotCapability.CREDIT_PASSPORT_READ_SELF,PilotCapability.SUBJECT_READ_SELF, PilotCapability.CREDIT_REQUEST,
+      PilotCapability.CREDIT_READ_SELF, PilotCapability.CREDIT_EVALUATE_SELF,
+      PilotCapability.CREDIT_OFFER_ACCEPT_SELF, PilotCapability.CREDIT_EXECUTE_SANDBOX_SELF,
+      PilotCapability.REPAYMENT_POST_SANDBOX_SELF, PilotCapability.OBLIGATION_READ_OWNED,
+      PilotCapability.EVIDENCE_READ_OWNED];
+    const borrower = harness.addIdentity({ tenantId: tenant, actorId: `actor_b4_human_${RUN_ID}`,
+      actorType: ActorType.HUMAN, roleBundle: RoleBundle.HUMAN_BORROWER,
+      capabilities: [...common, PilotCapability.HUMAN_SUBJECT_CREATE_SELF, PilotCapability.CONSENT_CREATE_SELF,
+        PilotCapability.CONSENT_READ_SELF, PilotCapability.IDENTITY_REFERENCE_READ_SELF], now: IDENTITY_NOW });
+    const controller = harness.addIdentity({ tenantId: tenant, actorId: `actor_b4_controller_${RUN_ID}`,
+      actorType: ActorType.HUMAN, roleBundle: RoleBundle.PRINCIPAL_CONTROLLER,
+      capabilities: [PilotCapability.AGENT_CREATE, PilotCapability.AGENT_MANAGE_OWNED,
+        PilotCapability.AGENT_ACCOUNT_CHALLENGE_CREATE_OWNED, PilotCapability.AGENT_ACCOUNT_BINDING_READ_SELF,
+        PilotCapability.MANDATE_DRAFT_CREATE, PilotCapability.MANDATE_ACTIVATE_OWNED,
+        PilotCapability.INTEGRATION_READ_OWNED], now: IDENTITY_NOW });
+    const agentIdentity = harness.addIdentity({ tenantId: tenant, actorId: `actor_b4_agent_${RUN_ID}`,
+      actorType: ActorType.AGENT, roleBundle: RoleBundle.AGENT_RUNTIME,
+      capabilities: [...common, PilotCapability.AGENT_ACCOUNT_PROOF_SUBMIT_SELF,
+        PilotCapability.AGENT_ACCOUNT_BINDING_READ_SELF], now: IDENTITY_NOW });
+    const outsider = harness.addIdentity({ tenantId: otherTenant, actorId: `actor_b4_outsider_${RUN_ID}`,
+      actorType: ActorType.HUMAN, roleBundle: RoleBundle.HUMAN_BORROWER, capabilities: common, now: IDENTITY_NOW });
+    const institution = harness.addIdentity({ tenantId: tenant, actorId: `actor_b4_institution_${RUN_ID}`,
+      actorType: ActorType.HUMAN, roleBundle: RoleBundle.CAPITAL_PARTNER_OPERATOR,
+      capabilities: [PilotCapability.CAPITAL_PARTNER_PORTFOLIO_READ_OWN,PilotCapability.CAPITAL_PARTNER_OFFER_CREATE_OWN], now: IDENTITY_NOW });
+    const sourceOperator=harness.addIdentity({tenantId:tenant,actorId:'actor_web027m_operations',actorType:ActorType.OPERATIONS_OPERATOR,roleBundle:RoleBundle.OPERATIONS_OPERATOR,
+      capabilities:[PilotCapability.APPROVAL_PROPOSE,PilotCapability.APPROVAL_READ,PilotCapability.APPROVAL_CANCEL,PilotCapability.SERVICING_WRITEOFF_SANDBOX],now:IDENTITY_NOW});
+    const sourceRisk=harness.addIdentity({tenantId:tenant,actorId:'actor_web027m_risk_reviewer',actorType:ActorType.RISK_OPERATOR,roleBundle:RoleBundle.RISK_OPERATOR,
+      capabilities:[PilotCapability.APPROVAL_READ,PilotCapability.APPROVAL_DECIDE],now:IDENTITY_NOW});
+    const sourceReviewer=harness.addIdentity({tenantId:tenant,actorId:'actor_web027n_operations_reviewer',actorType:ActorType.OPERATIONS_OPERATOR,roleBundle:RoleBundle.OPERATIONS_OPERATOR,
+      capabilities:[PilotCapability.APPROVAL_READ,PilotCapability.APPROVAL_DECIDE],now:IDENTITY_NOW});
+    for (const identity of [borrower, controller, outsider, institution,sourceOperator,sourceRisk,sourceReviewer]) await seedIdentity(owner, identity.authenticationContext.tenantId, identity);
+    await seedIdentity(owner, tenant, agentIdentity, { controllerActorId: controller.authenticationContext.actorId });
+    const { IpoOneSyntheticCollateralClient } = await import("../../../packages/sdk/src/synthetic-collateral-client.js");
+    const { createSyntheticCollateralMcpAdapter } = await import("../../../apps/agent-mcp/src/synthetic-collateral-mcp-adapter.js");
+    const { createAuthenticatedProtocolActionConfirmation } = await import("../src/economic-action-confirmation.js");
+    const viaMcp = async (client, command) => {
+      const sdk = new IpoOneSyntheticCollateralClient({transportProfile:"local_in_process",execute:request=>client.execute(request)});
+      const adapter = createSyntheticCollateralMcpAdapter({client:sdk});
+      const name = {pilotReadSyntheticCollateralProfile:'ipo_one_read_synthetic_collateral_profile',
+        pilotConfirmSyntheticCollateral:'ipo_one_confirm_synthetic_collateral',pilotReleaseSyntheticCollateral:'ipo_one_release_synthetic_collateral'}[command.operationId];
+      const payload = command.operationId === 'pilotReadSyntheticCollateralProfile' ? command.payload : {
+        ...command.payload,actionConfirmation:createAuthenticatedProtocolActionConfirmation(command)};
+      const result = await adapter.callTool(name,{resourceId:command.resource.resourceId,payload,
+        requestId:command.requestId,correlationId:command.correlationId,...(command.idempotencyKey?{idempotencyKey:command.idempotencyKey}:{})});
+      return result.structuredContent;
+    };
+    const handlers = () => createTenantFoundationHandlers({ syntheticCollateralEnabled: true, syntheticFeesEnabled: true, syntheticFeesLocalContext:true, syntheticFeeOperatorActorId:institution.authenticationContext.actorId });
+    const {createLocalApprovalRuntimeFactory}=await import('../src/local-approval-runtime.js');
+    // MFA contexts are authenticated fixtures in this component integration.
+    // Native browser WebAuthn is covered separately by the real HTTP browser test.
+    const protectedRuntime=(verifyRecordedProof=async()=>true,incompleteSource=false)=>new TenantCommandGateway({pool:app,handlers:new TenantCommandHandlerRegistry(createTenantFoundationHandlers({syntheticFeeCorrectionsEnabled:true,syntheticFeesLocalContext:true}).map(handler=>!incompleteSource || handler.operationId!=='pilotCorrectSyntheticFeeSource'?handler:{...handler,async plan(input){const plan=await handler.plan(input);return {...plan,writes:plan.writes.filter(write=>write.type!==CoreProjectionType.SYNTHETIC_FEE_SOURCE_CORRECTION)};}})),
+      policyRegistry:harness.policyRegistry,credentialRegistry:harness.credentialRegistry,referenceHasher:harness.referenceHasher,
+      livePolicyAdapterFactory:createPostgresTenantLivePolicyAdapter,
+      approvalRuntimeFactory:createLocalApprovalRuntimeFactory({syntheticFeeCorrectionsEnabled:true,verifyRecordedProof})});
+    const sourceClient=identity=>new OperatorTenantCommandClient({gateway:protectedRuntime(),authenticationContextProvider:async()=>identity.authenticationContext});
+    let correctionSequence=0;
+    const approveSourceCredit=async(resource,sourceFeeEntryId,amountMinor)=>{
+      const seq=++correctionSequence,ops=sourceClient(sourceOperator);
+      const preview=(await ops.execute({operationId:'pilotReviewSyntheticFeeCorrection',resource,payload:{sourceFeeEntryId,amountMinor},requestId:`request-source-review-${seq}`,correlationId:`correlation-source-${seq}`})).response;
+      const command={operationId:'pilotCorrectSyntheticFeeSource',resource,payload:{sourceFeeEntryId,amountMinor,expectedFeeStateHash:preview.expectedFeeStateHash,expectedEffectsHash:preview.expectedEffectsHash,sourcePolicyHash:preview.sourcePolicyHash},reasonCode:'synthetic_fee_source_correction',idempotencyKey:id(`source-execute-${seq}`)};
+      const proposed=await ops.execute({operationId:'pilotProposeApproval',payload:{command,expiresAt:new Date(Date.now()+300000).toISOString()},...envelope(`source-propose-${seq}`)});
+      let proposal=proposed.response.proposal;
+      // The executor cannot approve, and no command may run with zero/one approvals.
+      await assert.rejects(ops.execute({...command,approvalArtifact:{proposalId:proposal.approvalProposalId,proposalVersion:proposal.version},requestId:`source-early-${seq}`,correlationId:`source-${seq}`}));
+      for(const [index,reviewer]of [sourceRisk,sourceReviewer].entries()){
+        const result=await sourceClient(reviewer).execute({operationId:'pilotDecideApproval',resource:{resourceType:'approval_proposal',resourceId:proposal.approvalProposalId},payload:{expectedVersion:proposal.version,decision:'approve'},reasonCode:'approval_confirmed',...envelope(`source-review-${seq}-${index}`)});
+        proposal=result.response.proposal;
+        if(index===0)await assert.rejects(ops.execute({...command,approvalArtifact:{proposalId:proposal.approvalProposalId,proposalVersion:proposal.version},requestId:`source-one-${seq}`,correlationId:`source-${seq}`}));
+      }
+      return {ops,command:{...command,approvalArtifact:{proposalId:proposal.approvalProposalId,proposalVersion:proposal.version},requestId:`request-source-execute-${seq}`,correlationId:`source-${seq}`}};
+    };
+    let runtime = gateway(app, harness, handlers());
+    const human = humanClient(runtime, borrower.authenticationContext);
+    const principal = humanClient(runtime, controller.authenticationContext);
+    const agent = agentClient(runtime, agentIdentity.authenticationContext);
+    const denied = humanClient(runtime, outsider.authenticationContext);
+    const id = label => `b4-${RUN_ID}-${label}-0001`;
+    const envelope = label => ({ idempotencyKey: id(label), requestId: `request-${id(label)}`, correlationId: `correlation-${id(label)}` });
+    const subject = (await human.createHumanSubject(envelope('subject'))).response;
+    const consent = (await human.createConsent(createConsentCommand({ subjectId: subject.subjectId,
+      idempotencyKey: id('consent'), overrides: { purposes: ['credit_application','credit_decision','credit_offer_acceptance','obligation_servicing','identity_reference_use'] } }))).response.consent;
+    await seedSyntheticIdentityReference({ pool: app, tenantId: tenant, identity: borrower,
+      subjectId: subject.subjectId, principalId: subject.principalId, consentId: consent.consentId,
+      purposeCodes: ['identity_reference_use','credit_decision','credit_offer_acceptance'] });
+    // Actual unprivileged legacy economic writes before the additive column.
+    const legacyHuman=humanClient(gateway(app,harness),borrower.authenticationContext);
+    const legacyRequest=await legacyHuman.requestCredit(requestCreditCommand({subjectId:subject.subjectId,
+      authorityId:consent.consentId,idempotencyKey:id('legacy-request')}));
+    const legacyOffer=(await legacyHuman.evaluateCreditApplication({creditIntentId:legacyRequest.response.creditIntent.creditIntentId,
+      ...envelope('legacy-evaluate')})).response.offer;
+    const legacyAccepted=await legacyHuman.acceptCreditOffer({creditOfferId:legacyOffer.creditOfferId,payload:{
+      expectedOfferHash:legacyOffer.creditOfferHash,expectedTermsHash:legacyOffer.termsHash,
+      acknowledgementHash:hashId('b4-legacy-acknowledgement',legacyOffer.termsHash)},...envelope('legacy-accept')});
+    const legacyId=legacyAccepted.response.obligation.obligationId;
+    await legacyHuman.executeSandboxObligation({obligationId:legacyId,...envelope('legacy-execute')});
+    const legacyRepaid=await legacyHuman.postSandboxRepayment({obligationId:legacyId,
+      payload:{amountMinor:'12000',sourceCode:'synthetic_wallet'},...envelope('legacy-repay')});
+    assert.equal(legacyRepaid.response.obligation.status,'fully_repaid');
+    assert.equal(legacyRepaid.response.obligation.syntheticCollateral,undefined);
+    assert.deepEqual(await migrateUp({pool:owner}),[]);
+    const legacyRecovered=await legacyHuman.getOwnObligation({obligationId:legacyId,
+      requestId:`request-${id('legacy-after-migration')}`,correlationId:`correlation-${id('legacy-after-migration')}`});
+    assert.equal(legacyRecovered.response.obligation.totalRepaidMinor,'12000');
+    console.log('B4 compatible off: legacy loans accept, execute and repay without retroactive fees');
+    const createdAgent = (await principal.createAgentSubject(createCommand({
+      subjectActorId: agentIdentity.authenticationContext.actorId, displayName: 'B4 synthetic Agent', idempotencyKey: id('agent-subject')
+    }))).response;
+    await proveAndActivateAgentAccount({ controller: principal, agent, subjectId: createdAgent.subjectId,
+      privateKey: generatePrivateKey(), label: `b4-${RUN_ID}` });
+    const mandate = (await principal.createDraftMandate(createMandateCommand({ subjectId: createdAgent.subjectId, idempotencyKey: id('mandate'), overrides:{capabilities:['request_credit','accept_credit_offer','execute_sandbox_credit','provider_spend','capture_revenue','route_repayment']} }))).response;
+    for (const [mode, client, identity, subjectId, authorityId] of [
+      ['human', human, borrower, subject.subjectId, consent.consentId],
+      ['agent', agent, agentIdentity, createdAgent.subjectId, mandate.mandateId]
+    ]) {
+      const profileRequest={operationId:'pilotReadSyntheticCollateralProfile',resource:{resourceType:'subject',resourceId:subjectId},payload:{},requestId:`request-${id(`${mode}-profile`)}`,correlationId:`correlation-${id(`${mode}-profile`)}`};
+      const profile = mode === 'agent' ? await viaMcp(client,profileRequest) : await client.execute(profileRequest);
+      assert.equal(profile.response.enabled,true);
+      const requested = await client.requestCredit(requestCreditCommand({ subjectId, authorityId,
+        idempotencyKey: id(`${mode}-request`), overrides: { collateralProfile: 'm2_synthetic_weth_usd_cent.v1' } }));
+      const evaluated = await client.evaluateCreditApplication({ creditIntentId: requested.response.creditIntent.creditIntentId, ...envelope(`${mode}-evaluate`) });
+      const offer = evaluated.response.offer;
+      const readApplication = await client.getCreditApplication({creditIntentId:requested.response.creditIntent.creditIntentId,
+        requestId:`request-${id(`${mode}-read-application`)}`,correlationId:`correlation-${id(`${mode}-read-application`)}`});
+      assert.equal(readApplication.response.creditIntent.collateralProfile,'m2_synthetic_weth_usd_cent.v1');
+      assert.equal(readApplication.response.offer.collateralTerms.termsHash,offer.collateralTerms.termsHash);
+      assert.equal(offer.collateralTerms.requiredAssets, '80000000000000000');
+      if (mode === 'agent') {
+        const view = await principal.getMandate({mandateId:authorityId,requestId:`request-${id('mandate-view')}`,correlationId:`correlation-${id('mandate-view')}`});
+        await principal.activateSandboxMandate({mandateId:authorityId,payload:{
+          expectedMandateHash:view.response.mandate.mandateHash,
+          acknowledgedTermsHash:view.response.mandate.termsHash,
+          acknowledgementCode:'principal_authorizes_sandbox_credit_v1'
+        },...envelope('activate')});
+      }
+      const accepted = await client.acceptCreditOffer({ creditOfferId: offer.creditOfferId,
+        payload: { expectedOfferHash: offer.creditOfferHash, expectedTermsHash: offer.termsHash, acknowledgementHash: hashId('b4-acknowledgement', offer.termsHash) }, ...envelope(`${mode}-accept`) });
+      const obligationId = accepted.response.obligation.obligationId;
+      const compatibleOff = mode === 'human' ? humanClient(gateway(app,harness),identity.authenticationContext) : agentClient(gateway(app,harness),identity.authenticationContext);
+      await assert.rejects(compatibleOff.executeSandboxObligation({obligationId,
+        ...(mode === 'agent' ? {providerId:'provider_gateway_compute',providerCategory:'compute'} : {}),
+        ...envelope(`${mode}-compatible-rollback-guard`) }),{code:'synthetic_fees_disabled'});
+      const resource = { resourceType: 'obligation', resourceId: obligationId };
+      const terms = accepted.response.obligation.syntheticCollateral.terms;
+      const payload = { expectedVersion: 0, termsHash: terms.termsHash, chainId: terms.chainId, amountAssets: terms.requiredAssets };
+      await assert.rejects(client.executeSandboxObligation({ obligationId, ...(mode === 'agent' ? {providerId:'provider_gateway_compute',providerCategory:'compute'} : {}), ...envelope(`${mode}-before-confirm`) }), { code: 'synthetic_collateral_not_confirmed' });
+      const command = { operationId:'pilotConfirmSyntheticCollateral', resource, payload, ...envelope(`${mode}-confirm`) };
+      await assert.rejects(denied.execute(command));
+      await assert.rejects(client.execute({ ...command, ...envelope(`${mode}-wrong-chain`), payload: {...payload, chainId:'eip155:56'} }));
+      const confirmed = await executeConcurrentDuplicate(() => mode === 'agent' ? viaMcp(client,command) : client.execute(command));
+      assert.equal(confirmed.filter(r => r.replayed).length, 1);
+      assert.equal(confirmed[0].response.receipt.receiptId, confirmed[1].response.receipt.receiptId);
+      assert.equal(confirmed[0].response.receipt.transactionHash, null);
+      runtime = gateway(app, harness, handlers());
+      const fresh = mode === 'human' ? humanClient(runtime, identity.authenticationContext) : agentClient(runtime, identity.authenticationContext);
+      const recovered = await fresh.getOwnObligation({ obligationId, requestId:`request-${id(`${mode}-recover`)}`, correlationId:`correlation-${id(`${mode}-recover`)}` });
+      assert.equal(recovered.response.obligation.syntheticCollateral.state, 'confirmed');
+      await assert.rejects(compatibleOff.executeSandboxObligation({obligationId,
+        ...(mode === 'agent' ? {providerId:'provider_gateway_compute',providerCategory:'compute'} : {}),
+        ...envelope(`${mode}-off-confirmed-execute`)}),{code:'synthetic_fees_disabled'});
+      await assert.rejects(owner.query('UPDATE obligations SET synthetic_collateral=NULL WHERE id=$1',[obligationId]),{code:'P0001'});
+      await assert.rejects(fresh.execute({ operationId:'pilotReleaseSyntheticCollateral', resource,
+        payload:{...payload,expectedVersion:1}, ...envelope(`${mode}-release-early`) }), {code:'synthetic_collateral_release_blocked'});
+      await fresh.executeSandboxObligation({ obligationId,
+        ...(mode === 'agent' ? {providerId:'provider_gateway_compute',providerCategory:'compute'} : {}), ...envelope(`${mode}-execute`) });
+      if(mode==='agent') {
+        const before=(await fresh.execute({operationId:'pilotReadSyntheticFees',resource,payload:{},requestId:'request-agent-source-before',correlationId:'correlation-agent-source'})).response;
+        const {ops,command:creditCommand}=await approveSourceCredit(resource,before.entries[0].feeEntryId,'3000');
+        // Amount substitutions do not inherit the approved command's authority.
+        await assert.rejects(ops.execute({...creditCommand,idempotencyKey:id('source-substitute'),payload:{...creditCommand.payload,amountMinor:'3001'}}));
+        const staleMfa=new OperatorTenantCommandClient({gateway:protectedRuntime(async()=>false),authenticationContextProvider:async()=>sourceOperator.authenticationContext});
+        await assert.rejects(staleMfa.execute({...creditCommand,requestId:'request-source-expired-reviewer'}));
+        const financialSnapshot=async()=>{
+          const loan=(await owner.query('SELECT synthetic_fees,outstanding_minor::text,total_repaid_minor::text FROM obligations WHERE id=$1',[obligationId])).rows[0];
+          const counts={};
+          for(const table of ['synthetic_fee_entries','synthetic_fee_source_corrections','ledger_accounts','ledger_transactions','ledger_entries','domain_events','projection_snapshots','approval_executions'])counts[table]=(await owner.query(`SELECT count(*)::text AS count FROM ${table} WHERE tenant_id=$1`,[tenant])).rows[0].count;
+          return {loan,counts,proposal:(await owner.query('SELECT status,version,execution_id FROM approval_proposals WHERE id=$1',[creditCommand.approvalArtifact.proposalId])).rows[0]};
+        };
+        const beforeFailure=await financialSnapshot();
+        const incomplete=new OperatorTenantCommandClient({gateway:protectedRuntime(async()=>true,true),authenticationContextProvider:async()=>sourceOperator.authenticationContext});
+        await assert.rejects(incomplete.execute({...creditCommand,requestId:'request-source-injected-atomic-failure'}),/Source credits require their exact committed approval/);
+        assert.deepEqual(await financialSnapshot(),beforeFailure,'Deferred receipt failure rolls back all financial facts, events, snapshots and approval consumption');
+        const results=await executeConcurrentDuplicate(()=>ops.execute(creditCommand));
+        await assert.rejects(ops.execute({...creditCommand,idempotencyKey:id('source-reuse-approval'),requestId:'request-source-reused-approval'}));
+        assert.equal(results.filter(r=>r.replayed).length,1);
+        assert.equal(results[0].response.fees.principalUnpaidCreditMinor,'3000');
+        assert.equal(results[0].response.fees.borrowerAssessedMinor,'9');
+        const typed=await owner.query('SELECT outstanding_minor::text,repaid_amount_minor::text,total_repaid_minor::text FROM obligations WHERE id=$1',[obligationId]);
+        assert.equal(typed.rows[0].outstanding_minor,'9000');assert.equal(typed.rows[0].repaid_amount_minor,'0');assert.equal(typed.rows[0].total_repaid_minor,'0');
+        const line=(await owner.query('SELECT utilized_minor::text,status FROM credit_lines WHERE subject_id=$1',[(await fresh.getOwnObligation({obligationId,requestId:'request-agent-credit-state',correlationId:'correlation-agent-source'})).response.obligation.subjectId])).rows[0];
+        assert.equal(line.utilized_minor,'9000');assert.equal(line.status,'approved');
+        const lock=(await owner.query('SELECT o.outstanding_minor::text AS balance_minor FROM lockboxes l JOIN obligations o ON o.tenant_id=l.tenant_id AND o.id=l.obligation_id WHERE l.obligation_id=$1',[obligationId])).rows[0];
+        assert.equal(lock.balance_minor,'9000');
+        const sourceView=await fresh.execute({operationId:'pilotReadSyntheticFees',resource,payload:{},requestId:'request-agent-source-after',correlationId:'correlation-agent-source'});
+        assert.equal(sourceView.response.sourceCorrections.length,1);
+        assert.equal(sourceView.response.sourceCorrections[0].receiptId,results[0].response.receipt.receiptId);
+      }
+      const repaid = await fresh.postSandboxRepayment({ obligationId,
+        payload:{amountMinor:mode==='agent'?'9009':'12012',sourceCode:'synthetic_wallet'}, ...envelope(`${mode}-repay`) });
+      assert.equal(repaid.response.obligation.status,'fully_repaid');
+      assert.equal(repaid.response.obligation.syntheticFees.borrowerAssessedMinor,mode==='agent'?'9':'12');
+      assert.equal(repaid.response.obligation.syntheticFees.borrowerPaidMinor,mode==='agent'?'9':'12');
+      assert.equal(repaid.response.obligation.totalRepaidMinor,mode==='agent'?'9009':'12012');
+      const feeRead={operationId:'pilotReadSyntheticFees',resource, payload:{},requestId:`request-${id('fees')}`,correlationId:`correlation-${id('fees')}`};
+      const feeView=await fresh.execute(feeRead);
+      assert.equal(feeView.response.entries.length,mode==='agent'?2:1);
+      assert.equal(feeView.response.entries[0].feeDeltaMinor,'12');
+      await assert.rejects(denied.execute({...feeRead,requestId:`request-${id('denied-fees')}`}));
+      const releaseCommand = {operationId:'pilotReleaseSyntheticCollateral',resource,
+        payload:{...payload,expectedVersion:1},...envelope(`${mode}-release`)};
+      const released = mode === 'agent' ? await viaMcp(compatibleOff,releaseCommand) : await compatibleOff.execute(releaseCommand);
+      assert.equal(released.response.obligation.syntheticCollateral.state,'released');
+      assert.equal(released.response.obligation.syntheticCollateral.amountAssets,'0');
+      assert.equal(released.response.obligation.syntheticCollateral.confirmationReceiptId, confirmed[0].response.receipt.receiptId);
+      const disabled = mode === 'human' ? humanClient(gateway(app,harness),identity.authenticationContext) : agentClient(gateway(app,harness),identity.authenticationContext);
+      const final = await disabled.getOwnObligation({obligationId,requestId:`request-${id(`${mode}-disabled-read`)}`,correlationId:`correlation-${id(`${mode}-disabled-read`)}`});
+      assert.equal(final.response.obligation.syntheticCollateral.state,'released');
+      const context = createTenantSecurityContext({tenantId:tenant,actorId:identity.authenticationContext.actorId,
+        policyVersion:identity.authenticationContext.policyVersion,source:'local_test'});
+      const events = new PostgresEventRepository({pool:app,tenantContext:context});
+      const core = new PostgresCoreRepository({pool:app,eventRepository:events});
+      assert.equal((await core.verifyProjection(CoreProjectionType.OBLIGATION,obligationId)).matches,true);
+      await core.repairProjection({entityType:CoreProjectionType.OBLIGATION,entityId:obligationId,
+        approvedBy:identity.authenticationContext.actorId,reason:'B4 isolated synthetic snapshot replay acceptance',
+        idempotencyKey:id(`${mode}-snapshot-replay`)});
+      assert.equal((await core.verifyProjection(CoreProjectionType.OBLIGATION,obligationId)).matches,true);
+      assert.equal((await core.getCanonicalProjection(CoreProjectionType.OBLIGATION,obligationId))
+        .syntheticCollateral.releaseReceiptId,released.response.receipt.receiptId);
+
+      if(mode==='agent') {
+        const materialized=await new PostgresCreditOutcomeMaterializer({eventRepository:events}).run();
+        assert.ok(materialized.materializedCount>=1);
+        const outcome=(await owner.query('SELECT outcome,synthetic_fee_credit_context FROM credit_outcomes WHERE obligation_id=$1',[obligationId])).rows[0];
+        assert.equal(outcome.outcome.originalPrincipalMinor,'12000');assert.equal(outcome.outcome.totalRepaidMinor,'9009');
+        assert.equal(outcome.synthetic_fee_credit_context.effectivePrincipalMinor,'9000');
+        assert.equal(outcome.synthetic_fee_credit_context.netRepaidMinor,'9009');
+        const credit=await fresh.execute({operationId:'pilotReadOwnCreditState',resource:{resourceType:'subject',resourceId:final.response.obligation.subjectId},payload:{},requestId:'request-agent-credit-attribution',correlationId:'correlation-agent-credit-attribution'});
+        assert.equal(credit.response.creditState.metrics.completedCycleCount,1);
+        assert.equal(credit.response.creditState.metrics.totalNetRepaidMinor,'9009');
+        assert.equal(credit.response.creditState.trackRecord[0].syntheticFeeCreditContext.effectivePrincipalMinor,'9000');
+      }
+      console.log(`B4 durable ${mode}: confirmed, executed, fully repaid, released and recovered`);
+      await assert.rejects(disabled.execute({...command,...envelope(`${mode}-disabled-write`)}),{code:'synthetic_collateral_disabled'});
+    }
+
+    // Controlled-clock kernel + actual PostgreSQL scenarios. These are explicitly
+    // synthetic accounting fixtures, not user/partner transaction evidence.
+    const { persistSyntheticFeeInterestScenario }=await import('./support/synthetic-fee-interest-fixture.mjs');
+    const fixtureOptions={pool:app,tenantId:tenant,actorId:borrower.authenticationContext.actorId,subjectId:subject.subjectId,principalId:subject.principalId,consentId:consent.consentId};
+    const normal=await persistSyntheticFeeInterestScenario(fixtureOptions);
+    const pending=await persistSyntheticFeeInterestScenario({...fixtureOptions,assessmentEnabled:false});
+    assert.equal(normal.obligation.syntheticFees.institutionAssessedMinor,'98');
+    assert.equal(pending.obligation.syntheticFees.pendingNormalInterestMinor,'986');
+    const institutionClient=humanClient(gateway(app,harness,handlers()),institution.authenticationContext);
+    const read=()=>institutionClient.execute({operationId:'pilotReadSyntheticFeeSettlement',payload:{month:'2026-10'},requestId:`request-${id('bill-read')}`,correlationId:`correlation-${id('bill-read')}`});
+    let bill=await read();
+    assert.equal(bill.response.statement.additionsMinor,'98');assert.equal(bill.response.pendingAssessmentMinor,'98');
+    assert.equal(bill.response.pendingBaseMinor,'986');assert.equal(bill.response.statement.settledMinor,'0');
+    const close={operationId:'pilotCloseSyntheticFeeStatement',payload:{month:'2026-10'},...envelope('close-october')};
+    await assert.rejects(institutionClient.execute(close),{code:'synthetic_fee_reconciliation_pending'});
+    await assert.rejects(human.execute({operationId:'pilotReadSyntheticFeeSettlement',payload:{month:'2026-10'},requestId:`request-${id('forbidden-bill')}`,correlationId:`correlation-${id('forbidden-bill')}`}));
+    const reconcile={operationId:'pilotReconcileSyntheticFees',payload:{expectedStateHash:bill.response.pendingAssessmentStateHash},...envelope('reconcile-pending')};
+    await assert.rejects(institutionClient.execute({...reconcile,...envelope('stale-reconcile'),payload:{expectedStateHash:`0x${'ff'.repeat(32)}`}}),{code:'synthetic_fee_preview_stale'});
+    const offHandlers=createTenantFoundationHandlers({syntheticFeesEnabled:false,syntheticFeesLocalContext:true,syntheticFeeOperatorActorId:institution.authenticationContext.actorId});
+    const off=humanClient(gateway(app,harness,offHandlers),institution.authenticationContext);
+    const offView=await off.execute({operationId:'pilotReadSyntheticFeeSettlement',payload:{month:'2026-10'},requestId:`request-${id('off-read')}`,correlationId:`correlation-${id('off-read')}`});
+    assert.equal(offView.response.enabled,false);
+    await assert.rejects(off.execute({...reconcile,...envelope('off-reconcile')}),{code:'synthetic_fees_disabled'});
+    const reconciled=await executeConcurrentDuplicate(()=>institutionClient.execute(reconcile));
+    assert.equal(reconciled.filter(r=>r.replayed).length,1);assert.equal(reconciled[0].response.assessedCount,1);
+    bill=await read();assert.equal(bill.response.pendingAssessmentMinor,'0');assert.equal(bill.response.pendingBaseMinor,'0');
+    assert.equal(bill.response.statement.additionsMinor,'98'); // The newly admitted fee belongs to the current period.
+    const closed=await institutionClient.execute({...close,...envelope('close-october-ready')});
+    assert.equal(closed.response.statement.closed,true);assert.equal(closed.response.statement.closingMinor,'98');
+    assert.equal((await read()).response.statement.statementId,closed.response.statement.statementId);
+    const before=await pending.core.getCanonicalProjection(CoreProjectionType.OBLIGATION,pending.obligation.obligationId);
+    assert.equal(before.syntheticFees.institutionAssessedMinor,'98');assert.equal(before.syntheticFees.pendingNormalInterestMinor,'0');
+    const currentMonth=new Date().toISOString().slice(0,7);
+    await assert.rejects(institutionClient.execute({operationId:'pilotCloseSyntheticFeeStatement',payload:{month:currentMonth},...envelope('close-current')}),{code:'synthetic_fee_period_open'});
+    const context=createTenantSecurityContext({tenantId:tenant,actorId:borrower.authenticationContext.actorId,policyVersion:borrower.authenticationContext.policyVersion,source:'local_test'});
+    await withTenantTransaction(app,context,async client=>{
+      const sums=await client.query("SELECT count(*) AS count FROM ledger_transactions WHERE transaction_type IN ('synthetic_fee_assessment','synthetic_fee_reversal') AND debit_total_minor<>credit_total_minor");
+      assert.equal(sums.rows[0].count,'0');
+    });
+    await assert.rejects(withTenantTransaction(app,context,client=>client.query('UPDATE synthetic_fee_entries SET source_id=source_id WHERE id=$1',[normal.entry.feeEntryId])),{code:'P0001'});
+    const sourceCredit=await approveSourceCredit({resourceType:'obligation',resourceId:normal.obligation.obligationId},normal.entry.feeEntryId,'86');
+    const interestCredit=await sourceCredit.ops.execute(sourceCredit.command);
+    assert.equal(interestCredit.response.receipt.effects.interestRefundCreditMinor,'86');assert.equal(interestCredit.response.receipt.effects.feeCreditMinor,'8');
+    assert.equal(interestCredit.response.fees.normalInterestBaseMinor,'900');assert.equal(interestCredit.response.fees.institutionAssessedMinor,'90');
+    assert.equal((await read()).response.statement.statementId,closed.response.statement.statementId);
+    const currentBill=await institutionClient.execute({operationId:'pilotReadSyntheticFeeSettlement',payload:{month:currentMonth},requestId:'request-source-month-bill',correlationId:'correlation-source-month'});
+    assert.equal(currentBill.response.statement.reversalsMinor,'8');assert.equal(currentBill.response.statement.closingMinor,'188');
+    await assert.rejects(withTenantTransaction(app,context,client=>client.query('UPDATE synthetic_fee_source_corrections SET amount_minor=amount_minor WHERE id=$1',[interestCredit.response.receipt.receiptId])),{code:'P0001'});
+    await assert.rejects(withTenantTransaction(app,context,client=>client.query('DELETE FROM synthetic_fee_source_corrections WHERE id=$1',[interestCredit.response.receipt.receiptId])),{code:'P0001'});
+    await assert.rejects(migrateDown({pool:owner,steps:1}),/Retain approved source-credit schedule facts/);
+    console.log('F1 actual PostgreSQL: Agent unpaid3000 credit, no fake repayment,9000 exposure and9009 actual repayment; original12000 retained, one adjusted credit cycle; zero/one approval, amount substitution, invalid recorded MFA proof and reused approval denied; injected missing-receipt commit fully rolls back and retries, duplicate-safe; interest86 credit reverses8 institution fee in current month, frozen October unchanged, immutable source facts and rollback retention verified');
+    console.log('B4 institution: actual kernel interest986/fee98, pending while disabled, exact preview, duplicate-safe admission, UTC frozen statement and no payment claim');
   } finally {
     await raw.end();
     const exists = await owner.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[role]);

@@ -1,3 +1,4 @@
+import { B4_LOCAL_ONLY_MIGRATIONS } from "../../../scripts/vercel-migration-profile.mjs";
 import {
   MachineAuthenticator,
   createReferenceHashKeyring
@@ -138,17 +139,15 @@ function assertClosedConfig(input) {
 export async function assertProductionMigrationSet(pool, { syntheticCollateralEnabled = false } = {}) {
   const expected = await readMigrationSet();
   const result = await pool.query("SELECT name, checksum FROM schema_migrations ORDER BY name");
-  const beforeB3 = syntheticCollateralEnabled === false &&
-    expected.at(-1)?.name === "0089_synthetic_collateral_terms" &&
-    result.rowCount === expected.length - 1;
-  const required = beforeB3 ? expected.slice(0,-1) : expected;
-  if (result.rowCount !== required.length || required.some((migration,index) => (
-    result.rows[index]?.name !== migration.name || !migrationChecksumMatches({
-      name:migration.name,recordedChecksum:result.rows[index]?.checksum,releaseChecksum:migration.checksum
-    })
-  ))) throw new DomainError("production_database_migration_mismatch",
-    "Production database must match the current set, or the exact pre-B3 set only while synthetic collateral is off");
-  return beforeB3 ? "b3_compatible_off_before_migration" : "current";
+  // B4 is L0-only. Retain the exact previously-approved schema admission
+  // while its named local migrations are absent; all checksums remain exact.
+  const beforeB4=expected.filter(migration=>!B4_LOCAL_ONLY_MIGRATIONS.includes(migration.name));
+  const candidates=[{value:expected,state:"current"},{value:beforeB4,state:"current"}];
+  if(syntheticCollateralEnabled===false && beforeB4.at(-1)?.name==="0089_synthetic_collateral_terms")candidates.push({value:beforeB4.slice(0,-1),state:"b3_compatible_off_before_migration"});
+  const match=candidates.find(({value})=>result.rowCount===value.length && value.every((migration,index)=>
+    result.rows[index]?.name===migration.name && migrationChecksumMatches({name:migration.name,recordedChecksum:result.rows[index]?.checksum,releaseChecksum:migration.checksum})));
+  if(!match)throw new DomainError("production_database_migration_mismatch","Production schema must match an exact known migration set; B4 local files grant no production activation");
+  return match.state;
 }
 
 async function composeProductionClosedPilotRuntime(input) {

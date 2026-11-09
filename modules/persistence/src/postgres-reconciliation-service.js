@@ -629,6 +629,10 @@ export class PostgresReconciliationService {
   }
 
   async #checkProjectionCoverage(add) {
+    const localFeeTables=[['synthetic_fee_entry','synthetic_fee_entries'],['synthetic_fee_statement','synthetic_fee_statements'],['synthetic_fee_source_correction','synthetic_fee_source_corrections']];
+    const available=await this.#read("SELECT to_regclass('public.synthetic_fee_entries') AS entries,to_regclass('public.synthetic_fee_statements') AS statements,to_regclass('public.synthetic_fee_source_corrections') AS corrections");
+    const present=[available.rows[0].entries,available.rows[0].statements,available.rows[0].corrections];
+    const feeCoverage=localFeeTables.filter((_,i)=>present[i]).map(([type,table])=>`UNION ALL SELECT '${type}',id FROM ${table}`).join("\n");
     const result = await this.#read(`
       WITH entities(entity_type, entity_id) AS (
         SELECT 'principal', id FROM principals
@@ -653,6 +657,7 @@ export class PostgresReconciliationService {
         UNION ALL SELECT 'obligation', id FROM obligations
         UNION ALL SELECT 'sandbox_execution_receipt', id FROM sandbox_execution_receipts
         UNION ALL SELECT 'sandbox_servicing_action', id FROM sandbox_servicing_actions
+        ${feeCoverage}
         UNION ALL SELECT 'repayment', id FROM repayment_events
         UNION ALL SELECT 'consent_record', id FROM consent_records
         UNION ALL SELECT 'human_identity_reference', id FROM human_identity_references

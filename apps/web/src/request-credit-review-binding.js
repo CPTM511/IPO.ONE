@@ -120,6 +120,24 @@ const EXPECTED_STEPS = Object.freeze([
   })
 ]);
 
+
+// Adapter admission checks the supported contract shape. Pricing and permission
+// remain server policy; the immutable snapshot also pins the displayed fields.
+function offerReviewTermsVersion(offer, collateralProfile) {
+  const fee = offer?.feeTerms;
+  if (fee !== undefined) {
+    if (fee.profile !== "synthetic_usd_platform_fee.v1" || fee.scope !== "L0_LOCAL_NO_FUNDS" ||
+        fee.assetId !== offer.assetId || fee.economicLoanId !== offer.creditIntentId ||
+        fee.principalMinor !== offer.approvedPrincipalMinor || fee.annualRateBps !== offer.annualRateBps ||
+        fee.providerOriginationFeeMinor !== offer.originationFeeMinor || fee.currency !== "USD" ||
+        fee.syntheticOnly !== true || fee.productionFundsMoved !== false || fee.productionPolicyAvailable !== false ||
+        !HASH.test(fee.termsHash ?? "") ||
+        ["netProceedsMinor", "borrowerFeeAtFullFundingMinor", "estimatedTotalRepaymentMinor", "scheduledInterestEstimateMinor", "estimatedTotalCostMinor"].some(k=>!CANONICAL_MINOR.test(fee[k] ?? ""))) return undefined;
+    return "credit_terms.synthetic_fee.v1";
+  }
+  return collateralProfile ? "credit_terms.synthetic_secured.v1" : "credit_terms.v1";
+}
+
 function deepFreeze(value) {
   if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
   for (const nested of Object.values(value)) deepFreeze(nested);
@@ -279,7 +297,7 @@ function assertOfferReceipt(receipt, entryMode, profile) {
     offer.repaymentFrequency !== intent.repaymentFrequency ||
     offer.installmentCount !== intent.installmentCount ||
     !IDENTIFIER.test(offer.disclosureRef ?? "") ||
-    offer.termsVersion !== (creditRequest.collateralProfile ? "credit_terms.synthetic_secured.v1" : "credit_terms.v1") ||
+    offer.termsVersion !== offerReviewTermsVersion(offer, creditRequest.collateralProfile) ||
     offer.collateralTerms?.profile !== creditRequest.collateralProfile ||
     !HASH.test(offer.creditOfferHash ?? "") ||
     !HASH.test(offer.termsHash ?? "") ||
@@ -324,6 +342,7 @@ export function createRequestCreditReviewBinding(input) {
       maturityAt: offer.maturityAt,
       disclosureRef: offer.disclosureRef,
       termsVersion: offer.termsVersion,
+      ...(offer.feeTerms ? { feeTerms: structuredClone(offer.feeTerms) } : {}),
       ...(offer.collateralTerms ? { collateralTerms: structuredClone(offer.collateralTerms) } : {}),
       validUntil: offer.validUntil
     },
@@ -353,7 +372,7 @@ function recoveredOfferCommon({ recovery, creditRequest, now }) {
   const decision = recovery.decision;
   const offer = recovery.offer;
   const expectedTermsVersion = recovery.offerSchemaVersion === "credit_offer.v1"
-    ? (creditRequest.collateralProfile ? "credit_terms.synthetic_secured.v1" : "credit_terms.v1")
+    ? offerReviewTermsVersion(offer, creditRequest.collateralProfile)
     : recovery.offerSchemaVersion === "credit_offer.v2"
       ? "credit_terms.v2"
       : undefined;

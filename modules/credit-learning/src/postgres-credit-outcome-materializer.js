@@ -76,6 +76,7 @@ function mapObligation(row) {
   return {
     obligationId: row.obligation_id,
     obligationHash: row.obligation_hash,
+    ...(row.synthetic_fees?{syntheticFees:row.synthetic_fees}: {}),
     riskDecisionId: row.risk_decision_id,
     subjectId: row.subject_id,
     principalId: row.principal_id,
@@ -163,12 +164,12 @@ async function insertOutcome(client, outcome, committed) {
        authorizing, funds_authority, economic_state_mutation,
        production_authority, pii_included, raw_transaction_data_included,
        score_authoritative, sandbox_only, production_funds_moved,
-       schema_version
+       schema_version${outcome.syntheticFeeCreditContext ? ", synthetic_fee_credit_context" : ""}
      ) VALUES (
        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
        $12, $13, $14, $15, $16, $17, $18, $19, $20, $21,
        $22, $23, $24, $25, $26, $27,
-       $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39
+       $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39${outcome.syntheticFeeCreditContext ? ", $40" : ""}
      )`,
     [
       outcome.creditOutcomeId,
@@ -209,7 +210,8 @@ async function insertOutcome(client, outcome, committed) {
       outcome.scoreAuthoritative,
       outcome.sandboxOnly,
       outcome.productionFundsMoved,
-      outcome.schemaVersion
+      outcome.schemaVersion,
+      ...(outcome.syntheticFeeCreditContext ? [JSON.stringify(outcome.syntheticFeeCreditContext)] : [])
     ]
   );
 }
@@ -375,6 +377,7 @@ export class PostgresCreditOutcomeMaterializer {
            o.production_funds_moved AS obligation_production_funds_moved,
            o.updated_at AS obligation_updated_at,
            o.schema_version AS obligation_schema_version,
+           to_jsonb(o)->'synthetic_fees' AS synthetic_fees,
            d.decision_hash,
            d.status AS decision_status,
            d.policy_hash,

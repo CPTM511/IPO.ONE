@@ -138,7 +138,14 @@
         "pilotReadSecuredPoolRisk",
         "pilotReadSyntheticCollateralProfile",
         "pilotConfirmSyntheticCollateral",
-        "pilotReleaseSyntheticCollateral"
+        "pilotReleaseSyntheticCollateral",
+        "pilotReadSyntheticFees",
+        "pilotReadSyntheticFeeSettlement",
+        "pilotCloseSyntheticFeeStatement",
+        "pilotReconcileSyntheticFees",
+        "pilotReadSyntheticFeeCorrectionCases",
+        "pilotReviewSyntheticFeeCorrection",
+        "pilotCorrectSyntheticFeeSource"
       ]
     },
     "payload": {
@@ -190,7 +197,8 @@
         "sandbox_hardship_restructure",
         "sandbox_uncollectible_writeoff",
         "servicing_clock_tick",
-        "stop_loss_triggered"
+        "stop_loss_triggered",
+        "synthetic_fee_source_correction"
       ]
     },
     "retryAttempt": {
@@ -3263,6 +3271,310 @@
           "reasonCode"
         ]
       }
+    },
+    {
+      "title": "pilotReadSyntheticFees",
+      "required": [
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "pilotReadSyntheticFees"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/obligationResourceReference"
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "pilotReadSyntheticFeeSettlement",
+      "properties": {
+        "operationId": {
+          "const": "pilotReadSyntheticFeeSettlement"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "month"
+          ],
+          "properties": {
+            "month": {
+              "type": "string",
+              "pattern": "^20[0-9]{2}-(0[1-9]|1[0-2])$"
+            }
+          }
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "resource"
+            ]
+          },
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "purpose"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          },
+          {
+            "required": [
+              "approvalArtifact"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "pilotCloseSyntheticFeeStatement",
+      "properties": {
+        "operationId": {
+          "const": "pilotCloseSyntheticFeeStatement"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "month"
+          ],
+          "properties": {
+            "month": {
+              "type": "string",
+              "pattern": "^20[0-9]{2}-(0[1-9]|1[0-2])$"
+            }
+          }
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "resource"
+            ]
+          },
+          {
+            "required": [
+              "purpose"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          },
+          {
+            "required": [
+              "approvalArtifact"
+            ]
+          }
+        ]
+      },
+      "required": [
+        "idempotencyKey"
+      ]
+    },
+    {
+      "title": "pilotReconcileSyntheticFees",
+      "properties": {
+        "operationId": {
+          "const": "pilotReconcileSyntheticFees"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "expectedStateHash"
+          ],
+          "properties": {
+            "expectedStateHash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            }
+          }
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "resource"
+            ]
+          },
+          {
+            "required": [
+              "purpose"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          },
+          {
+            "required": [
+              "approvalArtifact"
+            ]
+          }
+        ]
+      },
+      "required": [
+        "idempotencyKey"
+      ]
+    },
+    {
+      "title": "pilotReadSyntheticFeeCorrectionCases",
+      "required": [],
+      "properties": {
+        "operationId": {
+          "const": "pilotReadSyntheticFeeCorrectionCases"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {}
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "pilotReviewSyntheticFeeCorrection",
+      "required": [
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "pilotReviewSyntheticFeeCorrection"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sourceFeeEntryId",
+            "amountMinor"
+          ],
+          "properties": {
+            "sourceFeeEntryId": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "amountMinor": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]*$"
+            }
+          }
+        },
+        "resource": {
+          "$ref": "#/$defs/obligationResourceReference"
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "pilotCorrectSyntheticFeeSource",
+      "required": [
+        "idempotencyKey",
+        "resource",
+        "reasonCode",
+        "approvalArtifact"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "pilotCorrectSyntheticFeeSource"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sourceFeeEntryId",
+            "amountMinor",
+            "expectedFeeStateHash",
+            "expectedEffectsHash",
+            "sourcePolicyHash"
+          ],
+          "properties": {
+            "sourceFeeEntryId": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "amountMinor": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]*$"
+            },
+            "expectedFeeStateHash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "expectedEffectsHash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "sourcePolicyHash": {
+              "const": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"
+            }
+          }
+        },
+        "resource": {
+          "$ref": "#/$defs/obligationResourceReference"
+        },
+        "reasonCode": {
+          "const": "synthetic_fee_source_correction"
+        }
+      }
     }
   ],
   "allOf": [
@@ -3406,6 +3718,66 @@
             },
             "reasonCode": {
               "const": "sandbox_uncollectible_writeoff"
+            },
+            "idempotencyKey": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 256,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "operationId",
+            "payload",
+            "resource",
+            "reasonCode",
+            "idempotencyKey"
+          ],
+          "properties": {
+            "operationId": {
+              "const": "pilotCorrectSyntheticFeeSource"
+            },
+            "payload": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sourceFeeEntryId",
+                "amountMinor",
+                "expectedFeeStateHash",
+                "expectedEffectsHash",
+                "sourcePolicyHash"
+              ],
+              "properties": {
+                "sourceFeeEntryId": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-f]{64}$"
+                },
+                "amountMinor": {
+                  "type": "string",
+                  "pattern": "^[1-9][0-9]*$"
+                },
+                "expectedFeeStateHash": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-f]{64}$"
+                },
+                "expectedEffectsHash": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-f]{64}$"
+                },
+                "sourcePolicyHash": {
+                  "const": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"
+                }
+              }
+            },
+            "resource": {
+              "$ref": "#/$defs/obligationResourceReference"
+            },
+            "reasonCode": {
+              "const": "synthetic_fee_source_correction"
             },
             "idempotencyKey": {
               "type": "string",

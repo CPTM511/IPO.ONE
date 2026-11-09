@@ -1,4 +1,4 @@
-import { createServicingCasePresentation } from "./servicing-case-presentation.js";
+import { createServicingCasePresentation,currentSyntheticSourceCorrection } from "./servicing-case-presentation.js";
 
 export const SERVICING_POSITION_INDEX_VERSION = "servicing_position_index.v1";
 export const SERVICING_POSITION_INDEX_LIMIT = 8;
@@ -139,7 +139,7 @@ function normalizeOwnedView(view, expectedObligationId) {
         "withdrawable",
         "schemaVersion"
       ],
-      ["latestServicingAction"]
+      ["latestServicingAction","latestSourceCorrection"]
     ) ||
     view.schemaVersion !== "tenant_owned_obligation_view.v1" ||
     view.sandboxOnly !== true ||
@@ -149,6 +149,8 @@ function normalizeOwnedView(view, expectedObligationId) {
     view.obligation?.obligationId !== expectedObligationId
   ) return null;
 
+  if(view.latestSourceCorrection && (!currentSyntheticSourceCorrection(view.obligation,view.latestSourceCorrection) ||
+    new Date(view.asOf)<new Date(view.latestSourceCorrection.effectiveAt)))return null;
   const presentation = createServicingCasePresentation(
     view.obligation,
     view.latestServicingAction

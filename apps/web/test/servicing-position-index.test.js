@@ -278,3 +278,16 @@ test("servicing position refresh rejects trusted-time, schedule, and repayment r
     null
   );
 });
+
+test('F1 source credit recovery requires its exact current receipt and does not relabel an old servicing action',()=>{
+  const view=structuredClone(owned),receipt=structuredClone(fixtures.validResults.find(v=>v.operationId==='pilotCorrectSyntheticFeeSource').response.receipt);
+  const loan=view.obligation;delete view.latestServicingAction;
+  loan.syntheticFees={...structuredClone(fixtures.validResults.find(v=>v.operationId==='pilotReadSyntheticFees').response.fees),sourceCorrectionCount:1,lastSourceCorrectionReceiptId:receipt.receiptId};
+  receipt.obligationId=loan.obligationId;receipt.effectiveAt=view.asOf;
+  Object.assign(receipt.effects,{nextOutstandingPrincipalMinor:loan.outstandingPrincipalMinor,nextOutstandingInterestMinor:loan.outstandingInterestMinor,nextOutstandingFeesMinor:loan.outstandingFeesMinor,scheduleSequenceAfter:loan.scheduleSequence,scheduleHashAfter:loan.scheduleHash});
+  view.latestSourceCorrection=receipt;
+  assert.ok(acceptServicingPositionRefresh(null,view));
+  for(const change of [r=>r.effects.nextOutstandingPrincipalMinor='999999',r=>r.obligationId='another_obligation',r=>r.receiptId='0x'+'ff'.repeat(32),r=>r.effects.scheduleSequenceAfter++,r=>r.sourcePolicyHash='0x'+'ee'.repeat(32)]){
+    const wrong=structuredClone(view);change(wrong.latestSourceCorrection);assert.equal(acceptServicingPositionRefresh(null,wrong),null);
+  }
+});

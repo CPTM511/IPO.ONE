@@ -1953,6 +1953,8 @@ test("every browser button has a discoverable action contract", async () => {
   const html = await readFile(new URL("../src/index.html", import.meta.url), "utf8");
   const js = await readFile(new URL("../src/app.js", import.meta.url), "utf8") +
     await readFile(new URL("../src/local-review-workspace.js", import.meta.url), "utf8") +
+    await readFile(new URL("../src/synthetic-fee-presentation.js", import.meta.url), "utf8") +
+    await readFile(new URL("../src/synthetic-fee-source-presentation.js", import.meta.url), "utf8") +
     await readFile(new URL("../src/web-theme.js", import.meta.url), "utf8") +
     await readFile(new URL("../src/mobile-wallet-access.js", import.meta.url), "utf8");
   const genericAction = /\bdata-(?:view|go-view|agent-guide-action|borrow-entry|human-guide-action|private-action|wallet-chain|wallet-workspace-role|auth-provider|trading-capital-view|scroll-target)=/;
@@ -1969,6 +1971,7 @@ test("every browser button has a discoverable action contract", async () => {
       !id ||
       (
         !js.includes(`el("${id}")`) &&
+        !js.includes(`el('${id}')`) &&
         !js.includes(`#${id}`) &&
         !js.includes(`getElementById("${id}")`)
       )

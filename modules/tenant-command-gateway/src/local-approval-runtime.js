@@ -1,3 +1,4 @@
+import { normalizeSyntheticFeeCorrectionPayload,loadSyntheticFeeCorrectionReview } from "./synthetic-fee-source-handlers.js";
 import { DomainError, hashId } from "../../../packages/domain/src/index.js";
 import { ApprovalService, ApprovalProjectionType } from "../../approval/src/index.js";
 import { AuthorizationService } from "../../authorization/src/index.js";
@@ -6,6 +7,7 @@ import { normalizeResolutionPayload } from "./servicing-handlers.js";
 export const LOCAL_SERVICING_REASONS = Object.freeze({
   pilotRestructureSandboxObligation: "sandbox_hardship_restructure",
   pilotRepurchaseSandboxObligation: "sandbox_contractual_repurchase",
+  pilotCorrectSyntheticFeeSource: "synthetic_fee_source_correction",
   pilotWriteOffSandboxObligation: "sandbox_uncollectible_writeoff"
 });
 const unavailable = () => { throw new DomainError("local_approval_unavailable", "The reviewed local approval service or exact proposal is unavailable."); };
@@ -21,10 +23,12 @@ export function authorizationCommandPayloadHash(envelope) {
   });
 }
 
-export function createLocalApprovalRuntimeFactory({ verifyRecordedProof }) {
+export function createLocalApprovalRuntimeFactory({ verifyRecordedProof,syntheticFeeCorrectionsEnabled=false }) {
   return async function createRuntime({ client, coreRepository, directory, authenticationContext,
     policyRegistry, credentialRegistry, referenceHasher, auditStore, handlers, livePolicyAdapterFactory }) {
-    if ((await client.query("SELECT current_database() AS name")).rows[0]?.name !== "ipo_one_web027_candidate") unavailable();
+    const database=(await client.query("SELECT current_database() AS name")).rows[0]?.name;
+    const feeScope=syntheticFeeCorrectionsEnabled===true && ["ipo_one_b4_fee_review","b4_fee_browser_test_20261109","b4_fee_integration_test_20261109"].includes(database);
+    if(database!=="ipo_one_web027_candidate" && !feeScope)unavailable();
     const recorded = new Map();
     let planned;
     const get = async (type, id) => (await coreRepository.getProjectionStateInTransaction(client, type, id, { lock: true }))?.value;
@@ -83,7 +87,15 @@ export function createLocalApprovalRuntimeFactory({ verifyRecordedProof }) {
       async prepare(command, { requestId, correlationId, now }) {
         if (authenticationContext.actorId !== "actor_web027m_operations" ||
             command.reasonCode !== LOCAL_SERVICING_REASONS[command.operationId]) unavailable();
-        normalizeResolutionPayload(command.operationId, command.payload);
+        if(command.operationId==="pilotCorrectSyntheticFeeSource") {
+          if(!feeScope)unavailable();
+          normalizeSyntheticFeeCorrectionPayload(command.payload);
+          const data=await loadSyntheticFeeCorrectionReview({client,coreRepository,payload:command.payload,authorizationDecision:{resourceId:command.resource.resourceId},now});
+          if(data.review.expectedFeeStateHash!==command.payload.expectedFeeStateHash || data.review.expectedEffectsHash!==command.payload.expectedEffectsHash)throw new DomainError("synthetic_fee_correction_stale","Review the current source credit before proposing");
+        } else {
+          if(feeScope)unavailable();
+          normalizeResolutionPayload(command.operationId, command.payload);
+        }
         const handler = handlers.require(command.operationId);
         const authorization = new AuthorizationService({ policyRegistry, directory, credentialRegistry, auditStore, referenceHasher,
           livePolicyAdapter: livePolicyAdapterFactory({ client, coreRepository, handler, payload: command.payload }) });
@@ -100,7 +112,7 @@ export function createLocalApprovalRuntimeFactory({ verifyRecordedProof }) {
         const response = rows.rows[0].response_json;
         if (rows.rows[0].response_hash !== hashId("command_response",response) ||
             response.proposal?.proposalHash !== proposal.proposalHash || !response.command || !response.planSnapshot) unavailable();
-        return {command:response.command,planSnapshot:response.planSnapshot};
+        return {command:response.command,planSnapshot:response.planSnapshot,...(response.sourceCorrectionReview?{sourceCorrectionReview:response.sourceCorrectionReview}:{})};
       }
     });
   };

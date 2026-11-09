@@ -214,7 +214,14 @@
         "agentRevokeSecuredFacilityAuthorization",
         "pilotReadSyntheticCollateralProfile",
         "pilotConfirmSyntheticCollateral",
-        "pilotReleaseSyntheticCollateral"
+        "pilotReleaseSyntheticCollateral",
+        "pilotReadSyntheticFees",
+        "pilotReadSyntheticFeeCorrectionCases",
+        "pilotReviewSyntheticFeeCorrection",
+        "pilotReadSyntheticFeeSettlement",
+        "pilotCloseSyntheticFeeStatement",
+        "pilotReconcileSyntheticFees",
+        "pilotCorrectSyntheticFeeSource"
       ],
       "properties": {
         "pilotReadOwnSecuredPool": {
@@ -630,6 +637,27 @@
         },
         "pilotReleaseSyntheticCollateral": {
           "const": "economic"
+        },
+        "pilotReadSyntheticFees": {
+          "const": "read"
+        },
+        "pilotReadSyntheticFeeCorrectionCases": {
+          "const": "read"
+        },
+        "pilotReviewSyntheticFeeCorrection": {
+          "const": "read"
+        },
+        "pilotReadSyntheticFeeSettlement": {
+          "const": "read"
+        },
+        "pilotCloseSyntheticFeeStatement": {
+          "const": "economic"
+        },
+        "pilotReconcileSyntheticFees": {
+          "const": "economic"
+        },
+        "pilotCorrectSyntheticFeeSource": {
+          "const": "privileged"
         }
       }
     },

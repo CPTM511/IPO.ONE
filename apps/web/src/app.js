@@ -1,3 +1,4 @@
+import { renderSyntheticFeePanels, initializeSyntheticFeeControls, syntheticFeeEffect, syntheticSourceCreditClosureLabel } from "./synthetic-fee-presentation.js";
 import { createSyntheticCollateralPresentation, syntheticCollateralAmount } from "./synthetic-collateral-presentation.js";
 import { installProductLocalization } from "./product-localization.js";
 import { authenticationErrorCopy, productErrorCopy, workspaceKindLabel, workspaceSessionPresentation } from "./product-error-presentation.js";
@@ -129,6 +130,7 @@ let interactionMode = "human";
 let humanNewApplicationMode = false;
 let authenticatedDataEpoch = 0;
 let localReviewWorkspace;
+let syntheticFeeControls;
 let tenantPilotProbeOwner = null;
 let tenantPilotProbePromise = null;
 let tenantPilotProbeSerial = 0;
@@ -2769,6 +2771,7 @@ function purgeAuthenticatedBrowserState({
 } = {}) {
   authenticatedDataEpoch += 1;
   localReviewWorkspace?.clear();
+  syntheticFeeControls?.reset();
   invalidateTenantPilotProbe();
   invalidateRiskRequestOwners();
   humanNewApplicationMode = false;
@@ -4699,6 +4702,7 @@ function renderAgentAuthorityPilot() {
 
 function privateHumanLifecycleStatus() {
   const obligation = tenantPilot.obligation;
+  if (syntheticSourceCreditClosureLabel(obligation))return syntheticSourceCreditClosureLabel(obligation);
   if (obligation?.status === "fully_repaid") return "Fully repaid";
   if (obligation?.executionStatus === "executed") return titleize(obligation.status ?? "active");
   if (obligation) return "Obligation created";
@@ -5392,7 +5396,7 @@ function renderSyntheticMeteredResource() {
       ? "Load the complete server Evidence timeline"
       : `${usdMinorToMoney(consumedMinor.toString())} consumed · ${usdMinorToMoney((BigInt(profile.maxChargePerWindowMinor) - consumedMinor).toString())} remaining`;
   el("syntheticMeteredResourceObligation").textContent = obligation
-    ? `${titleize(obligation.status)} · ${compactOpaqueId(obligation.obligationId)}`
+    ? `${(syntheticSourceCreditClosureLabel(obligation) ?? titleize(obligation.status))} · ${compactOpaqueId(obligation.obligationId)}`
     : "Awaiting an Agent Obligation";
   if (obligation) el("syntheticMeteredResourceObligation").title = obligation.obligationId;
   el("syntheticMeteredResourceRepayment").textContent = obligation
@@ -6533,7 +6537,7 @@ function renderPrivateProductSurfaces() {
       ? "Decision pending"
       : "Not requested";
   el("privateHumanObligationStatus").textContent = obligation
-    ? titleize(obligation.status)
+    ? (syntheticSourceCreditClosureLabel(obligation) ?? titleize(obligation.status))
     : "Not created";
   el("privateHumanServicingStatus").textContent = obligation
     ? `${servicingClassificationLabel(obligation.servicingClassification ?? "current")} · DPD ${obligation.daysPastDue ?? 0}`
@@ -6567,7 +6571,7 @@ function renderPrivateProductSurfaces() {
   const checkpoints = [
     ["Identity & authority", tenantPilot.intent || offer || obligation ? "Human Consent verified" : agentAuthorityPilot.subject ? agentStatus : "Create Human Subject or Agent authority", Boolean(tenantPilot.intent || offer || obligation || agentAuthorityPilot.subject)],
     ["Decision & Offer", offer ? `${titleize(decision?.status)} · ${usdMinorToMoney(offer.approvedPrincipalMinor)}` : "Awaiting deterministic evaluation", Boolean(offer)],
-    ["Shared Obligation", obligation ? `${titleize(obligation.status)} · schedule v${obligation.scheduleSequence ?? 1}` : "Awaiting exact Offer acceptance", Boolean(obligation)],
+    ["Shared Obligation", obligation ? `${(syntheticSourceCreditClosureLabel(obligation) ?? titleize(obligation.status))} · schedule v${obligation.scheduleSequence ?? 1}` : "Awaiting exact Offer acceptance", Boolean(obligation)],
     ["Sandbox execution", obligation?.executionStatus === "executed" ? "Signed non-withdrawable receipt verified" : "No production funds can move", obligation?.executionStatus === "executed"],
     ["Repayment & Evidence", repaymentEvidenceStatus, repaymentEvidenceComplete]
   ];
@@ -8809,6 +8813,7 @@ function renderTenantPilot() {
         ? "Reconnect wallet to continue"
         : "Confirm & create sandbox Obligation";
 
+  renderSyntheticFeePanels(tenantPilot.offer, tenantPilot.obligation);
   const collateralTerms = tenantPilot.offer?.collateralTerms;
   el("humanOfferCollateralDisclosure").hidden = !collateralTerms;
   el("humanOfferCollateralDisclosure").textContent = collateralTerms
@@ -8819,7 +8824,7 @@ function renderTenantPilot() {
   el("humanObligationExecution").textContent = obligation
     ? titleize(obligation.executionStatus)
     : "Pending execution";
-  el("humanObligationStatus").textContent = obligation ? titleize(obligation.status) : "Created";
+  el("humanObligationStatus").textContent = obligation ? (syntheticSourceCreditClosureLabel(obligation) ?? titleize(obligation.status)) : "Created";
   el("humanObligationServicing").textContent = obligation
     ? servicingClassificationLabel(obligation.servicingClassification ?? "current")
     : "Current";
@@ -10459,7 +10464,7 @@ async function acceptHumanCreditOffer() {
         resourceHash: offer.creditOfferHash,
         payloadHash: actionPayloadHash,
         requestId,
-        effect: `${usdMinorToMoney(offer.approvedPrincipalMinor)} synthetic principal · no real funds`
+        effect: syntheticFeeEffect(offer) || `${usdMinorToMoney(offer.approvedPrincipalMinor)} synthetic principal · no real funds`
       });
       if (!actionConfirmation) {
         throw Object.assign(
@@ -10616,7 +10621,7 @@ async function executeHumanSandboxObligation() {
         resourceHash: obligation.obligationHash,
         payloadHash: actionPayloadHash,
         requestId,
-        effect: `${usdMinorToMoney(obligation.originalPrincipalMinor)} synthetic ledger execution`
+        effect: syntheticFeeEffect(obligation) || `${usdMinorToMoney(obligation.originalPrincipalMinor)} synthetic ledger execution`
       });
       if (!actionConfirmation) {
         throw Object.assign(
@@ -14669,6 +14674,8 @@ document.addEventListener("ipo-product-language-change", () => {
   renderHumanApplicationInbox();
   for (const { node, value } of inputs) node.value = value;
   obligationHistoryBrowser.refreshPresentation();
+  syntheticFeeControls?.refreshPresentation();
+  localReviewWorkspace?.render();
   productLocalization.refresh();
 });
 
@@ -14715,6 +14722,7 @@ async function boot() {
     : "Sign in to access the public Beta workspace");
 }
 
+syntheticFeeControls = initializeSyntheticFeeControls({ query: tenantApi, currentObligation: () => tenantPilot.obligation });
 localReviewWorkspace = createLocalReviewWorkspace({
   api:tenantApi,
   getState:()=>({signedIn:accessState.sessionActive,workspace:currentWorkspaceName()}),

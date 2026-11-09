@@ -1,3 +1,5 @@
+import { createSyntheticFeeSourceHandlers } from "./synthetic-fee-source-handlers.js";
+import { createSyntheticFeeHandlers } from "./synthetic-fee-handlers.js";
 import { createLocalReviewHandlers } from "./local-review-handlers.js";
 import { createAgentSubjectHandlers } from "./agent-subject-handlers.js";
 import { createAgentAccountProofHandlers } from "./agent-account-proof-handlers.js";
@@ -49,11 +51,12 @@ import {
 export function createTenantFoundationHandlers(options) {
   return Object.freeze([
     ...createLocalReviewHandlers(options),
+    ...createSyntheticFeeSourceHandlers(options),
     ...createAgentSubjectHandlers(),
     ...createAgentAccountProofHandlers(options),
     ...createExecutionAccountBindingHandlers(options),
     ...createAgentSecuredFacilityAuthorizationHandlers(),
-    ...createCreditDecisionHandlers(),
+    ...createCreditDecisionHandlers(options),
     ...createCreditPassportHandlers(),
     ...createCreditStateQueryHandlers(),
     ...createCapitalPartnerHandlers(),
@@ -75,6 +78,7 @@ export function createTenantFoundationHandlers(options) {
     }),
     ...createCreditIntentHandlers(options),
     ...createSyntheticCollateralHandlers(options),
+    ...createSyntheticFeeHandlers(options),
     ...createHumanSubjectHandlers(options),
     ...createWorkspaceResumeHandlers(),
     ...createWorkspaceContinuationHandlers(),

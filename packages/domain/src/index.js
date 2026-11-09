@@ -40,3 +40,9 @@ export * from "./agent-secured-facility-authorization.js";
 export * from "./pilot-case.js";
 
 export * from "./synthetic-collateral.js";
+
+export * from "./synthetic-fees.js";
+
+export * from "./synthetic-fee-source-policy.js";
+
+export { releaseAgentCreditLineForSourceCredit } from "./credit-line-projection.js";

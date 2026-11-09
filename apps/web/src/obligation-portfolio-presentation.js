@@ -1,4 +1,4 @@
-import { createServicingCasePresentation } from "./servicing-case-presentation.js";
+import { createServicingCasePresentation,currentSyntheticSourceCorrection } from "./servicing-case-presentation.js";
 
 export const OBLIGATION_PORTFOLIO_PRESENTATION_VERSION =
   "obligation_portfolio_presentation.v1";
@@ -263,7 +263,7 @@ export function createObligationPortfolioPresentation(input) {
         "withdrawable",
         "schemaVersion"
       ],
-      ["latestServicingAction"]
+      ["latestServicingAction","latestSourceCorrection"]
     ) ||
     view.schemaVersion !== "tenant_owned_obligation_view.v1" ||
     view.sandboxOnly !== true ||
@@ -272,6 +272,7 @@ export function createObligationPortfolioPresentation(input) {
     !validTimestamp(view.asOf)
   ) return null;
   const obligation = view.obligation;
+  if(view.latestSourceCorrection && (!currentSyntheticSourceCorrection(obligation,view.latestSourceCorrection) || new Date(view.asOf)<new Date(view.latestSourceCorrection.effectiveAt)))return null;
   const servicing = createServicingCasePresentation(
     obligation,
     view.latestServicingAction
@@ -299,8 +300,15 @@ export function createObligationPortfolioPresentation(input) {
     writtenOffInterest,
     writtenOffFees
   ].some((value) => value === null)) return null;
+  const fees=obligation.syntheticFees;
+  const sourceCredit=fees?minor(fees.principalUnpaidCreditMinor??"0"):0n;
+  const actualPrincipalPaid=sourceCredit===null?null:originalPrincipal-outstandingPrincipal-sourceCredit;
+  const feePrincipalValid=!fees || (fees.terms?.profile==="synthetic_usd_platform_fee.v1" &&
+    fees.terms.principalMinor===obligation.originalPrincipalMinor && actualPrincipalPaid!==null &&
+    actualPrincipalPaid>=0n && actualPrincipalPaid<=totalRepaid &&
+    (sourceCredit===0n || (Number.isSafeInteger(fees.sourceCorrectionCount) && fees.sourceCorrectionCount>0)));
   if (
-    outstandingPrincipal + totalRepaid + writtenOffPrincipal > originalPrincipal ||
+    !feePrincipalValid || (!fees && outstandingPrincipal + totalRepaid + writtenOffPrincipal > originalPrincipal) ||
     String(outstandingPrincipal + outstandingInterest + outstandingFees) !==
       servicing.outstandingMinor
   ) return null;

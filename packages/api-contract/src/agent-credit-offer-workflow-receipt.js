@@ -1,3 +1,4 @@
+import { registerSyntheticFeeSchemas } from "./synthetic-fee-schemas.js";
 import approvalProposalSchema from "../../../schemas/v2/approval-proposal.schema.json" with { type: "json" };
 import approvalDecisionSchema from "../../../schemas/v2/approval-decision.schema.json" with { type: "json" };
 import Ajv2020 from "ajv/dist/2020.js";
@@ -51,6 +52,7 @@ const ajv = new Ajv2020({
   validateFormats: true
 });
 ajv.addFormat("date-time", { type: "string", validate: dateTime });
+registerSyntheticFeeSchemas(ajv);
 ajv.addSchema(mandateSchema);
 ajv.addSchema(providerIntentAcknowledgementSchema);
 ajv.addSchema(providerIntentViewSchema);

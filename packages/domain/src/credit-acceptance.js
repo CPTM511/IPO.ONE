@@ -1,3 +1,4 @@
+import { initialSyntheticFees, assertSyntheticFeeProvenance } from "./synthetic-fees.js";
 import {
   ConsentPurpose,
   ConsentStatus,
@@ -281,6 +282,7 @@ export function createAcceptedOfferObligation({ offer, intent, decision, accepta
   ) {
     throw new DomainError("offer_not_available", "Acceptance does not match Offer provenance");
   }
+  assertSyntheticFeeProvenance({ offer });
   const obligationId = createOperationalId("obligation");
   const schedule = createObligationSchedule({ obligationId, offer });
   const core = {
@@ -315,6 +317,7 @@ export function createAcceptedOfferObligation({ offer, intent, decision, accepta
     installments: schedule.installments,
     executionStatus: ObligationExecutionStatus.PENDING,
     ...(offer.collateralTerms ? { syntheticCollateral: initialSyntheticCollateral(offer.collateralTerms) } : {}),
+    ...(offer.feeTerms ? { syntheticFees: initialSyntheticFees(offer.feeTerms) } : {}),
     sandboxOnly: true,
     productionFundsMoved: false,
     status: ObligationStatus.CREATED,

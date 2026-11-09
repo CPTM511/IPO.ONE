@@ -402,3 +402,26 @@ export function replayAgentCreditLineProjection(events) {
   if (!current) invalid("credit_line_replay_invalid", "CreditLine replay contains no projection event");
   return current;
 }
+
+// A protected source credit only decreases canonical exposure. It neither
+// revalidates nor expands a Facility or changes its frozen/revoked state.
+export function releaseAgentCreditLineForSourceCredit({currentProjection,exposure,obligationId,principalCreditMinor,now=new Date()}) {
+  verifyCreditLineProjection(currentProjection);
+  const amount=minor("principalCreditMinor",principalCreditMinor);
+  if (!(now instanceof Date) || !Number.isFinite(now.getTime()) || !exposure ||
+      exposure.exposureHash!==createAgentCreditExposureHash(exposure) ||
+      currentProjection.subjectId!==exposure.subjectId || currentProjection.assetId!==exposure.assetId ||
+      currentProjection.exposureHash!==exposure.exposureHash ||
+      currentProjection.utilizedMinor!==exposure.outstandingPrincipalMinor ||
+      currentProjection.limitMinor!==exposure.committedLimitMinor ||
+      exposure.obligations.reduce((n,o)=>n+minor("outstandingPrincipalMinor",o.outstandingPrincipalMinor),0n)!==BigInt(exposure.outstandingPrincipalMinor)) {
+    invalid("credit_line_projection_stale","Source credit requires consistent canonical exposure");
+  }
+  const target=exposure.obligations.find(o=>o.obligationId===obligationId);
+  if (!target || amount>BigInt(target.outstandingPrincipalMinor)) invalid("credit_line_projection_stale","Credit exceeds the source Obligation exposure");
+  const obligations=exposure.obligations.map(o=>({...o,...(o.obligationId===obligationId?{outstandingPrincipalMinor:(BigInt(o.outstandingPrincipalMinor)-amount).toString()}: {})}));
+  const {projectionHash,...previous}=currentProjection;
+  const core={...previous,exposureHash:createAgentCreditExposureHash({...exposure,obligations}),
+    utilizedMinor:(BigInt(exposure.outstandingPrincipalMinor)-amount).toString(),updatedAt:now.toISOString()};
+  return Object.freeze({...core,projectionHash:hashId("credit_line_projection",core)});
+}

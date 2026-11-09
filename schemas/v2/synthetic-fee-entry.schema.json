@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/synthetic-fee-entry.schema.json",
+  "title": "IPO.ONE synthetic-fee-entry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "obligationId",
+    "economicLoanId",
+    "institutionId",
+    "sourceId",
+    "kind",
+    "policyHash",
+    "termsHash",
+    "sourceHash",
+    "baseDeltaMinor",
+    "feeDeltaMinor",
+    "cumulativeBaseMinor",
+    "cumulativeFeeMinor",
+    "remainderNumerator",
+    "remainderDenominator",
+    "reversesEntryId",
+    "reasonCode",
+    "occurredAt",
+    "revision",
+    "syntheticOnly",
+    "productionFundsMoved",
+    "schemaVersion",
+    "feeEntryId",
+    "assessmentStatus",
+    "reconcilesPendingEntryIds"
+  ],
+  "properties": {
+    "obligationId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "economicLoanId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "institutionId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "sourceId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "kind": {
+      "enum": [
+        "borrower",
+        "institution"
+      ]
+    },
+    "policyHash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "termsHash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "sourceHash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "baseDeltaMinor": {
+      "type": "string",
+      "pattern": "^-?(0|[1-9][0-9]{0,77})$"
+    },
+    "feeDeltaMinor": {
+      "type": "string",
+      "pattern": "^-?(0|[1-9][0-9]{0,77})$"
+    },
+    "cumulativeBaseMinor": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    },
+    "cumulativeFeeMinor": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    },
+    "remainderNumerator": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    },
+    "remainderDenominator": {
+      "const": "10000"
+    },
+    "reversesEntryId": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reasonCode": {
+      "enum": [
+        null,
+        "funding_correction",
+        "normal_interest_refund"
+      ]
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "syntheticOnly": {
+      "const": true
+    },
+    "productionFundsMoved": {
+      "const": false
+    },
+    "schemaVersion": {
+      "const": "synthetic_fee_entry.v1"
+    },
+    "feeEntryId": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "ledgerTransactionId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "assessmentStatus": {
+      "enum": [
+        "assessed",
+        "pending_profile_disabled"
+      ]
+    },
+    "reconcilesPendingEntryIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^0x[0-9a-f]{64}$"
+      }
+    }
+  }
+}

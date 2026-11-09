@@ -147,3 +147,16 @@ test("outcome rejects non-terminal, production-authorizing, and incomplete Evide
     (error) => error?.code === "invalid_credit_outcome"
   );
 });
+
+test('F1 credit attribution uses effective exposure without counting cancelled principal as payment',()=>{
+  const terminal={...obligation(),totalRepaidMinor:'9009',syntheticFees:{fundedBaseMinor:'9000',sourceCorrectionCount:1,lastSourceCorrectionReceiptId:hashId('receipt',{}),principalUnpaidCreditMinor:'3000',principalRefundCreditDueMinor:'0',interestRefundCreditDueMinor:'0',borrowerRefundDueMinor:'0'}};
+  const outcome=create({obligation:terminal});
+  assert.equal(outcome.originalPrincipalMinor,'12000');assert.equal(outcome.totalRepaidMinor,'9009');
+  assert.equal(outcome.syntheticFeeCreditContext.effectivePrincipalMinor,'9000');assert.equal(outcome.syntheticFeeCreditContext.netRepaidMinor,'9009');
+  assert.equal(outcome.repaymentRatioBps,10000);
+  assert.throws(()=>create({obligation:{...terminal,totalRepaidMinor:'0',syntheticFees:{...terminal.syntheticFees,fundedBaseMinor:'0'}}}),e=>e.code==='synthetic_fee_cycle_cancelled');
+});
+test('F1 paid source credit preserves gross receipts but removes refund credits from net performance',()=>{
+  const terminal={...obligation(),totalRepaidMinor:'12012',syntheticFees:{fundedBaseMinor:'9000',sourceCorrectionCount:1,lastSourceCorrectionReceiptId:hashId('receipt',{}),principalRefundCreditDueMinor:'3000',interestRefundCreditDueMinor:'0',borrowerRefundDueMinor:'3'}};
+  const outcome=create({obligation:terminal});assert.equal(outcome.totalRepaidMinor,'12012');assert.equal(outcome.syntheticFeeCreditContext.netRepaidMinor,'9009');
+});

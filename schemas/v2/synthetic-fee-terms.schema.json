@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/synthetic-fee-terms.schema.json",
+  "title": "IPO.ONE synthetic-fee-terms",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile",
+    "schemaVersion",
+    "scope",
+    "currency",
+    "minorUnitScale",
+    "borrowerRateBps",
+    "borrowerCapMinor",
+    "minimumFeeMinor",
+    "institutionRateBps",
+    "collectionMethod",
+    "rounding",
+    "settlementPeriod",
+    "fxMode",
+    "syntheticOnly",
+    "productionPolicyAvailable",
+    "productionFundsMoved",
+    "withdrawable",
+    "policyHash",
+    "economicLoanId",
+    "borrowerPayer",
+    "institutionPayer",
+    "institutionId",
+    "assetId",
+    "principalMinor",
+    "borrowerFeeAtFullFundingMinor",
+    "providerOriginationFeeMinor",
+    "termsHash",
+    "annualRateBps",
+    "scheduledTermDays",
+    "netProceedsMinor",
+    "scheduledInterestEstimateMinor",
+    "estimatedTotalRepaymentMinor",
+    "estimatedTotalCostMinor",
+    "disclosureBasis"
+  ],
+  "properties": {
+    "profile": {
+      "const": "synthetic_usd_platform_fee.v1"
+    },
+    "schemaVersion": {
+      "const": "synthetic_fee_terms.v1"
+    },
+    "scope": {
+      "const": "L0_LOCAL_NO_FUNDS"
+    },
+    "currency": {
+      "const": "USD"
+    },
+    "minorUnitScale": {
+      "const": 2
+    },
+    "borrowerRateBps": {
+      "const": 10
+    },
+    "borrowerCapMinor": {
+      "const": "1000"
+    },
+    "minimumFeeMinor": {
+      "const": "0"
+    },
+    "institutionRateBps": {
+      "const": 1000
+    },
+    "collectionMethod": {
+      "const": "separate_receivable"
+    },
+    "rounding": {
+      "const": "cumulative_floor_minor_unit"
+    },
+    "settlementPeriod": {
+      "const": "utc_calendar_month"
+    },
+    "fxMode": {
+      "const": "not_applicable_usd_only"
+    },
+    "syntheticOnly": {
+      "const": true
+    },
+    "productionPolicyAvailable": {
+      "const": false
+    },
+    "productionFundsMoved": {
+      "const": false
+    },
+    "withdrawable": {
+      "const": false
+    },
+    "policyHash": {
+      "const": "0x0672e224b332ce6809160e633ede365456b3dd852fbffde2fbf188ff019edb70"
+    },
+    "economicLoanId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "borrowerPayer": {
+      "const": "obligation_subject"
+    },
+    "institutionPayer": {
+      "const": "synthetic_capital_partner"
+    },
+    "institutionId": {
+      "const": "urn:ipo-one:local:synthetic-capital-partner:b4"
+    },
+    "assetId": {
+      "const": "urn:ipo-one:sandbox-asset:usd-cent"
+    },
+    "principalMinor": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    },
+    "borrowerFeeAtFullFundingMinor": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    },
+    "providerOriginationFeeMinor": {
+      "const": "0"
+    },
+    "termsHash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "annualRateBps": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "scheduledTermDays": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 366
+    },
+    "netProceedsMinor": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    },
+    "scheduledInterestEstimateMinor": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    },
+    "estimatedTotalRepaymentMinor": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    },
+    "estimatedTotalCostMinor": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    },
+    "disclosureBasis": {
+      "const": "execute_at_offer_creation_hold_to_maturity_actual365"
+    }
+  }
+}

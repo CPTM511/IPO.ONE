@@ -111,6 +111,7 @@ export function createCreditStateProjection({ outcomes, updatedAt }) {
     totalRepaidMinor: outcome.totalRepaidMinor,
     lossMinor: outcome.lossMinor,
     repaymentRatioBps: outcome.repaymentRatioBps,
+    ...(outcome.syntheticFeeCreditContext?{syntheticFeeCreditContext:structuredClone(outcome.syntheticFeeCreditContext)}: {}),
     sourceEvidenceHashes: Object.freeze([...outcome.sourceEvidenceHashes]),
     outcomeFinalizedAt: outcome.outcomeFinalizedAt,
     recordedAt: outcome.recordedAt,
@@ -128,6 +129,10 @@ export function createCreditStateProjection({ outcomes, updatedAt }) {
       totalOriginalPrincipalMinor: sumMinor(normalized, "originalPrincipalMinor"),
       totalRepaidMinor: sumMinor(normalized, "totalRepaidMinor"),
       totalLossMinor: sumMinor(normalized, "lossMinor"),
+      ...(normalized.some(o=>o.syntheticFeeCreditContext)?{
+        totalEffectivePrincipalMinor:normalized.reduce((n,o)=>n+BigInt(o.syntheticFeeCreditContext?.effectivePrincipalMinor??o.originalPrincipalMinor),0n).toString(),
+        totalNetRepaidMinor:normalized.reduce((n,o)=>n+BigInt(o.syntheticFeeCreditContext?.netRepaidMinor??o.totalRepaidMinor),0n).toString()
+      }: {}),
       schemaVersion: "credit_state_metrics.v1"
     },
     factors: factorState(counts, maximumDaysPastDue, normalized),

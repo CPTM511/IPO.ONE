@@ -137,7 +137,14 @@
         "pilotReadSecuredPoolRisk",
         "pilotReadSyntheticCollateralProfile",
         "pilotConfirmSyntheticCollateral",
-        "pilotReleaseSyntheticCollateral"
+        "pilotReleaseSyntheticCollateral",
+        "pilotReadSyntheticFees",
+        "pilotReadSyntheticFeeSettlement",
+        "pilotCloseSyntheticFeeStatement",
+        "pilotReconcileSyntheticFees",
+        "pilotReadSyntheticFeeCorrectionCases",
+        "pilotReviewSyntheticFeeCorrection",
+        "pilotCorrectSyntheticFeeSource"
       ]
     },
     "replayed": {
@@ -1549,6 +1556,88 @@
           "$ref": "#/$defs/syntheticCollateralReleased"
         }
       }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "pilotReadSyntheticFees"
+        },
+        "response": {
+          "$ref": "#/$defs/syntheticFeesView"
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "pilotReadSyntheticFeeSettlement"
+        },
+        "response": {
+          "$ref": "#/$defs/syntheticFeeSettlement"
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "pilotCloseSyntheticFeeStatement"
+        },
+        "response": {
+          "$ref": "#/$defs/syntheticFeeStatementClosed"
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "pilotReconcileSyntheticFees"
+        },
+        "response": {
+          "$ref": "#/$defs/syntheticFeesReconciled"
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "pilotReadSyntheticFeeCorrectionCases"
+        },
+        "response": {
+          "$ref": "#/$defs/pilotReadSyntheticFeeCorrectionCasesResponse"
+        }
+      },
+      "required": [
+        "operationId",
+        "response"
+      ]
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "pilotReviewSyntheticFeeCorrection"
+        },
+        "response": {
+          "$ref": "#/$defs/pilotReviewSyntheticFeeCorrectionResponse"
+        }
+      },
+      "required": [
+        "operationId",
+        "response"
+      ]
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "pilotCorrectSyntheticFeeSource"
+        },
+        "response": {
+          "$ref": "#/$defs/pilotCorrectSyntheticFeeSourceResponse"
+        }
+      },
+      "required": [
+        "operationId",
+        "response"
+      ]
     }
   ],
   "$defs": {
@@ -2058,6 +2147,66 @@
               "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
             }
           }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "operationId",
+            "payload",
+            "resource",
+            "reasonCode",
+            "idempotencyKey"
+          ],
+          "properties": {
+            "operationId": {
+              "const": "pilotCorrectSyntheticFeeSource"
+            },
+            "payload": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sourceFeeEntryId",
+                "amountMinor",
+                "expectedFeeStateHash",
+                "expectedEffectsHash",
+                "sourcePolicyHash"
+              ],
+              "properties": {
+                "sourceFeeEntryId": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-f]{64}$"
+                },
+                "amountMinor": {
+                  "type": "string",
+                  "pattern": "^[1-9][0-9]*$"
+                },
+                "expectedFeeStateHash": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-f]{64}$"
+                },
+                "expectedEffectsHash": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-f]{64}$"
+                },
+                "sourcePolicyHash": {
+                  "const": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"
+                }
+              }
+            },
+            "resource": {
+              "$ref": "#/$defs/obligationResourceReference"
+            },
+            "reasonCode": {
+              "const": "synthetic_fee_source_correction"
+            },
+            "idempotencyKey": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 256,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+            }
+          }
         }
       ]
     },
@@ -2170,6 +2319,216 @@
         },
         "productionFundsMoved": {
           "const": false
+        },
+        "sourceCorrectionReview": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "schemaVersion",
+            "obligationId",
+            "sourceFeeEntryId",
+            "amountMinor",
+            "sourcePolicyHash",
+            "expectedFeeStateHash",
+            "expectedEffectsHash",
+            "effects",
+            "syntheticOnly",
+            "productionFundsMoved"
+          ],
+          "properties": {
+            "schemaVersion": {
+              "const": "tenant_synthetic_fee_correction_review.v1"
+            },
+            "obligationId": {
+              "type": "string"
+            },
+            "sourceFeeEntryId": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "amountMinor": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]*$"
+            },
+            "sourcePolicyHash": {
+              "const": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"
+            },
+            "expectedFeeStateHash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "expectedEffectsHash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "effects": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sourceFeeEntryId",
+                "sourceHash",
+                "sourcePolicyHash",
+                "amountMinor",
+                "reasonCode",
+                "interestAccruedBeforeCreditMinor",
+                "accrualRemainder",
+                "unpaidPrincipalCreditMinor",
+                "writtenOffPrincipalCreditMinor",
+                "principalRefundCreditMinor",
+                "interestRefundCreditMinor",
+                "feeCreditMinor",
+                "unpaidFeeCreditMinor",
+                "writtenOffFeeCreditMinor",
+                "paidFeeCreditMinor",
+                "nextFundedBaseMinor",
+                "nextNormalInterestBaseMinor",
+                "nextBorrowerFeeMinor",
+                "nextInstitutionFeeMinor",
+                "nextOutstandingPrincipalMinor",
+                "nextOutstandingInterestMinor",
+                "nextOutstandingFeesMinor",
+                "nextStatus",
+                "kind",
+                "pendingSource",
+                "syntheticOnly",
+                "productionFundsMoved",
+                "cashRefundRecorded",
+                "scheduleSequenceBefore",
+                "scheduleSequenceAfter",
+                "scheduleHashBefore",
+                "scheduleHashAfter"
+              ],
+              "properties": {
+                "sourceFeeEntryId": {
+                  "type": "string"
+                },
+                "sourceHash": {
+                  "type": "string"
+                },
+                "sourcePolicyHash": {
+                  "type": "string"
+                },
+                "amountMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "reasonCode": {
+                  "type": "string"
+                },
+                "interestAccruedBeforeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "accrualRemainder": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "unpaidPrincipalCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "writtenOffPrincipalCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "principalRefundCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "interestRefundCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "feeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "unpaidFeeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "writtenOffFeeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "paidFeeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextFundedBaseMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextNormalInterestBaseMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextBorrowerFeeMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextInstitutionFeeMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextOutstandingPrincipalMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextOutstandingInterestMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextOutstandingFeesMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextStatus": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "borrower",
+                    "institution"
+                  ]
+                },
+                "pendingSource": {
+                  "type": "boolean"
+                },
+                "syntheticOnly": {
+                  "const": true
+                },
+                "productionFundsMoved": {
+                  "const": false
+                },
+                "cashRefundRecorded": {
+                  "const": false
+                },
+                "scheduleSequenceBefore": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "scheduleSequenceAfter": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "scheduleHashBefore": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-f]{64}$"
+                },
+                "scheduleHashAfter": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-f]{64}$"
+                }
+              }
+            },
+            "syntheticOnly": {
+              "const": true
+            },
+            "productionFundsMoved": {
+              "const": false
+            }
+          }
         }
       }
     },
@@ -2217,6 +2576,216 @@
         },
         "productionFundsMoved": {
           "const": false
+        },
+        "sourceCorrectionReview": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "schemaVersion",
+            "obligationId",
+            "sourceFeeEntryId",
+            "amountMinor",
+            "sourcePolicyHash",
+            "expectedFeeStateHash",
+            "expectedEffectsHash",
+            "effects",
+            "syntheticOnly",
+            "productionFundsMoved"
+          ],
+          "properties": {
+            "schemaVersion": {
+              "const": "tenant_synthetic_fee_correction_review.v1"
+            },
+            "obligationId": {
+              "type": "string"
+            },
+            "sourceFeeEntryId": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "amountMinor": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]*$"
+            },
+            "sourcePolicyHash": {
+              "const": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"
+            },
+            "expectedFeeStateHash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "expectedEffectsHash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "effects": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sourceFeeEntryId",
+                "sourceHash",
+                "sourcePolicyHash",
+                "amountMinor",
+                "reasonCode",
+                "interestAccruedBeforeCreditMinor",
+                "accrualRemainder",
+                "unpaidPrincipalCreditMinor",
+                "writtenOffPrincipalCreditMinor",
+                "principalRefundCreditMinor",
+                "interestRefundCreditMinor",
+                "feeCreditMinor",
+                "unpaidFeeCreditMinor",
+                "writtenOffFeeCreditMinor",
+                "paidFeeCreditMinor",
+                "nextFundedBaseMinor",
+                "nextNormalInterestBaseMinor",
+                "nextBorrowerFeeMinor",
+                "nextInstitutionFeeMinor",
+                "nextOutstandingPrincipalMinor",
+                "nextOutstandingInterestMinor",
+                "nextOutstandingFeesMinor",
+                "nextStatus",
+                "kind",
+                "pendingSource",
+                "syntheticOnly",
+                "productionFundsMoved",
+                "cashRefundRecorded",
+                "scheduleSequenceBefore",
+                "scheduleSequenceAfter",
+                "scheduleHashBefore",
+                "scheduleHashAfter"
+              ],
+              "properties": {
+                "sourceFeeEntryId": {
+                  "type": "string"
+                },
+                "sourceHash": {
+                  "type": "string"
+                },
+                "sourcePolicyHash": {
+                  "type": "string"
+                },
+                "amountMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "reasonCode": {
+                  "type": "string"
+                },
+                "interestAccruedBeforeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "accrualRemainder": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "unpaidPrincipalCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "writtenOffPrincipalCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "principalRefundCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "interestRefundCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "feeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "unpaidFeeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "writtenOffFeeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "paidFeeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextFundedBaseMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextNormalInterestBaseMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextBorrowerFeeMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextInstitutionFeeMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextOutstandingPrincipalMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextOutstandingInterestMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextOutstandingFeesMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextStatus": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "borrower",
+                    "institution"
+                  ]
+                },
+                "pendingSource": {
+                  "type": "boolean"
+                },
+                "syntheticOnly": {
+                  "const": true
+                },
+                "productionFundsMoved": {
+                  "const": false
+                },
+                "cashRefundRecorded": {
+                  "const": false
+                },
+                "scheduleSequenceBefore": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "scheduleSequenceAfter": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "scheduleHashBefore": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-f]{64}$"
+                },
+                "scheduleHashAfter": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-f]{64}$"
+                }
+              }
+            },
+            "syntheticOnly": {
+              "const": true
+            },
+            "productionFundsMoved": {
+              "const": false
+            }
+          }
         }
       }
     },
@@ -2255,6 +2824,216 @@
         },
         "productionFundsMoved": {
           "const": false
+        },
+        "sourceCorrectionReview": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "schemaVersion",
+            "obligationId",
+            "sourceFeeEntryId",
+            "amountMinor",
+            "sourcePolicyHash",
+            "expectedFeeStateHash",
+            "expectedEffectsHash",
+            "effects",
+            "syntheticOnly",
+            "productionFundsMoved"
+          ],
+          "properties": {
+            "schemaVersion": {
+              "const": "tenant_synthetic_fee_correction_review.v1"
+            },
+            "obligationId": {
+              "type": "string"
+            },
+            "sourceFeeEntryId": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "amountMinor": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]*$"
+            },
+            "sourcePolicyHash": {
+              "const": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"
+            },
+            "expectedFeeStateHash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "expectedEffectsHash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "effects": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sourceFeeEntryId",
+                "sourceHash",
+                "sourcePolicyHash",
+                "amountMinor",
+                "reasonCode",
+                "interestAccruedBeforeCreditMinor",
+                "accrualRemainder",
+                "unpaidPrincipalCreditMinor",
+                "writtenOffPrincipalCreditMinor",
+                "principalRefundCreditMinor",
+                "interestRefundCreditMinor",
+                "feeCreditMinor",
+                "unpaidFeeCreditMinor",
+                "writtenOffFeeCreditMinor",
+                "paidFeeCreditMinor",
+                "nextFundedBaseMinor",
+                "nextNormalInterestBaseMinor",
+                "nextBorrowerFeeMinor",
+                "nextInstitutionFeeMinor",
+                "nextOutstandingPrincipalMinor",
+                "nextOutstandingInterestMinor",
+                "nextOutstandingFeesMinor",
+                "nextStatus",
+                "kind",
+                "pendingSource",
+                "syntheticOnly",
+                "productionFundsMoved",
+                "cashRefundRecorded",
+                "scheduleSequenceBefore",
+                "scheduleSequenceAfter",
+                "scheduleHashBefore",
+                "scheduleHashAfter"
+              ],
+              "properties": {
+                "sourceFeeEntryId": {
+                  "type": "string"
+                },
+                "sourceHash": {
+                  "type": "string"
+                },
+                "sourcePolicyHash": {
+                  "type": "string"
+                },
+                "amountMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "reasonCode": {
+                  "type": "string"
+                },
+                "interestAccruedBeforeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "accrualRemainder": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "unpaidPrincipalCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "writtenOffPrincipalCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "principalRefundCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "interestRefundCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "feeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "unpaidFeeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "writtenOffFeeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "paidFeeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextFundedBaseMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextNormalInterestBaseMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextBorrowerFeeMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextInstitutionFeeMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextOutstandingPrincipalMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextOutstandingInterestMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextOutstandingFeesMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextStatus": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "borrower",
+                    "institution"
+                  ]
+                },
+                "pendingSource": {
+                  "type": "boolean"
+                },
+                "syntheticOnly": {
+                  "const": true
+                },
+                "productionFundsMoved": {
+                  "const": false
+                },
+                "cashRefundRecorded": {
+                  "const": false
+                },
+                "scheduleSequenceBefore": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "scheduleSequenceAfter": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "scheduleHashBefore": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-f]{64}$"
+                },
+                "scheduleHashAfter": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-f]{64}$"
+                }
+              }
+            },
+            "syntheticOnly": {
+              "const": true
+            },
+            "productionFundsMoved": {
+              "const": false
+            }
+          }
         }
       }
     },
@@ -2293,6 +3072,216 @@
         },
         "productionFundsMoved": {
           "const": false
+        },
+        "sourceCorrectionReview": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "schemaVersion",
+            "obligationId",
+            "sourceFeeEntryId",
+            "amountMinor",
+            "sourcePolicyHash",
+            "expectedFeeStateHash",
+            "expectedEffectsHash",
+            "effects",
+            "syntheticOnly",
+            "productionFundsMoved"
+          ],
+          "properties": {
+            "schemaVersion": {
+              "const": "tenant_synthetic_fee_correction_review.v1"
+            },
+            "obligationId": {
+              "type": "string"
+            },
+            "sourceFeeEntryId": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "amountMinor": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]*$"
+            },
+            "sourcePolicyHash": {
+              "const": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"
+            },
+            "expectedFeeStateHash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "expectedEffectsHash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "effects": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sourceFeeEntryId",
+                "sourceHash",
+                "sourcePolicyHash",
+                "amountMinor",
+                "reasonCode",
+                "interestAccruedBeforeCreditMinor",
+                "accrualRemainder",
+                "unpaidPrincipalCreditMinor",
+                "writtenOffPrincipalCreditMinor",
+                "principalRefundCreditMinor",
+                "interestRefundCreditMinor",
+                "feeCreditMinor",
+                "unpaidFeeCreditMinor",
+                "writtenOffFeeCreditMinor",
+                "paidFeeCreditMinor",
+                "nextFundedBaseMinor",
+                "nextNormalInterestBaseMinor",
+                "nextBorrowerFeeMinor",
+                "nextInstitutionFeeMinor",
+                "nextOutstandingPrincipalMinor",
+                "nextOutstandingInterestMinor",
+                "nextOutstandingFeesMinor",
+                "nextStatus",
+                "kind",
+                "pendingSource",
+                "syntheticOnly",
+                "productionFundsMoved",
+                "cashRefundRecorded",
+                "scheduleSequenceBefore",
+                "scheduleSequenceAfter",
+                "scheduleHashBefore",
+                "scheduleHashAfter"
+              ],
+              "properties": {
+                "sourceFeeEntryId": {
+                  "type": "string"
+                },
+                "sourceHash": {
+                  "type": "string"
+                },
+                "sourcePolicyHash": {
+                  "type": "string"
+                },
+                "amountMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "reasonCode": {
+                  "type": "string"
+                },
+                "interestAccruedBeforeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "accrualRemainder": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "unpaidPrincipalCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "writtenOffPrincipalCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "principalRefundCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "interestRefundCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "feeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "unpaidFeeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "writtenOffFeeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "paidFeeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextFundedBaseMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextNormalInterestBaseMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextBorrowerFeeMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextInstitutionFeeMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextOutstandingPrincipalMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextOutstandingInterestMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextOutstandingFeesMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextStatus": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "borrower",
+                    "institution"
+                  ]
+                },
+                "pendingSource": {
+                  "type": "boolean"
+                },
+                "syntheticOnly": {
+                  "const": true
+                },
+                "productionFundsMoved": {
+                  "const": false
+                },
+                "cashRefundRecorded": {
+                  "const": false
+                },
+                "scheduleSequenceBefore": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "scheduleSequenceAfter": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "scheduleHashBefore": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-f]{64}$"
+                },
+                "scheduleHashAfter": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-f]{64}$"
+                }
+              }
+            },
+            "syntheticOnly": {
+              "const": true
+            },
+            "productionFundsMoved": {
+              "const": false
+            }
+          }
         }
       }
     },
@@ -2350,7 +3339,8 @@
                 "enum": [
                   "pilotRestructureSandboxObligation",
                   "pilotRepurchaseSandboxObligation",
-                  "pilotWriteOffSandboxObligation"
+                  "pilotWriteOffSandboxObligation",
+                  "pilotCorrectSyntheticFeeSource"
                 ]
               },
               "obligationId": {
@@ -4441,6 +5431,9 @@
               }
             }
           }
+        },
+        "syntheticFees": {
+          "$ref": "#/$defs/syntheticFeeState"
         }
       }
     },
@@ -5481,7 +6474,7 @@
           "$ref": "#/$defs/identifier"
         },
         "termsVersion": {
-          "enum": ["credit_terms.v1", "credit_terms.synthetic_secured.v1"]
+          "enum": ["credit_terms.v1", "credit_terms.synthetic_secured.v1", "credit_terms.synthetic_fee.v1"]
         },
         "validUntil": {
           "$ref": "#/$defs/timestamp"
@@ -5600,6 +6593,9 @@
               "pattern": "^0x[0-9a-f]{64}$"
             }
           }
+        },
+        "feeTerms": {
+          "$ref": "#/$defs/syntheticFeeTerms"
         }
       }
     },
@@ -8996,6 +9992,289 @@
         },
         "schemaVersion": {
           "const": "tenant_owned_obligation_view.v1"
+        },
+        "latestSourceCorrection": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sourceFeeEntryId",
+            "amountMinor",
+            "expectedFeeStateHash",
+            "expectedEffectsHash",
+            "sourcePolicyHash",
+            "obligationId",
+            "originalSourceId",
+            "originalSourceHash",
+            "approvalExecutionId",
+            "actorId",
+            "reasonCode",
+            "syntheticOnly",
+            "productionFundsMoved",
+            "kind",
+            "effects",
+            "effectiveAt",
+            "refundStatus",
+            "scope",
+            "profile",
+            "chainTransactionHash",
+            "schemaVersion",
+            "receiptId",
+            "receiptHash",
+            "sourceLedgerTransactionId",
+            "feeLedgerTransactionId",
+            "feeEntryId"
+          ],
+          "properties": {
+            "sourceFeeEntryId": {
+              "type": "string"
+            },
+            "amountMinor": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]*$"
+            },
+            "expectedFeeStateHash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "expectedEffectsHash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "sourcePolicyHash": {
+              "const": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"
+            },
+            "obligationId": {
+              "type": "string"
+            },
+            "originalSourceId": {
+              "type": "string"
+            },
+            "originalSourceHash": {
+              "type": "string"
+            },
+            "approvalExecutionId": {
+              "type": "string"
+            },
+            "actorId": {
+              "type": "string"
+            },
+            "reasonCode": {
+              "type": "string"
+            },
+            "syntheticOnly": {
+              "const": true
+            },
+            "productionFundsMoved": {
+              "const": false
+            },
+            "kind": {
+              "enum": [
+                "borrower",
+                "institution"
+              ]
+            },
+            "effects": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sourceFeeEntryId",
+                "sourceHash",
+                "sourcePolicyHash",
+                "amountMinor",
+                "reasonCode",
+                "interestAccruedBeforeCreditMinor",
+                "accrualRemainder",
+                "unpaidPrincipalCreditMinor",
+                "writtenOffPrincipalCreditMinor",
+                "principalRefundCreditMinor",
+                "interestRefundCreditMinor",
+                "feeCreditMinor",
+                "unpaidFeeCreditMinor",
+                "writtenOffFeeCreditMinor",
+                "paidFeeCreditMinor",
+                "nextFundedBaseMinor",
+                "nextNormalInterestBaseMinor",
+                "nextBorrowerFeeMinor",
+                "nextInstitutionFeeMinor",
+                "nextOutstandingPrincipalMinor",
+                "nextOutstandingInterestMinor",
+                "nextOutstandingFeesMinor",
+                "nextStatus",
+                "kind",
+                "pendingSource",
+                "syntheticOnly",
+                "productionFundsMoved",
+                "cashRefundRecorded",
+                "scheduleSequenceBefore",
+                "scheduleSequenceAfter",
+                "scheduleHashBefore",
+                "scheduleHashAfter"
+              ],
+              "properties": {
+                "sourceFeeEntryId": {
+                  "type": "string"
+                },
+                "sourceHash": {
+                  "type": "string"
+                },
+                "sourcePolicyHash": {
+                  "type": "string"
+                },
+                "amountMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "reasonCode": {
+                  "type": "string"
+                },
+                "interestAccruedBeforeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "accrualRemainder": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "unpaidPrincipalCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "writtenOffPrincipalCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "principalRefundCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "interestRefundCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "feeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "unpaidFeeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "writtenOffFeeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "paidFeeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextFundedBaseMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextNormalInterestBaseMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextBorrowerFeeMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextInstitutionFeeMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextOutstandingPrincipalMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextOutstandingInterestMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextOutstandingFeesMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextStatus": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "borrower",
+                    "institution"
+                  ]
+                },
+                "pendingSource": {
+                  "type": "boolean"
+                },
+                "syntheticOnly": {
+                  "const": true
+                },
+                "productionFundsMoved": {
+                  "const": false
+                },
+                "cashRefundRecorded": {
+                  "const": false
+                },
+                "scheduleSequenceBefore": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "scheduleSequenceAfter": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "scheduleHashBefore": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-f]{64}$"
+                },
+                "scheduleHashAfter": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-f]{64}$"
+                }
+              }
+            },
+            "effectiveAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "refundStatus": {
+              "const": "credit_due_only"
+            },
+            "scope": {
+              "const": "L0_LOCAL_NO_FUNDS"
+            },
+            "profile": {
+              "const": "synthetic_usd_platform_fee.v1"
+            },
+            "chainTransactionHash": {
+              "type": "null"
+            },
+            "schemaVersion": {
+              "const": "synthetic_fee_source_correction.v1"
+            },
+            "receiptId": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "receiptHash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "sourceLedgerTransactionId": {
+              "type": "string"
+            },
+            "feeLedgerTransactionId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "feeEntryId": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            }
+          }
         }
       }
     },
@@ -9050,7 +10329,66 @@
         },
         "outcomeFinalizedAt": { "$ref": "#/$defs/timestamp" },
         "recordedAt": { "$ref": "#/$defs/timestamp" },
-        "schemaVersion": { "const": "credit_track_record_entry.v1" }
+        "schemaVersion": { "const": "credit_track_record_entry.v1" },
+        "syntheticFeeCreditContext": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "schemaVersion",
+            "scope",
+            "effectivePrincipalMinor",
+            "netRepaidMinor",
+            "netLossMinor",
+            "grossLossMinor",
+            "feeStateHash",
+            "sourceCorrectionCount",
+            "lastSourceCorrectionReceiptId",
+            "syntheticOnly",
+            "productionFundsMoved"
+          ],
+          "properties": {
+            "schemaVersion": {
+              "const": "synthetic_fee_credit_context.v1"
+            },
+            "scope": {
+              "const": "L0_LOCAL_NO_FUNDS"
+            },
+            "effectivePrincipalMinor": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            },
+            "netRepaidMinor": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            },
+            "netLossMinor": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            },
+            "grossLossMinor": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            },
+            "feeStateHash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "sourceCorrectionCount": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "lastSourceCorrectionReceiptId": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "syntheticOnly": {
+              "const": true
+            },
+            "productionFundsMoved": {
+              "const": false
+            }
+          }
+        }
       }
     },
     "creditStateProjection": {
@@ -9110,7 +10448,15 @@
             "totalOriginalPrincipalMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
             "totalRepaidMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
             "totalLossMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
-            "schemaVersion": { "const": "credit_state_metrics.v1" }
+            "schemaVersion": { "const": "credit_state_metrics.v1" },
+            "totalEffectivePrincipalMinor": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            },
+            "totalNetRepaidMinor": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            }
           }
         },
         "factors": {
@@ -9822,6 +11168,1128 @@
         },
         "schemaVersion": {
           "const": "trading_facility_evidence.v1"
+        }
+      }
+    },
+    "syntheticFeeTerms": {
+      "$ref": "https://schemas.ipo.one/v2/synthetic-fee-terms.schema.json"
+    },
+    "syntheticFeeState": {
+      "$ref": "https://schemas.ipo.one/v2/synthetic-fee-state.schema.json"
+    },
+    "syntheticFeeEntry": {
+      "$ref": "https://schemas.ipo.one/v2/synthetic-fee-entry.schema.json"
+    },
+    "syntheticFeeStatement": {
+      "$ref": "https://schemas.ipo.one/v2/synthetic-fee-statement.schema.json"
+    },
+    "syntheticFeesView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "obligationId",
+        "fees",
+        "entries",
+        "syntheticOnly",
+        "productionFundsMoved",
+        "sourceCorrections"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "tenant_synthetic_fees.v1"
+        },
+        "obligationId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "fees": {
+          "$ref": "#/$defs/syntheticFeeState"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/syntheticFeeEntry"
+          }
+        },
+        "syntheticOnly": {
+          "const": true
+        },
+        "productionFundsMoved": {
+          "const": false
+        },
+        "sourceCorrections": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "sourceFeeEntryId",
+              "amountMinor",
+              "expectedFeeStateHash",
+              "expectedEffectsHash",
+              "sourcePolicyHash",
+              "obligationId",
+              "originalSourceId",
+              "originalSourceHash",
+              "approvalExecutionId",
+              "actorId",
+              "reasonCode",
+              "syntheticOnly",
+              "productionFundsMoved",
+              "kind",
+              "effects",
+              "effectiveAt",
+              "refundStatus",
+              "scope",
+              "profile",
+              "chainTransactionHash",
+              "schemaVersion",
+              "receiptId",
+              "receiptHash",
+              "sourceLedgerTransactionId",
+              "feeLedgerTransactionId",
+              "feeEntryId"
+            ],
+            "properties": {
+              "sourceFeeEntryId": {
+                "type": "string"
+              },
+              "amountMinor": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]*$"
+              },
+              "expectedFeeStateHash": {
+                "type": "string",
+                "pattern": "^0x[0-9a-f]{64}$"
+              },
+              "expectedEffectsHash": {
+                "type": "string",
+                "pattern": "^0x[0-9a-f]{64}$"
+              },
+              "sourcePolicyHash": {
+                "const": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"
+              },
+              "obligationId": {
+                "type": "string"
+              },
+              "originalSourceId": {
+                "type": "string"
+              },
+              "originalSourceHash": {
+                "type": "string"
+              },
+              "approvalExecutionId": {
+                "type": "string"
+              },
+              "actorId": {
+                "type": "string"
+              },
+              "reasonCode": {
+                "type": "string"
+              },
+              "syntheticOnly": {
+                "const": true
+              },
+              "productionFundsMoved": {
+                "const": false
+              },
+              "kind": {
+                "enum": [
+                  "borrower",
+                  "institution"
+                ]
+              },
+              "effects": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "sourceFeeEntryId",
+                  "sourceHash",
+                  "sourcePolicyHash",
+                  "amountMinor",
+                  "reasonCode",
+                  "interestAccruedBeforeCreditMinor",
+                  "accrualRemainder",
+                  "unpaidPrincipalCreditMinor",
+                  "writtenOffPrincipalCreditMinor",
+                  "principalRefundCreditMinor",
+                  "interestRefundCreditMinor",
+                  "feeCreditMinor",
+                  "unpaidFeeCreditMinor",
+                  "writtenOffFeeCreditMinor",
+                  "paidFeeCreditMinor",
+                  "nextFundedBaseMinor",
+                  "nextNormalInterestBaseMinor",
+                  "nextBorrowerFeeMinor",
+                  "nextInstitutionFeeMinor",
+                  "nextOutstandingPrincipalMinor",
+                  "nextOutstandingInterestMinor",
+                  "nextOutstandingFeesMinor",
+                  "nextStatus",
+                  "kind",
+                  "pendingSource",
+                  "syntheticOnly",
+                  "productionFundsMoved",
+                  "cashRefundRecorded",
+                  "scheduleSequenceBefore",
+                  "scheduleSequenceAfter",
+                  "scheduleHashBefore",
+                  "scheduleHashAfter"
+                ],
+                "properties": {
+                  "sourceFeeEntryId": {
+                    "type": "string"
+                  },
+                  "sourceHash": {
+                    "type": "string"
+                  },
+                  "sourcePolicyHash": {
+                    "type": "string"
+                  },
+                  "amountMinor": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$"
+                  },
+                  "reasonCode": {
+                    "type": "string"
+                  },
+                  "interestAccruedBeforeCreditMinor": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$"
+                  },
+                  "accrualRemainder": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$"
+                  },
+                  "unpaidPrincipalCreditMinor": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$"
+                  },
+                  "writtenOffPrincipalCreditMinor": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$"
+                  },
+                  "principalRefundCreditMinor": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$"
+                  },
+                  "interestRefundCreditMinor": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$"
+                  },
+                  "feeCreditMinor": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$"
+                  },
+                  "unpaidFeeCreditMinor": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$"
+                  },
+                  "writtenOffFeeCreditMinor": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$"
+                  },
+                  "paidFeeCreditMinor": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$"
+                  },
+                  "nextFundedBaseMinor": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$"
+                  },
+                  "nextNormalInterestBaseMinor": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$"
+                  },
+                  "nextBorrowerFeeMinor": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$"
+                  },
+                  "nextInstitutionFeeMinor": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$"
+                  },
+                  "nextOutstandingPrincipalMinor": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$"
+                  },
+                  "nextOutstandingInterestMinor": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$"
+                  },
+                  "nextOutstandingFeesMinor": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$"
+                  },
+                  "nextStatus": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "enum": [
+                      "borrower",
+                      "institution"
+                    ]
+                  },
+                  "pendingSource": {
+                    "type": "boolean"
+                  },
+                  "syntheticOnly": {
+                    "const": true
+                  },
+                  "productionFundsMoved": {
+                    "const": false
+                  },
+                  "cashRefundRecorded": {
+                    "const": false
+                  },
+                  "scheduleSequenceBefore": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "scheduleSequenceAfter": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "scheduleHashBefore": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-f]{64}$"
+                  },
+                  "scheduleHashAfter": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-f]{64}$"
+                  }
+                }
+              },
+              "effectiveAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "refundStatus": {
+                "const": "credit_due_only"
+              },
+              "scope": {
+                "const": "L0_LOCAL_NO_FUNDS"
+              },
+              "profile": {
+                "const": "synthetic_usd_platform_fee.v1"
+              },
+              "chainTransactionHash": {
+                "type": "null"
+              },
+              "schemaVersion": {
+                "const": "synthetic_fee_source_correction.v1"
+              },
+              "receiptId": {
+                "type": "string",
+                "pattern": "^0x[0-9a-f]{64}$"
+              },
+              "receiptHash": {
+                "type": "string",
+                "pattern": "^0x[0-9a-f]{64}$"
+              },
+              "sourceLedgerTransactionId": {
+                "type": "string"
+              },
+              "feeLedgerTransactionId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "feeEntryId": {
+                "type": "string",
+                "pattern": "^0x[0-9a-f]{64}$"
+              }
+            }
+          }
+        }
+      }
+    },
+    "syntheticFeeSettlement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "enabled",
+        "policy",
+        "statement",
+        "syntheticOnly",
+        "productionFundsMoved",
+        "pendingBaseMinor",
+        "pendingAssessmentMinor",
+        "pendingAssessmentStateHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "tenant_synthetic_fee_settlement.v1"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "profile",
+            "schemaVersion",
+            "scope",
+            "currency",
+            "minorUnitScale",
+            "borrowerRateBps",
+            "borrowerCapMinor",
+            "minimumFeeMinor",
+            "institutionRateBps",
+            "collectionMethod",
+            "rounding",
+            "settlementPeriod",
+            "fxMode",
+            "syntheticOnly",
+            "productionPolicyAvailable",
+            "productionFundsMoved",
+            "withdrawable"
+          ],
+          "properties": {
+            "profile": {
+              "const": "synthetic_usd_platform_fee.v1"
+            },
+            "schemaVersion": {
+              "const": "synthetic_fee_policy.v1"
+            },
+            "scope": {
+              "const": "L0_LOCAL_NO_FUNDS"
+            },
+            "currency": {
+              "const": "USD"
+            },
+            "minorUnitScale": {
+              "const": 2
+            },
+            "borrowerRateBps": {
+              "const": 10
+            },
+            "borrowerCapMinor": {
+              "const": "1000"
+            },
+            "minimumFeeMinor": {
+              "const": "0"
+            },
+            "institutionRateBps": {
+              "const": 1000
+            },
+            "collectionMethod": {
+              "const": "separate_receivable"
+            },
+            "rounding": {
+              "const": "cumulative_floor_minor_unit"
+            },
+            "settlementPeriod": {
+              "const": "utc_calendar_month"
+            },
+            "fxMode": {
+              "const": "not_applicable_usd_only"
+            },
+            "syntheticOnly": {
+              "const": true
+            },
+            "productionPolicyAvailable": {
+              "const": false
+            },
+            "productionFundsMoved": {
+              "const": false
+            },
+            "withdrawable": {
+              "const": false
+            }
+          }
+        },
+        "statement": {
+          "$ref": "#/$defs/syntheticFeeStatement"
+        },
+        "syntheticOnly": {
+          "const": true
+        },
+        "productionFundsMoved": {
+          "const": false
+        },
+        "pendingBaseMinor": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,77})$"
+        },
+        "pendingAssessmentMinor": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,77})$"
+        },
+        "pendingAssessmentStateHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        }
+      }
+    },
+    "syntheticFeeStatementClosed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "statement",
+        "syntheticOnly",
+        "productionFundsMoved"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "tenant_synthetic_fee_statement_closed.v1"
+        },
+        "statement": {
+          "$ref": "#/$defs/syntheticFeeStatement"
+        },
+        "syntheticOnly": {
+          "const": true
+        },
+        "productionFundsMoved": {
+          "const": false
+        }
+      }
+    },
+    "syntheticFeesReconciled": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "assessedCount",
+        "feeEntryIds",
+        "syntheticOnly",
+        "productionFundsMoved"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "tenant_synthetic_fees_reconciled.v1"
+        },
+        "assessedCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "feeEntryIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^0x[0-9a-f]{64}$"
+          }
+        },
+        "syntheticOnly": {
+          "const": true
+        },
+        "productionFundsMoved": {
+          "const": false
+        }
+      }
+    },
+    "pilotReadSyntheticFeeCorrectionCasesResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "cases",
+        "hasMore",
+        "asOf",
+        "syntheticOnly",
+        "productionFundsMoved"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "tenant_synthetic_fee_correction_cases.v1"
+        },
+        "cases": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "obligationId",
+              "reference",
+              "status",
+              "sourceFeeEntryId",
+              "kind",
+              "sourceId",
+              "sourceHash",
+              "remainingSourceBaseMinor",
+              "occurredAt"
+            ],
+            "properties": {
+              "obligationId": {
+                "type": "string"
+              },
+              "reference": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "sourceFeeEntryId": {
+                "type": "string",
+                "pattern": "^0x[0-9a-f]{64}$"
+              },
+              "kind": {
+                "enum": [
+                  "borrower",
+                  "institution"
+                ]
+              },
+              "sourceId": {
+                "type": "string"
+              },
+              "sourceHash": {
+                "type": "string",
+                "pattern": "^0x[0-9a-f]{64}$"
+              },
+              "remainingSourceBaseMinor": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]*$"
+              },
+              "occurredAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "hasMore": {
+          "type": "boolean"
+        },
+        "asOf": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "syntheticOnly": {
+          "const": true
+        },
+        "productionFundsMoved": {
+          "const": false
+        }
+      }
+    },
+    "pilotReviewSyntheticFeeCorrectionResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "obligationId",
+        "sourceFeeEntryId",
+        "amountMinor",
+        "sourcePolicyHash",
+        "expectedFeeStateHash",
+        "expectedEffectsHash",
+        "effects",
+        "syntheticOnly",
+        "productionFundsMoved"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "tenant_synthetic_fee_correction_review.v1"
+        },
+        "obligationId": {
+          "type": "string"
+        },
+        "sourceFeeEntryId": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "amountMinor": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]*$"
+        },
+        "sourcePolicyHash": {
+          "const": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"
+        },
+        "expectedFeeStateHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "expectedEffectsHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "effects": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sourceFeeEntryId",
+            "sourceHash",
+            "sourcePolicyHash",
+            "amountMinor",
+            "reasonCode",
+            "interestAccruedBeforeCreditMinor",
+            "accrualRemainder",
+            "unpaidPrincipalCreditMinor",
+            "writtenOffPrincipalCreditMinor",
+            "principalRefundCreditMinor",
+            "interestRefundCreditMinor",
+            "feeCreditMinor",
+            "unpaidFeeCreditMinor",
+            "writtenOffFeeCreditMinor",
+            "paidFeeCreditMinor",
+            "nextFundedBaseMinor",
+            "nextNormalInterestBaseMinor",
+            "nextBorrowerFeeMinor",
+            "nextInstitutionFeeMinor",
+            "nextOutstandingPrincipalMinor",
+            "nextOutstandingInterestMinor",
+            "nextOutstandingFeesMinor",
+            "nextStatus",
+            "kind",
+            "pendingSource",
+            "syntheticOnly",
+            "productionFundsMoved",
+            "cashRefundRecorded",
+            "scheduleSequenceBefore",
+            "scheduleSequenceAfter",
+            "scheduleHashBefore",
+            "scheduleHashAfter"
+          ],
+          "properties": {
+            "sourceFeeEntryId": {
+              "type": "string"
+            },
+            "sourceHash": {
+              "type": "string"
+            },
+            "sourcePolicyHash": {
+              "type": "string"
+            },
+            "amountMinor": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            },
+            "reasonCode": {
+              "type": "string"
+            },
+            "interestAccruedBeforeCreditMinor": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            },
+            "accrualRemainder": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            },
+            "unpaidPrincipalCreditMinor": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            },
+            "writtenOffPrincipalCreditMinor": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            },
+            "principalRefundCreditMinor": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            },
+            "interestRefundCreditMinor": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            },
+            "feeCreditMinor": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            },
+            "unpaidFeeCreditMinor": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            },
+            "writtenOffFeeCreditMinor": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            },
+            "paidFeeCreditMinor": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            },
+            "nextFundedBaseMinor": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            },
+            "nextNormalInterestBaseMinor": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            },
+            "nextBorrowerFeeMinor": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            },
+            "nextInstitutionFeeMinor": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            },
+            "nextOutstandingPrincipalMinor": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            },
+            "nextOutstandingInterestMinor": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            },
+            "nextOutstandingFeesMinor": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            },
+            "nextStatus": {
+              "type": "string"
+            },
+            "kind": {
+              "enum": [
+                "borrower",
+                "institution"
+              ]
+            },
+            "pendingSource": {
+              "type": "boolean"
+            },
+            "syntheticOnly": {
+              "const": true
+            },
+            "productionFundsMoved": {
+              "const": false
+            },
+            "cashRefundRecorded": {
+              "const": false
+            },
+            "scheduleSequenceBefore": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "scheduleSequenceAfter": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "scheduleHashBefore": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "scheduleHashAfter": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            }
+          }
+        },
+        "syntheticOnly": {
+          "const": true
+        },
+        "productionFundsMoved": {
+          "const": false
+        }
+      }
+    },
+    "pilotCorrectSyntheticFeeSourceResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "obligationId",
+        "fees",
+        "receipt",
+        "syntheticOnly",
+        "productionFundsMoved"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "tenant_synthetic_fee_source_corrected.v1"
+        },
+        "obligationId": {
+          "type": "string"
+        },
+        "fees": {
+          "$ref": "https://schemas.ipo.one/v2/synthetic-fee-state.schema.json"
+        },
+        "receipt": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sourceFeeEntryId",
+            "amountMinor",
+            "expectedFeeStateHash",
+            "expectedEffectsHash",
+            "sourcePolicyHash",
+            "obligationId",
+            "originalSourceId",
+            "originalSourceHash",
+            "approvalExecutionId",
+            "actorId",
+            "reasonCode",
+            "syntheticOnly",
+            "productionFundsMoved",
+            "kind",
+            "effects",
+            "effectiveAt",
+            "refundStatus",
+            "scope",
+            "profile",
+            "chainTransactionHash",
+            "schemaVersion",
+            "receiptId",
+            "receiptHash",
+            "sourceLedgerTransactionId",
+            "feeLedgerTransactionId",
+            "feeEntryId"
+          ],
+          "properties": {
+            "sourceFeeEntryId": {
+              "type": "string"
+            },
+            "amountMinor": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]*$"
+            },
+            "expectedFeeStateHash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "expectedEffectsHash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "sourcePolicyHash": {
+              "const": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"
+            },
+            "obligationId": {
+              "type": "string"
+            },
+            "originalSourceId": {
+              "type": "string"
+            },
+            "originalSourceHash": {
+              "type": "string"
+            },
+            "approvalExecutionId": {
+              "type": "string"
+            },
+            "actorId": {
+              "type": "string"
+            },
+            "reasonCode": {
+              "type": "string"
+            },
+            "syntheticOnly": {
+              "const": true
+            },
+            "productionFundsMoved": {
+              "const": false
+            },
+            "kind": {
+              "enum": [
+                "borrower",
+                "institution"
+              ]
+            },
+            "effects": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sourceFeeEntryId",
+                "sourceHash",
+                "sourcePolicyHash",
+                "amountMinor",
+                "reasonCode",
+                "interestAccruedBeforeCreditMinor",
+                "accrualRemainder",
+                "unpaidPrincipalCreditMinor",
+                "writtenOffPrincipalCreditMinor",
+                "principalRefundCreditMinor",
+                "interestRefundCreditMinor",
+                "feeCreditMinor",
+                "unpaidFeeCreditMinor",
+                "writtenOffFeeCreditMinor",
+                "paidFeeCreditMinor",
+                "nextFundedBaseMinor",
+                "nextNormalInterestBaseMinor",
+                "nextBorrowerFeeMinor",
+                "nextInstitutionFeeMinor",
+                "nextOutstandingPrincipalMinor",
+                "nextOutstandingInterestMinor",
+                "nextOutstandingFeesMinor",
+                "nextStatus",
+                "kind",
+                "pendingSource",
+                "syntheticOnly",
+                "productionFundsMoved",
+                "cashRefundRecorded",
+                "scheduleSequenceBefore",
+                "scheduleSequenceAfter",
+                "scheduleHashBefore",
+                "scheduleHashAfter"
+              ],
+              "properties": {
+                "sourceFeeEntryId": {
+                  "type": "string"
+                },
+                "sourceHash": {
+                  "type": "string"
+                },
+                "sourcePolicyHash": {
+                  "type": "string"
+                },
+                "amountMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "reasonCode": {
+                  "type": "string"
+                },
+                "interestAccruedBeforeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "accrualRemainder": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "unpaidPrincipalCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "writtenOffPrincipalCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "principalRefundCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "interestRefundCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "feeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "unpaidFeeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "writtenOffFeeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "paidFeeCreditMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextFundedBaseMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextNormalInterestBaseMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextBorrowerFeeMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextInstitutionFeeMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextOutstandingPrincipalMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextOutstandingInterestMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextOutstandingFeesMinor": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "nextStatus": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "borrower",
+                    "institution"
+                  ]
+                },
+                "pendingSource": {
+                  "type": "boolean"
+                },
+                "syntheticOnly": {
+                  "const": true
+                },
+                "productionFundsMoved": {
+                  "const": false
+                },
+                "cashRefundRecorded": {
+                  "const": false
+                },
+                "scheduleSequenceBefore": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "scheduleSequenceAfter": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "scheduleHashBefore": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-f]{64}$"
+                },
+                "scheduleHashAfter": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-f]{64}$"
+                }
+              }
+            },
+            "effectiveAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "refundStatus": {
+              "const": "credit_due_only"
+            },
+            "scope": {
+              "const": "L0_LOCAL_NO_FUNDS"
+            },
+            "profile": {
+              "const": "synthetic_usd_platform_fee.v1"
+            },
+            "chainTransactionHash": {
+              "type": "null"
+            },
+            "schemaVersion": {
+              "const": "synthetic_fee_source_correction.v1"
+            },
+            "receiptId": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "receiptHash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "sourceLedgerTransactionId": {
+              "type": "string"
+            },
+            "feeLedgerTransactionId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "feeEntryId": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            }
+          }
+        },
+        "syntheticOnly": {
+          "const": true
+        },
+        "productionFundsMoved": {
+          "const": false
         }
       }
     }

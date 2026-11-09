@@ -88,7 +88,7 @@
     "typecheck": "node scripts/check-contract-types.mjs",
     "check:schemas": "node scripts/check-schemas.mjs",
     "check:openapi": "node scripts/check-openapi.mjs",
-    "check:migrations": "node scripts/check-migrations.mjs",
+    "check:migrations": "node --test scripts/sql-drop-statements.test.mjs && node scripts/check-migrations.mjs",
     "check:deploy-topology": "node scripts/check-deploy-topology.mjs",
     "check:provider-selection": "node scripts/check-provider-selection.mjs",
     "check:closed-pilot-operations": "node scripts/check-closed-pilot-operations.mjs",

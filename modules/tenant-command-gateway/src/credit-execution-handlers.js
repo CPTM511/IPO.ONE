@@ -1,3 +1,4 @@
+import { assertSyntheticFeeProvenance } from "../../../packages/domain/src/synthetic-fees.js";
 import {
   assertSyntheticCollateralProvenance,
   assertSyntheticCollateralAllowsExecution,
@@ -194,6 +195,7 @@ export async function loadObligationContext({
     );
   }
   assertSyntheticCollateralProvenance({ intent: intentState.value, offer: offerState.value, obligation });
+  assertSyntheticFeeProvenance({ offer: offerState.value, obligation });
   return {
     state,
     obligation,
@@ -358,7 +360,8 @@ async function planAgentLockboxCreation({
 
 export function executeSandboxObligationCommandHandler({
   sandboxRailAdapter = LOCAL_SIGNED_SANDBOX_RAIL,
-  syntheticCollateralEnabled = false
+  syntheticCollateralEnabled = false,
+  syntheticFeesEnabled = false
 } = {}) {
   if (
     !sandboxRailAdapter || typeof sandboxRailAdapter.execute !== "function" ||
@@ -451,6 +454,10 @@ export function executeSandboxObligationCommandHandler({
           })
         : undefined;
       if (creditLine) assertAgentProviderTarget({ input, authority, creditLine });
+      assertSyntheticFeeProvenance({ offer, obligation });
+      if (obligation.syntheticFees && syntheticFeesEnabled !== true) {
+        throw new DomainError("synthetic_fees_disabled", "Local synthetic fee policy is disabled");
+      }
       assertSyntheticCollateralAllowsExecution(obligation);
       if (obligation.syntheticCollateral && !syntheticCollateralEnabled) {
         throw new DomainError("synthetic_collateral_disabled", "Synthetic collateral is not enabled in this environment");
@@ -585,6 +592,9 @@ export function executeSandboxObligationCommandHandler({
         lockboxEvent,
         executionEvent
       ].filter(Boolean);
+      const feePlan = planSyntheticFeeWrites(execution, { obligation, authenticationContext, requestId, correlationId, now });
+      // Keep the Obligation projection source at the stream head.
+      events.splice(events.length - 1, 0, ...feePlan.events);
       return {
         aggregateType: "obligation",
         aggregateId: obligation.obligationId,
@@ -615,6 +625,7 @@ export function executeSandboxObligationCommandHandler({
             value: execution.obligation,
             eventId: executionEvent.eventId
           },
+          ...feePlan.writes,
           ...(creditLine ? [{
             type: CoreProjectionType.CREDIT_LINE,
             value: creditLine.value,
@@ -693,7 +704,7 @@ function createRevenueCaptureReceipt({ lockbox, repayment, now }) {
   });
 }
 
-export function postSandboxRepaymentCommandHandler() {
+export function postSandboxRepaymentCommandHandler({ syntheticFeesEnabled = false } = {}) {
   return Object.freeze({
     operationId: "pilotPostSandboxRepayment",
     kind: "command",
@@ -754,6 +765,7 @@ export function postSandboxRepaymentCommandHandler() {
         summarizeEconomicActionConfirmation(actionConfirmation);
       await assertSandboxAccountsAvailable({ client, coreRepository, obligation });
       const result = postSandboxRepayment(obligation, {
+        syntheticFeeAssessmentEnabled: syntheticFeesEnabled === true,
         amountMinor: input.amountMinor,
         sourceCode: input.sourceCode,
         actorId: authenticationContext.actorId,
@@ -873,6 +885,9 @@ export function postSandboxRepaymentCommandHandler() {
         now
       });
       events.push(ledgerEvent, repaymentEvent);
+      const feePlan = planSyntheticFeeWrites(result, { obligation, authenticationContext, requestId, correlationId, now });
+      events.push(...feePlan.events);
+      writes.push(...feePlan.writes);
       writes.push(
         {
           type: CoreProjectionType.LEDGER_TRANSACTION,
@@ -1016,6 +1031,23 @@ export function postSandboxRepaymentCommandHandler() {
 export function createCreditExecutionHandlers(options) {
   return Object.freeze([
     executeSandboxObligationCommandHandler(options),
-    postSandboxRepaymentCommandHandler()
+    postSandboxRepaymentCommandHandler(options)
   ]);
+}
+
+export function planSyntheticFeeWrites(result, { obligation, authenticationContext, requestId, correlationId, now }) {
+  if (!result.feeEntry) return { events: [], writes: [] };
+  const entry = { ...result.feeEntry,
+    ...(result.feeTransaction ? { ledgerTransactionId: result.feeTransaction.ledgerTransactionId } : {}) };
+  const event = createCreditEvent({
+    eventType: BigInt(entry.baseDeltaMinor) < 0n ? CreditEventType.SYNTHETIC_FEE_REVERSED : CreditEventType.SYNTHETIC_FEE_ASSESSED,
+    subjectId: obligation.subjectId, obligationId: obligation.obligationId,
+    payload: { ...entry, actorId: authenticationContext.actorId, causationId: requestId, correlationId }, now
+  });
+  return {
+    events: [event], writes: [
+      ...(result.feeTransaction ? [{ type: CoreProjectionType.LEDGER_TRANSACTION, value: result.feeTransaction, eventId: event.eventId }] : []),
+      { type: CoreProjectionType.SYNTHETIC_FEE_ENTRY, value: entry, eventId: event.eventId }
+    ]
+  };
 }

@@ -104,6 +104,11 @@ export const LedgerAccountType = Object.freeze({
   FEE_RECEIVABLE: "fee_receivable",
   SYNTHETIC_INTEREST_INCOME: "synthetic_interest_income",
   SYNTHETIC_FEE_INCOME: "synthetic_fee_income",
+  SYNTHETIC_BORROWER_REFUND_PAYABLE: "synthetic_borrower_refund_payable",
+  SYNTHETIC_INSTITUTION_FEE_RECEIVABLE: "synthetic_institution_fee_receivable",
+  SYNTHETIC_INSTITUTION_FEE_INCOME: "synthetic_institution_fee_income",
+  SYNTHETIC_BORROWER_FEE_REFUND_PAYABLE: "synthetic_borrower_fee_refund_payable",
+  SYNTHETIC_INSTITUTION_FEE_CREDIT_PAYABLE: "synthetic_institution_fee_credit_payable",
   WRITE_OFF_LOSS: "write_off_loss"
 });
 
@@ -413,6 +418,11 @@ export const CreditEventType = Object.freeze({
   CREDIT_OFFER_STATUS_CHANGED: "credit_offer_status_changed",
   RISK_DECISION_CREATED: "risk_decision_created",
   OBLIGATION_CREATED: "obligation_created",
+  SYNTHETIC_FEE_SOURCE_CORRECTED: "synthetic_fee_source_corrected",
+  SYNTHETIC_FEES_RECONCILED: "synthetic_fees_reconciled",
+  SYNTHETIC_FEE_ASSESSED: "synthetic_fee_assessed",
+  SYNTHETIC_FEE_REVERSED: "synthetic_fee_reversed",
+  SYNTHETIC_FEE_STATEMENT_CLOSED: "synthetic_fee_statement_closed",
   SYNTHETIC_COLLATERAL_CONFIRMED: "synthetic_collateral_confirmed",
   SYNTHETIC_COLLATERAL_RELEASED: "synthetic_collateral_released",
   OBLIGATION_SANDBOX_EXECUTED: "obligation_sandbox_executed",

@@ -118,8 +118,8 @@
     },
     "operations": {
       "type": "array",
-      "minItems": 125,
-      "maxItems": 125,
+      "minItems": 132,
+      "maxItems": 132,
       "uniqueItems": true,
       "items": {
         "$ref": "#/$defs/operation"
@@ -260,7 +260,7 @@
       ],
       "properties": {
         "operationId": {
-          "enum": ["pilotProposeApproval", "pilotReadApproval", "pilotDecideApproval", "pilotCancelApproval", "pilotReadApprovalInbox", "pilotReadRiskAgentDirectory", "pilotAcceptCreditOffer", "pilotActivateSandboxMandate", "pilotCreateAgentAccountChallenge", "pilotCreateAgentSubject", "pilotCreateConsent", "pilotActivateSandboxHumanSubject", "pilotCreateHumanSubject", "pilotCreateDraftMandate", "pilotCreateCreditPassportArtifact", "pilotCreateOfficialReport", "pilotEvaluateCreditApplication", "pilotPersistAgentContinuationReceipt", "pilotExecuteSandboxObligation", "pilotFreezeSubject", "pilotPostSandboxRepayment", "pilotRepurchaseSandboxObligation", "pilotRestructureSandboxObligation", "pilotRequestCredit", "pilotReadAgentSelf", "pilotReadAgentAccountBinding", "pilotReadCreditApplication", "pilotReadCreditRegistryEvidence", "pilotReadOwnCreditPassportArtifact", "pilotReadOfficialReport", "pilotRetrieveOfficialReport", "pilotVerifyCreditPassportArtifact", "pilotReadConsent", "pilotReadHumanSelf", "pilotReadWorkspaceResume", "pilotReadCapitalPartnerSelf", "pilotReadCapitalPartnerPassportInbox", "pilotReadTenantRiskPortfolioReference", "pilotReadServicingQueueReference", "pilotReadIdentityReference", "pilotReadMandate", "pilotReadTenantRisk", "pilotReadPilotHealth", "pilotReadPilotFeedbackSummary", "pilotReadClosedPilotReadiness", "pilotReadServicingQueue", "pilotReadEvidence", "pilotReadOwnObligation", "pilotReadOwnCreditState", "pilotReadOwnObligationEvidence", "pilotRevokeConsent", "pilotRevokeDraftMandate", "pilotRevokeCreditPassportArtifact", "pilotRevokeOfficialReport", "pilotAuthorCapitalPartnerOffer", "pilotTransitionCapitalPartnerOffer", "pilotReadCapitalPartnerFacility", "pilotReadCapitalPartnerPortfolio", "pilotSubmitAgentAccountProof", "pilotSubmitPilotFeedback", "pilotFileCase", "pilotListOwnCases", "pilotReadCaseQueue", "pilotTransitionCase", "pilotWriteOffSandboxObligation", "workerAdvanceSandboxServicing", "pilotReadProviderIntent", "pilotAcknowledgeProviderIntent", "workerProcessInbox", "workerAdmitMeteredUsage", "tradingCreateAccountBindingChallenge", "tradingImportHyperliquidHistory", "tradingFinalizeEvidenceSnapshot", "tradingReadCreditProfile", "tradingCreateCapitalRequest", "tradingCreateProviderMandate", "tradingListCompatibleMandates", "tradingCreateMatchProposal", "tradingAcceptMatchAsProvider", "tradingAcceptMatchAsSubject", "tradingCreateFacility", "tradingContributeSubjectCollateral", "tradingRecordProviderFunding", "tradingActivateFacility", "tradingSubmitOrderIntent", "tradingCancelOrderIntent", "tradingReadFacilityState", "tradingEvaluateRisk", "tradingPauseNewRisk", "tradingFlattenFacility", "tradingRequestClose", "tradingRunSettlement", "tradingReadSettlement", "tradingIssuePerformanceProof", "tradingReadFacilityEvidence", "agentCreateSecuredFacilityAuthorization", "agentReadSecuredFacilityAuthorization", "agentRevokeSecuredFacilityAuthorization", "walletPrepareAccountBinding", "walletSubmitAccountBinding", "walletReadAccountBindings", "walletRevokeAccountBinding", "walletDiscoverCapabilities", "walletPrepareGrant", "walletActivateGrant", "walletReadGrant", "walletRevokeGrant", "walletPrepareExecution", "walletApproveExecution", "walletSubmitExecution", "walletReadExecution", "venueDiscoverCapabilities", "venueReadBinding", "venuePrepareDelegate", "venueActivateDelegate", "venueRevokeDelegate", "venuePrepareExecution", "venueSubmitExecution", "venueReadExecution", "pilotReadOwnSecuredPool", "pilotReviewSecuredPoolAction", "pilotReadSecuredPoolRisk", "pilotReadSyntheticCollateralProfile", "pilotConfirmSyntheticCollateral", "pilotReleaseSyntheticCollateral"]
+          "enum": ["pilotProposeApproval", "pilotReadApproval", "pilotDecideApproval", "pilotCancelApproval", "pilotReadApprovalInbox", "pilotReadRiskAgentDirectory", "pilotAcceptCreditOffer", "pilotActivateSandboxMandate", "pilotCreateAgentAccountChallenge", "pilotCreateAgentSubject", "pilotCreateConsent", "pilotActivateSandboxHumanSubject", "pilotCreateHumanSubject", "pilotCreateDraftMandate", "pilotCreateCreditPassportArtifact", "pilotCreateOfficialReport", "pilotEvaluateCreditApplication", "pilotPersistAgentContinuationReceipt", "pilotExecuteSandboxObligation", "pilotFreezeSubject", "pilotPostSandboxRepayment", "pilotRepurchaseSandboxObligation", "pilotRestructureSandboxObligation", "pilotRequestCredit", "pilotReadAgentSelf", "pilotReadAgentAccountBinding", "pilotReadCreditApplication", "pilotReadCreditRegistryEvidence", "pilotReadOwnCreditPassportArtifact", "pilotReadOfficialReport", "pilotRetrieveOfficialReport", "pilotVerifyCreditPassportArtifact", "pilotReadConsent", "pilotReadHumanSelf", "pilotReadWorkspaceResume", "pilotReadCapitalPartnerSelf", "pilotReadCapitalPartnerPassportInbox", "pilotReadTenantRiskPortfolioReference", "pilotReadServicingQueueReference", "pilotReadIdentityReference", "pilotReadMandate", "pilotReadTenantRisk", "pilotReadPilotHealth", "pilotReadPilotFeedbackSummary", "pilotReadClosedPilotReadiness", "pilotReadServicingQueue", "pilotReadEvidence", "pilotReadOwnObligation", "pilotReadOwnCreditState", "pilotReadOwnObligationEvidence", "pilotRevokeConsent", "pilotRevokeDraftMandate", "pilotRevokeCreditPassportArtifact", "pilotRevokeOfficialReport", "pilotAuthorCapitalPartnerOffer", "pilotTransitionCapitalPartnerOffer", "pilotReadCapitalPartnerFacility", "pilotReadCapitalPartnerPortfolio", "pilotSubmitAgentAccountProof", "pilotSubmitPilotFeedback", "pilotFileCase", "pilotListOwnCases", "pilotReadCaseQueue", "pilotTransitionCase", "pilotWriteOffSandboxObligation", "workerAdvanceSandboxServicing", "pilotReadProviderIntent", "pilotAcknowledgeProviderIntent", "workerProcessInbox", "workerAdmitMeteredUsage", "tradingCreateAccountBindingChallenge", "tradingImportHyperliquidHistory", "tradingFinalizeEvidenceSnapshot", "tradingReadCreditProfile", "tradingCreateCapitalRequest", "tradingCreateProviderMandate", "tradingListCompatibleMandates", "tradingCreateMatchProposal", "tradingAcceptMatchAsProvider", "tradingAcceptMatchAsSubject", "tradingCreateFacility", "tradingContributeSubjectCollateral", "tradingRecordProviderFunding", "tradingActivateFacility", "tradingSubmitOrderIntent", "tradingCancelOrderIntent", "tradingReadFacilityState", "tradingEvaluateRisk", "tradingPauseNewRisk", "tradingFlattenFacility", "tradingRequestClose", "tradingRunSettlement", "tradingReadSettlement", "tradingIssuePerformanceProof", "tradingReadFacilityEvidence", "agentCreateSecuredFacilityAuthorization", "agentReadSecuredFacilityAuthorization", "agentRevokeSecuredFacilityAuthorization", "walletPrepareAccountBinding", "walletSubmitAccountBinding", "walletReadAccountBindings", "walletRevokeAccountBinding", "walletDiscoverCapabilities", "walletPrepareGrant", "walletActivateGrant", "walletReadGrant", "walletRevokeGrant", "walletPrepareExecution", "walletApproveExecution", "walletSubmitExecution", "walletReadExecution", "venueDiscoverCapabilities", "venueReadBinding", "venuePrepareDelegate", "venueActivateDelegate", "venueRevokeDelegate", "venuePrepareExecution", "venueSubmitExecution", "venueReadExecution", "pilotReadOwnSecuredPool", "pilotReviewSecuredPoolAction", "pilotReadSecuredPoolRisk", "pilotReadSyntheticCollateralProfile", "pilotConfirmSyntheticCollateral", "pilotReleaseSyntheticCollateral", "pilotReadSyntheticFees", "pilotReadSyntheticFeeSettlement", "pilotCloseSyntheticFeeStatement", "pilotReconcileSyntheticFees", "pilotCorrectSyntheticFeeSource", "pilotReadSyntheticFeeCorrectionCases", "pilotReviewSyntheticFeeCorrection"]
         },
         "kind": {
           "enum": [
@@ -585,7 +585,14 @@
             "tenant_secured_pool_risk_view.v1",
             "tenant_synthetic_collateral_profile.v1",
             "tenant_synthetic_collateral_confirmed.v1",
-            "tenant_synthetic_collateral_released.v1"
+            "tenant_synthetic_collateral_released.v1",
+            "tenant_synthetic_fees.v1",
+            "tenant_synthetic_fee_settlement.v1",
+            "tenant_synthetic_fee_statement_closed.v1",
+            "tenant_synthetic_fees_reconciled.v1",
+            "tenant_synthetic_fee_correction_cases.v1",
+            "tenant_synthetic_fee_correction_review.v1",
+            "tenant_synthetic_fee_source_corrected.v1"
           ]
         },
         "public": {
@@ -3770,6 +3777,287 @@
               "const": "tenant_synthetic_collateral_released.v1"
             }
           }
+        },
+        {
+          "properties": {
+            "operationId": {
+              "const": "pilotReadSyntheticFees"
+            },
+            "kind": {
+              "const": "query"
+            },
+            "actorTypes": {
+              "const": [
+                "human",
+                "agent"
+              ]
+            },
+            "resourceType": {
+              "const": "obligation"
+            },
+            "requiredCapability": {
+              "const": "obligation.read.owned"
+            },
+            "idempotency": {
+              "const": "prohibited"
+            },
+            "quotaClass": {
+              "const": "read"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_synthetic_fees.v1"
+            }
+          }
+        },
+        {
+          "properties": {
+            "operationId": {
+              "const": "pilotReadSyntheticFeeSettlement"
+            },
+            "kind": {
+              "const": "query"
+            },
+            "actorTypes": {
+              "const": [
+                "human"
+              ]
+            },
+            "resourceType": {
+              "const": "workspace"
+            },
+            "requiredCapability": {
+              "const": "capital_partner.portfolio.read.own"
+            },
+            "idempotency": {
+              "const": "prohibited"
+            },
+            "quotaClass": {
+              "const": "read"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_synthetic_fee_settlement.v1"
+            }
+          }
+        },
+        {
+          "properties": {
+            "operationId": {
+              "const": "pilotCloseSyntheticFeeStatement"
+            },
+            "kind": {
+              "const": "command"
+            },
+            "actorTypes": {
+              "const": [
+                "human"
+              ]
+            },
+            "resourceType": {
+              "const": "workspace"
+            },
+            "requiredCapability": {
+              "const": "capital_partner.offer.create.own"
+            },
+            "idempotency": {
+              "const": "required"
+            },
+            "quotaClass": {
+              "const": "economic"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_synthetic_fee_statement_closed.v1"
+            }
+          }
+        },
+        {
+          "properties": {
+            "operationId": {
+              "const": "pilotReconcileSyntheticFees"
+            },
+            "kind": {
+              "const": "command"
+            },
+            "actorTypes": {
+              "const": [
+                "human"
+              ]
+            },
+            "resourceType": {
+              "const": "workspace"
+            },
+            "requiredCapability": {
+              "const": "capital_partner.offer.create.own"
+            },
+            "idempotency": {
+              "const": "required"
+            },
+            "quotaClass": {
+              "const": "economic"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_synthetic_fees_reconciled.v1"
+            }
+          }
+        },
+        {
+          "properties": {
+            "operationId": {
+              "const": "pilotReadSyntheticFeeCorrectionCases"
+            },
+            "kind": {
+              "const": "query"
+            },
+            "actorTypes": {
+              "const": [
+                "operations_operator",
+                "risk_operator",
+                "auditor"
+              ]
+            },
+            "resourceType": {
+              "const": "workspace"
+            },
+            "requiredCapability": {
+              "const": "approval.read"
+            },
+            "idempotency": {
+              "const": "prohibited"
+            },
+            "quotaClass": {
+              "const": "read"
+            },
+            "requestSchemaVersion": {
+              "const": "tenant_protocol_request.v1"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_synthetic_fee_correction_cases.v1"
+            },
+            "public": {
+              "const": false
+            },
+            "fundsAuthority": {
+              "const": false
+            }
+          },
+          "required": [
+            "operationId",
+            "kind",
+            "actorTypes",
+            "resourceType",
+            "requiredCapability",
+            "idempotency",
+            "quotaClass",
+            "requestSchemaVersion",
+            "responseSchemaVersion",
+            "public",
+            "fundsAuthority"
+          ]
+        },
+        {
+          "properties": {
+            "operationId": {
+              "const": "pilotReviewSyntheticFeeCorrection"
+            },
+            "kind": {
+              "const": "query"
+            },
+            "actorTypes": {
+              "const": [
+                "operations_operator",
+                "risk_operator",
+                "auditor"
+              ]
+            },
+            "resourceType": {
+              "const": "obligation"
+            },
+            "requiredCapability": {
+              "const": "approval.read"
+            },
+            "idempotency": {
+              "const": "prohibited"
+            },
+            "quotaClass": {
+              "const": "read"
+            },
+            "requestSchemaVersion": {
+              "const": "tenant_protocol_request.v1"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_synthetic_fee_correction_review.v1"
+            },
+            "public": {
+              "const": false
+            },
+            "fundsAuthority": {
+              "const": false
+            }
+          },
+          "required": [
+            "operationId",
+            "kind",
+            "actorTypes",
+            "resourceType",
+            "requiredCapability",
+            "idempotency",
+            "quotaClass",
+            "requestSchemaVersion",
+            "responseSchemaVersion",
+            "public",
+            "fundsAuthority"
+          ]
+        },
+        {
+          "properties": {
+            "operationId": {
+              "const": "pilotCorrectSyntheticFeeSource"
+            },
+            "kind": {
+              "const": "command"
+            },
+            "actorTypes": {
+              "const": [
+                "operations_operator"
+              ]
+            },
+            "resourceType": {
+              "const": "obligation"
+            },
+            "requiredCapability": {
+              "const": "servicing.writeoff.sandbox"
+            },
+            "idempotency": {
+              "const": "required"
+            },
+            "quotaClass": {
+              "const": "privileged"
+            },
+            "requestSchemaVersion": {
+              "const": "tenant_protocol_request.v1"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_synthetic_fee_source_corrected.v1"
+            },
+            "public": {
+              "const": false
+            },
+            "fundsAuthority": {
+              "const": false
+            }
+          },
+          "required": [
+            "operationId",
+            "kind",
+            "actorTypes",
+            "resourceType",
+            "requiredCapability",
+            "idempotency",
+            "quotaClass",
+            "requestSchemaVersion",
+            "responseSchemaVersion",
+            "public",
+            "fundsAuthority"
+          ]
         }
       ]
     }

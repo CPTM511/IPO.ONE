@@ -5,6 +5,8 @@ export const TERMINAL_CREDIT_SOURCE_SQL = `o.schema_version = 'obligation.v2'
           AND o.execution_status = 'executed'
           AND o.sandbox_only = TRUE
           AND o.production_funds_moved = FALSE
+          AND NOT (COALESCE((to_jsonb(o)#>>'{synthetic_fees,sourceCorrectionCount}')::BIGINT,0)>0
+            AND to_jsonb(o)#>>'{synthetic_fees,fundedBaseMinor}'='0')
           AND d.schema_version = 'risk_decision.v3'
           AND d.status = 'approved'
           AND d.sandbox_only = TRUE

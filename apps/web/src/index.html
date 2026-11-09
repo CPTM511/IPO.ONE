@@ -1054,12 +1054,36 @@
                   </div>
                   <p class="offer-boundary" id="humanOfferBoundary">Acceptance creates one auditable Obligation and deterministic schedule. No production funds can move.</p>
                   <p class="offer-boundary" id="humanOfferCollateralDisclosure" hidden></p>
+                  <section id="humanOfferFeeDisclosure" class="panel" aria-labelledby="humanOfferFeeTitle" hidden>
+                    <h4 id="humanOfferFeeTitle">Platform service fee</h4>
+                    <p>0.10% of successful funding; no minimum; $10 cap per economic loan. Paid separately with repayment. Synthetic USD only.</p>
+                    <dl class="synthetic-fee-values">
+                      <div><dt>Net proceeds</dt><dd id="humanFeeNetProceeds"></dd></div>
+                      <div><dt>Borrower platform fee</dt><dd id="humanFeePlatform"></dd></div>
+                      <div><dt>Provider origination fee</dt><dd id="humanFeeProvider"></dd></div>
+                      <div><dt>Estimated interest at maturity</dt><dd id="humanFeeInterestEstimate"></dd></div>
+                      <div><dt>Estimated total repayment</dt><dd id="humanFeeRepaymentEstimate"></dd></div>
+                      <div><dt>Estimated total cost</dt><dd id="humanFeeCostEstimate"></dd></div>
+                    </dl>
+                    <p>Estimate assumes execution when quoted and repayment at maturity. Actual interest uses executed principal, elapsed whole days and Actual/365; early repayment changes the total. The institution pays its own interest share.</p>
+                  </section>
                 </aside>
                 <section class="obligation-card" id="humanObligationCard" tabindex="-1" aria-labelledby="humanObligationTitle" hidden>
                   <div class="obligation-card-heading">
                       <div><span>04</span><div><small>Your sandbox credit plan</small><strong id="humanObligationTitle">Obligation created</strong></div></div>
                     <em id="humanObligationExecution">Pending execution</em>
                   </div>
+                  <section id="humanSyntheticFeeSummary" class="panel" aria-labelledby="humanSyntheticFeeTitle" hidden>
+                    <h4 id="humanSyntheticFeeTitle">Borrower platform fee</h4>
+                    <dl class="synthetic-fee-values">
+                      <div><dt>Assessed fee</dt><dd id="humanFeeAssessed"></dd></div>
+                      <div><dt>Fee paid</dt><dd id="humanFeePaid"></dd></div>
+                      <div><dt>Fee outstanding</dt><dd id="humanFeeBalance"></dd></div>
+                      <div><dt>Refund credit due</dt><dd id="humanFeeRefundDue"></dd></div>
+                    <div id="humanSourceCreditSummary" hidden><dt>Principal credited without repayment</dt><dd id="humanSourcePrincipalCredit">—</dd><dt>Source refund credit due</dt><dd id="humanSourceRefundCredit">—</dd><p>Synthetic credit only. No payment or cash refund is recorded. Prior interest is not repriced.</p></div></dl>
+                    <button id="humanReadFeesBtn" class="secondary" type="button">View fee receipts</button>
+                    <div id="humanFeeReceiptRows" class="synthetic-fee-details" role="status" aria-live="polite"></div>
+                  </section>
                   <section id="syntheticCollateralPanel" class="panel" aria-labelledby="syntheticCollateralTitle" hidden>
                     <h3 id="syntheticCollateralTitle">Synthetic collateral</h3>
                     <p id="syntheticCollateralState" role="status">Awaiting synthetic collateral confirmation</p>
@@ -1930,6 +1954,40 @@
                 <p class="helper" id="capitalPartnerPortfolioHelper" role="status" aria-live="polite">Portfolio values come from canonical Offer, Obligation, servicing, repayment, and Evidence projections.</p>
               </section>
 
+              <section class="panel" id="syntheticFeeSettlementPanel" aria-labelledby="syntheticFeeSettlementTitle">
+                <h3 id="syntheticFeeSettlementTitle">Institution service fee</h3>
+                <p>10% of eligible received normal interest. Principal, penalties, subsidies and borrower fees are excluded. Synthetic USD only; no real payment.</p>
+                <label for="syntheticFeeMonth">UTC settlement month<input id="syntheticFeeMonth" type="month" /></label>
+                <button id="loadSyntheticFeeStatementBtn" class="secondary" type="button">View monthly statement</button>
+                <p id="syntheticFeeSettlementStatus" role="status" aria-live="polite">Only the designated synthetic institution operator can view this statement.</p>
+                <div id="syntheticFeeStatementValues" hidden>
+                  <dl class="synthetic-fee-values">
+                    <div><dt>Opening balance</dt><dd id="syntheticFeeOpening"></dd></div>
+                    <div><dt>New fees</dt><dd id="syntheticFeeAdditions"></dd></div>
+                    <div><dt>Reversals</dt><dd id="syntheticFeeReversals"></dd></div>
+                    <div><dt>Settled amount</dt><dd id="syntheticFeeSettled"></dd></div>
+                    <div><dt>Closing balance</dt><dd id="syntheticFeeClosing"></dd></div>
+                  </dl>
+                  <details class="synthetic-fee-details"><summary>Receipt details</summary><code id="syntheticFeeStatementReference"></code></details>
+                </div>
+                <p><span>Pending interest fee assessment</span>: <strong id="syntheticFeePendingAmount">—</strong></p>
+                <button id="reconcileSyntheticFeesBtn" class="secondary" type="button" disabled>Review pending fee assessment</button>
+                <dialog id="syntheticFeeReconcileDialog" aria-labelledby="syntheticFeeReconcileTitle">
+                  <h3 id="syntheticFeeReconcileTitle">Review pending fee assessment</h3>
+                  <p>Assess the disclosed service fees from verified interest receipts for this synthetic institution. This changes its synthetic fee receivable; it does not move money.</p>
+                  <p id="syntheticFeeReconcileAmount"></p>
+                  <button id="syntheticFeeReconcileConfirmBtn" class="primary" type="button">Confirm synthetic fee assessment</button>
+                  <button id="syntheticFeeReconcileCancelBtn" class="secondary" type="button">Cancel</button>
+                </dialog>
+                <button id="closeSyntheticFeeStatementBtn" class="secondary" type="button" disabled>Freeze completed monthly statement</button>
+                <dialog id="syntheticFeeCloseDialog" aria-labelledby="syntheticFeeCloseTitle">
+                  <h3 id="syntheticFeeCloseTitle">Freeze completed monthly statement</h3>
+                  <p id="syntheticFeeCloseMonth"></p>
+                  <p>This preserves the monthly fee statement. It does not record a payment or move money. Later corrections appear in their own period.</p>
+                  <button id="syntheticFeeCloseConfirmBtn" class="primary" type="button">Confirm statement freeze</button>
+                  <button id="syntheticFeeCloseCancelBtn" class="secondary" type="button">Cancel</button>
+                </dialog>
+              </section>
               <section class="panel capital-partner-boundary" aria-labelledby="capitalPartnerBoundaryTitle">
                 <div>
                   <p class="eyebrow">Explicit Phase 2 boundary</p>
@@ -2770,6 +2828,17 @@
                   <label class="risk-acknowledgement"><input id="localServicingAcknowledge" type="checkbox" /><span>I have reviewed this plan and want to record this exact proposal for independent approval. No execution occurs at this step.</span></label>
                   <button id="proposeLocalServicingBtn" type="submit" class="primary" disabled>Record servicing proposal</button>
                 </form>
+                <section id="syntheticFeeCorrectionPanel" class="local-approval-detail" hidden>
+                  <h4>Synthetic source credit</h4><p>Synthetic credit only. No payment or cash refund is recorded. Prior interest is not repriced.</p>
+                  <button id="loadSyntheticFeeCorrectionCasesBtn" type="button" class="secondary">Load eligible source receipts</button>
+                  <label for="syntheticFeeCorrectionSource">Original source</label><select id="syntheticFeeCorrectionSource"></select>
+                  <label for="syntheticFeeCorrectionAmount">Credit amount (USD)</label><input id="syntheticFeeCorrectionAmount" inputmode="decimal" value="1.00" />
+                  <button id="reviewSyntheticFeeCorrectionBtn" type="button" class="secondary" disabled>Review source credit</button>
+                  <p id="syntheticFeeCorrectionImpact" style="white-space:pre-line"></p>
+                  <label class="risk-acknowledgement"><input id="syntheticFeeCorrectionAcknowledge" type="checkbox" /><span>I reviewed this source credit and its exact financial effects.</span></label>
+                  <button id="proposeSyntheticFeeCorrectionBtn" type="button" class="primary" disabled>Propose source credit</button>
+                  <p id="syntheticFeeCorrectionStatus" class="risk-helper" role="status" aria-live="polite"></p>
+                </section>
                 <div id="localApprovalList" class="local-review-list"></div>
                 <section id="localApprovalDetail" class="local-approval-detail" hidden>
                   <h4 id="localApprovalTitle"></h4><p id="localApprovalTerms"></p><p id="localApprovalImpact"></p><p id="localApprovalProgress" role="status"></p>

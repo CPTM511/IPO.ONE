@@ -159,7 +159,7 @@ export function createFinalizedCreditOutcome({
     terminal.totalRepaidMinor
   );
   const writtenOff = terminal.status === "written_off";
-  const lossMinor = writtenOff
+  const grossLossMinor = writtenOff
     ? [
         terminal.writtenOffPrincipalMinor,
         terminal.writtenOffInterestMinor,
@@ -170,11 +170,30 @@ export function createFinalizedCreditOutcome({
         0n
       )
     : 0n;
-  const repaymentRatioBps = originalPrincipal === 0n
+  let syntheticFeeCreditContext;
+  const fees=terminal.syntheticFees;
+  if ((fees?.sourceCorrectionCount??0)>0) {
+    const effective=assertMinor("effectivePrincipalMinor",fees.fundedBaseMinor);
+    if (effective===0n) throw new DomainError("synthetic_fee_cycle_cancelled","Fully cancelled synthetic funding does not earn a credit cycle");
+    const refunded=[fees.principalRefundCreditDueMinor,fees.interestRefundCreditDueMinor,fees.borrowerRefundDueMinor]
+      .reduce((n,v)=>n+assertMinor("refundCreditDueMinor",v??"0"),0n);
+    const recoveredLoss=[fees.principalWrittenOffCreditMinor,fees.feeWrittenOffCreditMinor]
+      .reduce((n,v)=>n+assertMinor("writtenOffCreditMinor",v??"0"),0n);
+    if (refunded>totalRepaid || recoveredLoss>grossLossMinor) invalid("Source credit attribution exceeds gross historical facts");
+    syntheticFeeCreditContext={schemaVersion:"synthetic_fee_credit_context.v1",scope:"L0_LOCAL_NO_FUNDS",
+      effectivePrincipalMinor:effective.toString(),netRepaidMinor:(totalRepaid-refunded).toString(),
+      netLossMinor:(grossLossMinor-recoveredLoss).toString(),grossLossMinor:grossLossMinor.toString(),
+      feeStateHash:hashId("fee_state",fees),sourceCorrectionCount:fees.sourceCorrectionCount,
+      lastSourceCorrectionReceiptId:fees.lastSourceCorrectionReceiptId,syntheticOnly:true,productionFundsMoved:false};
+  }
+  const ratioPrincipal=BigInt(syntheticFeeCreditContext?.effectivePrincipalMinor??originalPrincipal);
+  const ratioRepaid=BigInt(syntheticFeeCreditContext?.netRepaidMinor??totalRepaid);
+  const lossMinor=BigInt(syntheticFeeCreditContext?.netLossMinor??grossLossMinor);
+  const repaymentRatioBps = ratioPrincipal === 0n
     ? 0
-    : Number((totalRepaid * 10_000n) / originalPrincipal > 10_000n
+    : Number((ratioRepaid * 10_000n) / ratioPrincipal > 10_000n
       ? 10_000n
-      : (totalRepaid * 10_000n) / originalPrincipal);
+      : (ratioRepaid * 10_000n) / ratioPrincipal);
   const outcomeLabel = writtenOff
     ? "written_off"
     : servicing.maxDaysPastDue === 0 &&
@@ -194,7 +213,8 @@ export function createFinalizedCreditOutcome({
     writtenOffPrincipalMinor: terminal.writtenOffPrincipalMinor,
     writtenOffInterestMinor: terminal.writtenOffInterestMinor,
     writtenOffFeesMinor: terminal.writtenOffFeesMinor,
-    updatedAt: terminal.updatedAt
+    updatedAt: terminal.updatedAt,
+    ...(syntheticFeeCreditContext?{syntheticFeeCreditContext}: {})
   });
   const outcomeCore = {
     riskDecisionId: sourceDecision.riskDecisionId,
@@ -215,6 +235,7 @@ export function createFinalizedCreditOutcome({
     totalRepaidMinor: terminal.totalRepaidMinor,
     lossMinor: lossMinor.toString(),
     repaymentRatioBps,
+    ...(syntheticFeeCreditContext?{syntheticFeeCreditContext}: {}),
     sourceEvidenceHashes: evidenceHashes,
     outcomeFinalizedAt: servicing.outcomeFinalizedAt
   };

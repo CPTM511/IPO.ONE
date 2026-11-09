@@ -1,4 +1,4 @@
-import { assertLocalSpecialRoleDatabase, localSpecialRoleSpecs, localSpecialRolesEnabled } from "./local-special-role-access.js";
+import { localSyntheticFeeCorrectionsEnabled, assertLocalSpecialRoleDatabase, localSpecialRoleSpecs, localSpecialRolesEnabled } from "./local-special-role-access.js";
 import { assertLocalAccessDatabase, rotateLocalAccessCredentials } from "./local-access-repair.js";
 import { randomBytes } from "node:crypto";
 import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
@@ -97,6 +97,14 @@ async function provisionApplicationRole(ownerPool, password) {
   await ownerPool.query(`GRANT CONNECT ON DATABASE ${database} TO ${APP_ROLE}`);
   await ownerPool.query(`GRANT USAGE ON SCHEMA public TO ${APP_ROLE}`);
   await ownerPool.query(`GRANT SELECT ON ALL TABLES IN SCHEMA public TO ${APP_ROLE}`);
+  // B4 facts are append-only. No UPDATE/DELETE privilege is needed or granted.
+  const feeTables = await ownerPool.query("SELECT to_regclass('public.synthetic_fee_entries') AS present");
+  if (feeTables.rows[0]?.present) {
+    await ownerPool.query(`GRANT INSERT ON synthetic_fee_entries, synthetic_fee_statements TO ${APP_ROLE}`);
+  }
+  if ((await ownerPool.query("SELECT to_regclass('public.synthetic_fee_source_corrections') AS present")).rows[0]?.present) {
+    await ownerPool.query(`GRANT INSERT ON synthetic_fee_source_corrections TO ${APP_ROLE}`);
+  }
   await ownerPool.query(`REVOKE ALL ON local_principal_agent_runtimes FROM ${APP_ROLE}`);
   await ownerPool.query(`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${APP_ROLE}`);
   await ownerPool.query(`GRANT UPDATE (id) ON actors, memberships, access_grants TO ${APP_ROLE}`);
@@ -191,7 +199,7 @@ async function provisionApplicationRole(ownerPool, password) {
      TO ${APP_ROLE}`
   );
   if (localSpecialRolesEnabled()) {
-    if (database !== "ipo_one_web027_candidate") throw new Error("Local approval writes require the reviewed candidate database");
+    if (database !== "ipo_one_web027_candidate" && !(localSyntheticFeeCorrectionsEnabled() && ["ipo_one_b4_fee_review","b4_fee_browser_test_20261109"].includes(database))) throw new Error("Local approval writes require the reviewed candidate database");
     await ownerPool.query(`GRANT INSERT ON approval_proposals, approval_decisions, approval_executions TO ${APP_ROLE}`);
     await ownerPool.query(`GRANT UPDATE (status, version, approved_at, rejected_at, canceled_at, expired_at,
       superseded_at, superseded_by_proposal_id, executed_at, execution_id, updated_at) ON approval_proposals TO ${APP_ROLE}`);
@@ -786,7 +794,7 @@ export async function provisionPrivatePilotAuthentication({
   invitation
 }) {
   const checkedProfile = assertPrivatePilotProfile(profile);
-  if (localPasskeys) assertLocalAccessDatabase(ownerConnectionString, basePort);
+  if (localPasskeys) { if(localSyntheticFeeCorrectionsEnabled())assertLocalSpecialRoleDatabase(ownerConnectionString,basePort);else assertLocalAccessDatabase(ownerConnectionString, basePort); }
   if (specialRoleInvitations) assertLocalSpecialRoleDatabase(ownerConnectionString, basePort);
   if (
     !Number.isSafeInteger(basePort) ||

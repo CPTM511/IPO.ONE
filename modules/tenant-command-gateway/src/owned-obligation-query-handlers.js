@@ -1,3 +1,4 @@
+import { CoreProjectionType } from "../../persistence/src/index.js";
 import { DomainError } from "../../../packages/domain/src/index.js";
 import {
   summarizeServicingAction,
@@ -54,9 +55,18 @@ export function readOwnedObligationQueryHandler() {
         );
       }
 
+      const sourceId=obligation.syntheticFees?.lastSourceCorrectionReceiptId;
+      const source=sourceId?await coreRepository.getProjectionInTransaction(client,CoreProjectionType.SYNTHETIC_FEE_SOURCE_CORRECTION,sourceId):null;
+      const sourceCurrent=source?.obligationId===obligation.obligationId && source.receiptId===sourceId &&
+        source.effects.nextOutstandingPrincipalMinor===obligation.outstandingPrincipalMinor &&
+        source.effects.nextOutstandingInterestMinor===obligation.outstandingInterestMinor &&
+        source.effects.nextOutstandingFeesMinor===obligation.outstandingFeesMinor &&
+        source.effects.scheduleSequenceAfter===obligation.scheduleSequence && source.effects.scheduleHashAfter===obligation.scheduleHash &&
+        (!latestServicingAction || source.effectiveAt>=latestServicingAction.effectiveAt);
       return {
         obligation: summarizeSharedObligation(obligation),
-        ...(latestServicingAction
+        ...(sourceCurrent?{latestSourceCorrection:source}:{}),
+        ...(!sourceCurrent && latestServicingAction
           ? { latestServicingAction: summarizeServicingAction(latestServicingAction) }
           : {}),
         asOf: now.toISOString(),

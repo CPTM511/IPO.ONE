@@ -166,6 +166,7 @@ export function createOfficialReportCommandHandler() {
         obligation.sandboxOnly !== true ||
         obligation.productionFundsMoved !== false
       ) unavailable();
+      if (obligation.syntheticFees) throw new DomainError("synthetic_fee_report_unsupported", "This synthetic fee loan uses its versioned fee Ledger and receipts; official report v1 does not audit that profile");
       const evidencePage = await coreRepository.listObligationEvidenceInTransaction(client, {
         obligationId: obligation.obligationId,
         limit: OFFICIAL_REPORT_MAX_EVIDENCE_ITEMS + 1

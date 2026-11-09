@@ -47,6 +47,8 @@ test("every authenticated operation has exactly one closed quota classification"
     .map((item) => item.operationId));
   assert.deepEqual(economic, new Set([
     "pilotAcceptCreditOffer",
+    "pilotCloseSyntheticFeeStatement",
+    "pilotReconcileSyntheticFees",
     "pilotConfirmSyntheticCollateral",
     "pilotReleaseSyntheticCollateral",
     "pilotAuthorCapitalPartnerOffer",

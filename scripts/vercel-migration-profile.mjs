@@ -5,6 +5,8 @@ import { createHash } from "node:crypto";
 // BNB-004 adds only offchain BNB network identity after conditional public-release authorization.
 // Local invitation,
 // runtime enrollment and Passkey migrations are not production migrations.
+export const B4_LOCAL_ONLY_MIGRATIONS = Object.freeze(["0090_local_synthetic_platform_fees", "0091_local_synthetic_fee_source_credits", "0092_local_b4_source_review_origins", "0093_local_synthetic_principal_credit_balances", "0094_local_synthetic_source_credit_schedule"]);
+
 export const VERCEL_MIGRATION_PROFILE = Object.freeze({
   id: "synthetic_collateral_v1",
   baselineCommit: "50ee192e79580dc449d9cf9de6f7a6e0bcd7aa12",
@@ -21,7 +23,8 @@ export const VERCEL_MIGRATION_PROFILE = Object.freeze({
     "0082_local_special_role_enrollment",
     "0083_local_operations_reviewer_origin",
     "0085_local_bnb_ordinary_wallet_access",
-    "0086_local_bnb_risk_passkey_origin"
+    "0086_local_bnb_risk_passkey_origin",
+    ...B4_LOCAL_ONLY_MIGRATIONS
   ])
 });
 

@@ -1,3 +1,4 @@
+import { loadSyntheticFeeCorrectionReview } from "./synthetic-fee-source-handlers.js";
 import { DomainError, hashId } from "../../../packages/domain/src/index.js";
 import { summarizeSharedObligation } from "./credit-acceptance-handlers.js";
 import { CoreProjectionType } from "../../persistence/src/index.js";
@@ -10,7 +11,7 @@ function empty(payload) {
   if (!payload || Object.keys(payload).length) throw new DomainError("invalid_tenant_command_payload", "This read accepts an empty payload.");
 }
 function response(version, proposal, decisions, draft) {
-  return { schemaVersion:version, proposal, decisions, command:draft.command, planSnapshot:draft.planSnapshot, sandboxOnly:true, productionFundsMoved:false };
+  return { schemaVersion:version, proposal, decisions, command:draft.command, planSnapshot:draft.planSnapshot, ...(draft.sourceCorrectionReview?{sourceCorrectionReview:draft.sourceCorrectionReview}:{}), sandboxOnly:true, productionFundsMoved:false };
 }
 
 const REVIEWED_SERVICING_PLANS = new Set([
@@ -38,6 +39,8 @@ export function createLocalReviewHandlers({ localRiskAgentDirectory = false } = 
       operationId:"pilotProposeApproval", kind:"command",
       async plan(input) {
         const r = runtime(input.approvalRuntime);
+        const correction=input.payload.command.operationId==="pilotCorrectSyntheticFeeSource"
+          ? await loadSyntheticFeeCorrectionReview({...input,payload:input.payload.command.payload,authorizationDecision:{resourceId:input.payload.command.resource.resourceId}}):null;
         const preparation = await r.prepare(input.payload.command, input);
         const result = await r.service.propose({ approvalPreparation:preparation,
           authenticationContext:input.authenticationContext, idempotencyKey:input.idempotencyKey,
@@ -47,6 +50,7 @@ export function createLocalReviewHandlers({ localRiskAgentDirectory = false } = 
           authorizationResource:{ resourceType:"approval_proposal", resourceId:result.proposal.approvalProposalId,
             actorBindings:[{ actorId:input.authenticationContext.actorId, actorType:input.authenticationContext.actorType, relationship:"owner" }] },
           response:response("tenant_approval_proposed.v1",result.proposal,result.decisions,{command:input.payload.command,
+            ...(correction?{sourceCorrectionReview:{schemaVersion:"tenant_synthetic_fee_correction_review.v1",obligationId:correction.obligation.obligationId,sourceFeeEntryId:correction.originalEntry.feeEntryId,amountMinor:input.payload.command.payload.amountMinor,...correction.review}}:{}),
             planSnapshot:summarizeSharedObligation(await input.coreRepository.getProjectionInTransaction(input.client,CoreProjectionType.OBLIGATION,input.payload.command.resource.resourceId))}) };
       }
     },

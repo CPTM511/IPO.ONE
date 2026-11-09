@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/synthetic-fee-state.schema.json",
+  "title": "IPO.ONE synthetic-fee-state",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "terms",
+    "fundedBaseMinor",
+    "normalInterestBaseMinor",
+    "borrowerAssessedMinor",
+    "borrowerPaidMinor",
+    "institutionAssessedMinor",
+    "institutionSettledMinor",
+    "borrowerRefundDueMinor",
+    "institutionCreditDueMinor",
+    "revision",
+    "pendingNormalInterestMinor",
+    "pendingEntryIds"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "synthetic_fee_state.v1"
+    },
+    "terms": {
+      "$ref": "https://schemas.ipo.one/v2/synthetic-fee-terms.schema.json"
+    },
+    "fundedBaseMinor": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    },
+    "normalInterestBaseMinor": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    },
+    "borrowerAssessedMinor": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    },
+    "borrowerPaidMinor": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    },
+    "institutionAssessedMinor": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    },
+    "institutionSettledMinor": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    },
+    "borrowerRefundDueMinor": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    },
+    "institutionCreditDueMinor": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "pendingNormalInterestMinor": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    },
+    "pendingEntryIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^0x[0-9a-f]{64}$"
+      }
+    },
+    "principalUnpaidCreditMinor": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    },
+    "principalWrittenOffCreditMinor": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    },
+    "principalRefundCreditDueMinor": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    },
+    "interestRefundCreditDueMinor": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    },
+    "feeWrittenOffCreditMinor": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    },
+    "sourceCorrectionCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "lastSourceCorrectionReceiptId": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        }
+      ]
+    }
+  }
+}

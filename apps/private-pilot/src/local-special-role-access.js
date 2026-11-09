@@ -3,7 +3,8 @@ import { readFile } from "node:fs/promises";
 import { ActorType } from "../../../modules/authentication/src/index.js";
 import { PilotCapability as C, RoleBundle as R } from "../../../modules/authorization/src/index.js";
 
-export const localSpecialRolesEnabled = () => process.env.IPO_ONE_LOCAL_SPECIAL_ROLES === "web027m_v1";
+export const localSyntheticFeeCorrectionsEnabled = () => process.env.IPO_ONE_LOCAL_SYNTHETIC_FEE_CORRECTIONS === "b4_f1_v1";
+export const localSpecialRolesEnabled = () => localSyntheticFeeCorrectionsEnabled() || process.env.IPO_ONE_LOCAL_SPECIAL_ROLES === "web027m_v1";
 export const LOCAL_SPECIAL_ROLE_SPECS = Object.freeze({
   operations: Object.freeze({ actorId: "actor_web027m_operations", durableCredentialId: "credential_f4224b12-e6ff-45ca-b42b-54fbb275df19", actorType: ActorType.OPERATIONS_OPERATOR,
     roleBundle: R.OPERATIONS_OPERATOR, port: 8939, hash: "#risk-operations",
@@ -18,7 +19,7 @@ export const LOCAL_SPECIAL_ROLE_SPECS = Object.freeze({
     capabilities: Object.freeze([C.APPROVAL_READ, C.APPROVAL_DECIDE, C.SERVICING_QUEUE_READ]) })
 });
 
-export const localIndependentOperationsEnabled = () => localSpecialRolesEnabled() &&
+export const localIndependentOperationsEnabled = () => localSyntheticFeeCorrectionsEnabled() || localSpecialRolesEnabled() &&
   process.env.IPO_ONE_LOCAL_OPERATIONS_REVIEWER === "web027n_v1";
 export const LOCAL_OPERATIONS_REVIEWER_SPEC = Object.freeze({
   actorId: "actor_web027n_operations_reviewer",
@@ -29,13 +30,20 @@ export const LOCAL_OPERATIONS_REVIEWER_SPEC = Object.freeze({
   capabilities: Object.freeze([C.APPROVAL_READ, C.APPROVAL_DECIDE, C.SERVICING_QUEUE_READ])
 });
 export function localSpecialRoleSpecs() {
-  return localIndependentOperationsEnabled()
-    ? { ...LOCAL_SPECIAL_ROLE_SPECS, operationsReviewer: LOCAL_OPERATIONS_REVIEWER_SPEC }
-    : LOCAL_SPECIAL_ROLE_SPECS;
+  const specs=localIndependentOperationsEnabled() ? { ...LOCAL_SPECIAL_ROLE_SPECS, operationsReviewer: LOCAL_OPERATIONS_REVIEWER_SPEC } : LOCAL_SPECIAL_ROLE_SPECS;
+  if(!localSyntheticFeeCorrectionsEnabled())return specs;
+  const ports=process.env.IPO_ONE_B4_SOURCE_REVIEW_PORTS==="browser_v1"?[8981,8982,8983,8984]:[8967,8968,8969,8970];
+  return Object.fromEntries(Object.entries(specs).map(([name,spec],i)=>[name,{...spec,port:ports[i]}]));
 }
 
 export function assertLocalSpecialRoleDatabase(connectionString, basePort) {
   const url = new URL(connectionString);
+  if(localSyntheticFeeCorrectionsEnabled()) {
+    const browser=process.env.IPO_ONE_B4_SOURCE_REVIEW_PORTS==="browser_v1";
+    if(url.hostname!=="127.0.0.1" || url.port!=="59989" ||
+      !(browser?url.pathname==="/b4_fee_browser_test_20261109" && basePort===8921:url.pathname==="/ipo_one_b4_fee_review" && basePort===8907))throw new Error("B4-F1 requires its exact isolated database, origins and port profile");
+    return;
+  }
   if (url.hostname !== "127.0.0.2" || url.port !== "55435" ||
       url.pathname !== "/ipo_one_web027_candidate" || basePort !== 8935) {
     throw new Error("WEB-027M requires the exact isolated candidate database and ports");

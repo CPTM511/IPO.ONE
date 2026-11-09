@@ -1,5 +1,6 @@
 import {
   restoreSyntheticCollateralOfferTerms,
+  restoreSyntheticFeeOfferTerms,
   CreditLineStatus,
   DomainError,
   ObligationStatus,
@@ -44,6 +45,9 @@ export const CoreProjectionType = Object.freeze({
   OBLIGATION: "obligation",
   SANDBOX_EXECUTION_RECEIPT: "sandbox_execution_receipt",
   SANDBOX_SERVICING_ACTION: "sandbox_servicing_action",
+  SYNTHETIC_FEE_ENTRY: "synthetic_fee_entry",
+  SYNTHETIC_FEE_STATEMENT: "synthetic_fee_statement",
+  SYNTHETIC_FEE_SOURCE_CORRECTION: "synthetic_fee_source_correction",
   REPAYMENT: "repayment",
   CONSENT_RECORD: "consent_record",
   HUMAN_IDENTITY_REFERENCE: "human_identity_reference",
@@ -105,6 +109,9 @@ const ENTITY_ID_FIELDS = Object.freeze({
   [CoreProjectionType.OBLIGATION]: "obligationId",
   [CoreProjectionType.SANDBOX_EXECUTION_RECEIPT]: "sandboxExecutionReceiptId",
   [CoreProjectionType.SANDBOX_SERVICING_ACTION]: "servicingActionId",
+  [CoreProjectionType.SYNTHETIC_FEE_ENTRY]: "feeEntryId",
+  [CoreProjectionType.SYNTHETIC_FEE_STATEMENT]: "statementId",
+  [CoreProjectionType.SYNTHETIC_FEE_SOURCE_CORRECTION]: "receiptId",
   [CoreProjectionType.REPAYMENT]: "repaymentId",
   [CoreProjectionType.CONSENT_RECORD]: "consentId",
   [CoreProjectionType.HUMAN_IDENTITY_REFERENCE]: "identityReferenceId",
@@ -968,6 +975,7 @@ function mapObligation(row, installments = []) {
       installments: installments.map(mapObligationInstallment),
       executionStatus: row.execution_status,
       ...(row.synthetic_collateral ? { syntheticCollateral: clone(row.synthetic_collateral) } : {}),
+      ...(row.synthetic_fees ? { syntheticFees: clone(row.synthetic_fees) } : {}),
       ...(row.pool_obligation_binding_id
         ? { poolObligationBindingId: row.pool_obligation_binding_id }
         : {}),
@@ -1199,7 +1207,7 @@ function mapCreditIntent(row) {
 
 function mapCreditOffer(row) {
   if (!row) return undefined;
-  return restoreSyntheticCollateralOfferTerms({
+  return restoreSyntheticFeeOfferTerms(restoreSyntheticCollateralOfferTerms({
     creditOfferId: row.id,
     creditOfferHash: row.offer_hash,
     termsHash: row.terms_hash,
@@ -1241,8 +1249,10 @@ function mapCreditOffer(row) {
     ...(row.closed_at ? { closedAt: timestamp(row.closed_at) } : {}),
     createdAt: timestamp(row.created_at),
     updatedAt: timestamp(row.updated_at),
-    schemaVersion: row.schema_version
-  });
+    schemaVersion: row.schema_version,
+    ...(row.fee_terms ? { feeTerms: clone(row.fee_terms) } : {}),
+    ...(row.fee_collateral_terms ? { collateralTerms: clone(row.fee_collateral_terms) } : {})
+  }));
 }
 
 function mapCreditOfferAcceptance(row) {
@@ -4835,6 +4845,15 @@ export class PostgresCoreRepository {
       case CoreProjectionType.SANDBOX_EXECUTION_RECEIPT:
         value = await this.getSandboxExecutionReceipt(entityId);
         break;
+      case CoreProjectionType.SYNTHETIC_FEE_ENTRY:
+        value = await this.#getOne("feeEntryId", entityId, "SELECT document FROM synthetic_fee_entries WHERE id = $1", row => row?.document);
+        break;
+      case CoreProjectionType.SYNTHETIC_FEE_SOURCE_CORRECTION:
+        value = await this.#getOne("receiptId", entityId, "SELECT document FROM synthetic_fee_source_corrections WHERE id = $1", row => row?.document);
+        break;
+      case CoreProjectionType.SYNTHETIC_FEE_STATEMENT:
+        value = await this.#getOne("statementId", entityId, "SELECT document FROM synthetic_fee_statements WHERE id = $1", row => row?.document);
+        break;
       case CoreProjectionType.SANDBOX_SERVICING_ACTION:
         value = await this.getSandboxServicingAction(entityId);
         break;
@@ -5049,6 +5068,12 @@ export class PostgresCoreRepository {
         return this.#writeObligation(client, value);
       case CoreProjectionType.SANDBOX_EXECUTION_RECEIPT:
         return this.#writeSandboxExecutionReceipt(client, value);
+      case CoreProjectionType.SYNTHETIC_FEE_ENTRY:
+        return this.#writeSyntheticFeeEntry(client, value);
+      case CoreProjectionType.SYNTHETIC_FEE_SOURCE_CORRECTION:
+        return this.#writeSyntheticFeeSourceCorrection(client, value);
+      case CoreProjectionType.SYNTHETIC_FEE_STATEMENT:
+        return this.#writeSyntheticFeeStatement(client, value);
       case CoreProjectionType.SANDBOX_SERVICING_ACTION:
         return this.#writeSandboxServicingAction(client, value);
       case CoreProjectionType.REPAYMENT:
@@ -6619,8 +6644,10 @@ export class PostgresCoreRepository {
     // Only a validated synthetic position writes the new column; an omitted
     // position can never erase a previously persisted one.
     const hasSyntheticCollateral = value.syntheticCollateral !== undefined;
+    const hasSyntheticFees = value.syntheticFees !== undefined;
     const repaidPrincipalMinor = (
       BigInt(value.originalPrincipalMinor) - BigInt(value.outstandingPrincipalMinor)
+      - (hasSyntheticFees ? BigInt(value.syntheticFees.principalUnpaidCreditMinor ?? "0") : 0n)
     ).toString();
     const result = await client.query(
       `INSERT INTO obligations(
@@ -6641,7 +6668,7 @@ export class PostgresCoreRepository {
          schedule_sequence, servicing_owner_code, resolution_type,
          resolution_reason_code, resolution_at, written_off_principal_minor,
          written_off_interest_minor, written_off_fees_minor,
-         pool_obligation_binding_id, pool_execution_receipt_id${hasSyntheticCollateral ? ", synthetic_collateral" : ""}
+         pool_obligation_binding_id, pool_execution_receipt_id${hasSyntheticCollateral ? ", synthetic_collateral" : ""}${hasSyntheticFees ? ", synthetic_fees" : ""}
        ) VALUES (
          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
          NULL, NULL, $11, 1, '[]'::jsonb, '[]'::jsonb, $12, $13, $14, $15,
@@ -6649,7 +6676,7 @@ export class PostgresCoreRepository {
          $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38,
          $39, $40, $41, $42, $43,
          $44, $45, $46, $47, $48, $49, $50, $51, $52, $53,
-         $54, $55, $56, $57, $58, $59${hasSyntheticCollateral ? ", $60::jsonb" : ""}
+         $54, $55, $56, $57, $58, $59${hasSyntheticCollateral ? ", $60::jsonb" : ""}${hasSyntheticFees ? `, $${hasSyntheticCollateral ? 61 : 60}::jsonb` : ""}
        )
        ON CONFLICT (id) DO UPDATE
          SET outstanding_minor = EXCLUDED.outstanding_minor,
@@ -6661,6 +6688,7 @@ export class PostgresCoreRepository {
              total_repaid_minor = EXCLUDED.total_repaid_minor,
              execution_status = EXCLUDED.execution_status,
              ${hasSyntheticCollateral ? "synthetic_collateral = EXCLUDED.synthetic_collateral," : ""}
+             ${hasSyntheticFees ? "synthetic_fees = EXCLUDED.synthetic_fees," : ""}
              sandbox_execution_receipt_id = EXCLUDED.sandbox_execution_receipt_id,
              executed_at = EXCLUDED.executed_at,
              last_accrued_at = EXCLUDED.last_accrued_at,
@@ -6754,7 +6782,8 @@ export class PostgresCoreRepository {
         value.writtenOffFeesMinor ?? "0",
         value.poolObligationBindingId ?? null,
         value.poolExecutionReceiptId ?? null,
-        ...(hasSyntheticCollateral ? [json(value.syntheticCollateral)] : [])
+        ...(hasSyntheticCollateral ? [json(value.syntheticCollateral)] : []),
+        ...(hasSyntheticFees ? [json(value.syntheticFees)] : [])
       ]
     );
     if (result.rowCount !== 1) {
@@ -7164,6 +7193,57 @@ export class PostgresCoreRepository {
     }
   }
 
+  async #writeSyntheticFeeEntry(client, value) {
+    const { feeEntryId, ledgerTransactionId, ...core } = value;
+    if (hashId("synthetic_fee_entry", core) !== feeEntryId) throw projectionConflict(CoreProjectionType.SYNTHETIC_FEE_ENTRY, feeEntryId);
+    const inserted = await client.query(`INSERT INTO synthetic_fee_entries(
+      id,obligation_id,institution_id,kind,source_id,source_hash,base_delta_minor,fee_delta_minor,
+      reverses_entry_id,ledger_transaction_id,occurred_at,document)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb) ON CONFLICT DO NOTHING RETURNING id`,
+      [feeEntryId,value.obligationId,value.institutionId,value.kind,value.sourceId,value.sourceHash,
+       value.baseDeltaMinor,value.feeDeltaMinor,value.reversesEntryId,ledgerTransactionId ?? null,value.occurredAt,json(value)]);
+    if (inserted.rowCount === 0) {
+      const old = await client.query("SELECT document FROM synthetic_fee_entries WHERE id=$1",[feeEntryId]);
+      if (!old.rows[0] || hashId("fee_document",old.rows[0].document) !== hashId("fee_document",value)) throw projectionConflict(CoreProjectionType.SYNTHETIC_FEE_ENTRY,feeEntryId);
+    }
+  }
+
+  async #writeSyntheticFeeSourceCorrection(client, value) {
+    const { receiptId, receiptHash, sourceLedgerTransactionId, feeLedgerTransactionId, feeEntryId, ...core } = value;
+    if (hashId("synthetic_fee_source_correction", core) !== receiptId || receiptId !== receiptHash) {
+      throw projectionConflict(CoreProjectionType.SYNTHETIC_FEE_SOURCE_CORRECTION,receiptId);
+    }
+    const inserted = await client.query(`INSERT INTO synthetic_fee_source_corrections(
+      id,obligation_id,original_fee_entry_id,kind,amount_minor,approval_execution_id,
+      source_ledger_transaction_id,fee_ledger_transaction_id,document)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb) ON CONFLICT DO NOTHING RETURNING id`,
+      [receiptId,value.obligationId,value.sourceFeeEntryId,value.kind,value.amountMinor,value.approvalExecutionId,
+       sourceLedgerTransactionId,feeLedgerTransactionId,json(value)]);
+    if (!inserted.rowCount) {
+      const old=await client.query("SELECT document FROM synthetic_fee_source_corrections WHERE id=$1",[receiptId]);
+      if (!old.rows[0] || hashId("fee_document",old.rows[0].document)!==hashId("fee_document",value)) throw projectionConflict(CoreProjectionType.SYNTHETIC_FEE_SOURCE_CORRECTION,receiptId);
+    }
+  }
+
+  async #writeSyntheticFeeStatement(client, value) {
+    const { statementId, ...core } = value;
+    if (value.closed !== true || hashId("synthetic_fee_statement",core) !== statementId) throw projectionConflict(CoreProjectionType.SYNTHETIC_FEE_STATEMENT,statementId);
+    const inserted = await client.query(`INSERT INTO synthetic_fee_statements(id,institution_id,month,document)
+      VALUES($1,$2,$3,$4::jsonb) ON CONFLICT DO NOTHING RETURNING id`,[statementId,value.institutionId,value.month,json(value)]);
+    if (inserted.rowCount === 0) {
+      const old = await client.query("SELECT document FROM synthetic_fee_statements WHERE id=$1",[statementId]);
+      if (!old.rows[0] || hashId("fee_document",old.rows[0].document) !== hashId("fee_document",value)) throw projectionConflict(CoreProjectionType.SYNTHETIC_FEE_STATEMENT,statementId);
+    }
+  }
+
+  async listSyntheticFeeEntriesInTransaction(client, { obligationId, institutionId } = {}) {
+    if (!obligationId && !institutionId) throw new DomainError("tenant_resource_unavailable","A scoped fee owner is required");
+    const rows = await client.query(`SELECT document FROM synthetic_fee_entries WHERE
+      ($1::text IS NULL OR obligation_id=$1) AND ($2::text IS NULL OR institution_id=$2)
+      ORDER BY occurred_at,id`,[obligationId ?? null,institutionId ?? null]);
+    return rows.rows.map(row => clone(row.document));
+  }
+
   async #writeCreditIntent(client, value) {
     const result = await client.query(
       `INSERT INTO credit_intents(
@@ -7222,6 +7302,7 @@ export class PostgresCoreRepository {
   }
 
   async #writeCreditOffer(client, value) {
+    const hasFees = value.feeTerms !== undefined;
     const result = await client.query(
       `INSERT INTO credit_offers(
          id, offer_hash, terms_hash, credit_intent_id, subject_id,
@@ -7236,13 +7317,13 @@ export class PostgresCoreRepository {
          credit_passport_artifact_version, passport_verification_hash,
          underwriting_snapshot_hash, facility_limit_minor, per_draw_cap_minor,
          permitted_purpose_code, conditions, undrawn_revocation_rule,
-         superseding_offer_id, closed_at
+         superseding_offer_id, closed_at${hasFees ? ", fee_terms, fee_collateral_terms" : ""}
        ) VALUES (
          $1, $2, $3, $4, $5, $6, $7, $8,
          $9, $10, $11, $12, $13, $14, $15, $16,
          $17, $18, $19, $20, $21, $22, $23, $24, $25, $26,
          $27, $28, $29, $30, $31, $32, $33, $34, $35, $36,
-         $37, $38, $39, $40
+         $37, $38, $39, $40${hasFees ? ", $41::jsonb, $42::jsonb" : ""}
        )
        ON CONFLICT (id) DO UPDATE
          SET status = EXCLUDED.status,
@@ -7325,7 +7406,8 @@ export class PostgresCoreRepository {
         value.conditions ? json(value.conditions) : null,
         value.undrawnRevocationRule ?? null,
         value.supersedingOfferId ?? null,
-        value.closedAt ?? null
+        value.closedAt ?? null,
+        ...(hasFees ? [json(value.feeTerms), value.collateralTerms ? json(value.collateralTerms) : null] : [])
       ]
     );
     if (result.rowCount !== 1) {

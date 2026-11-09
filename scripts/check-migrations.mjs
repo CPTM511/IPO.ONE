@@ -1,3 +1,4 @@
+import {droppedSqlObjects} from "./sql-drop-statements.mjs";
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -23,23 +24,23 @@ for (const upFile of upFiles) {
   combinedUp.push(up);
 
   for (const table of [...up.matchAll(/CREATE TABLE ([a-z_]+)/g)].map((match) => match[1])) {
-    if (!down.includes(`DROP TABLE IF EXISTS ${table};`)) {
+    if (!droppedSqlObjects(down,"TABLE").has(table)) {
       failures.push(`${downFile} does not drop table ${table}`);
     }
   }
   for (const type of [...up.matchAll(/CREATE TYPE ([a-z_]+)/g)].map((match) => match[1])) {
-    if (!down.includes(`DROP TYPE IF EXISTS ${type};`)) {
+    if (!droppedSqlObjects(down,"TYPE").has(type)) {
       failures.push(`${downFile} does not drop type ${type}`);
     }
   }
   for (const fn of [...up.matchAll(/CREATE FUNCTION ([a-z_]+)/g)].map((match) => match[1])) {
-    if (!down.includes(`DROP FUNCTION IF EXISTS ${fn}(`)) {
+    if (!droppedSqlObjects(down,"FUNCTION").has(fn)) {
       failures.push(`${downFile} does not drop function ${fn}`);
     }
   }
   for (const match of up.matchAll(/CREATE (?:UNIQUE )?INDEX ([a-z_]+)[\s\S]*? ON ([a-z_]+)/g)) {
     const [, index, table] = match;
-    if (!down.includes(`DROP INDEX IF EXISTS ${index};`) && !down.includes(`DROP TABLE IF EXISTS ${table};`)) {
+    if (!droppedSqlObjects(down,"INDEX").has(index) && !droppedSqlObjects(down,"TABLE").has(table)) {
       failures.push(`${downFile} does not drop index ${index} or its table ${table}`);
     }
   }

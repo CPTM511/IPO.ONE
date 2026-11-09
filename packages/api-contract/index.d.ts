@@ -1,4 +1,11 @@
 export type TenantProtocolOperationId =
+  | "pilotReconcileSyntheticFees"
+  | "pilotReadSyntheticFeeCorrectionCases"
+  | "pilotReviewSyntheticFeeCorrection"
+  | "pilotCorrectSyntheticFeeSource"
+  | "pilotReadSyntheticFees"
+  | "pilotReadSyntheticFeeSettlement"
+  | "pilotCloseSyntheticFeeStatement"
   | "pilotReadSyntheticCollateralProfile"
   | "pilotConfirmSyntheticCollateral"
   | "pilotReleaseSyntheticCollateral"
@@ -1994,6 +2001,13 @@ export interface ReadRiskAgentDirectoryRequest extends TenantProtocolRequestBase
 }
 
 export type TenantProtocolRequest =
+  | ReconcileSyntheticFeesRequest
+  | SyntheticFeeCorrectionCasesRequest
+  | SyntheticFeeCorrectionReviewRequest
+  | SyntheticFeeSourceCorrectionRequest
+  | ReadSyntheticFeesRequest
+  | ReadSyntheticFeeSettlementRequest
+  | CloseSyntheticFeeStatementRequest
   | ReadSyntheticCollateralProfileRequest
   | ConfirmSyntheticCollateralRequest
   | ReleaseSyntheticCollateralRequest
@@ -2351,6 +2365,7 @@ export interface CreditDecisionSummary {
 }
 
 export interface CreditOfferSummary {
+  feeTerms?: SyntheticFeeTerms;
   collateralTerms?: SyntheticCollateralTerms;
   creditOfferId: string;
   creditOfferHash: string;
@@ -2367,7 +2382,7 @@ export interface CreditOfferSummary {
   firstPaymentAt: string;
   maturityAt: string;
   disclosureRef: string;
-  termsVersion: "credit_terms.v1" | "credit_terms.synthetic_secured.v1";
+  termsVersion: "credit_terms.v1" | "credit_terms.synthetic_secured.v1" | "credit_terms.synthetic_fee.v1";
   validUntil: string;
   reasonCodes: string[];
   sandboxOnly: true;
@@ -2452,6 +2467,7 @@ export interface ObligationInstallmentSummary {
 
 export interface SharedObligationSummary {
   syntheticCollateral?: SyntheticCollateralState;
+  syntheticFees?: SyntheticFeeState;
   obligationId: string;
   obligationHash: string;
   subjectId: string;
@@ -3336,6 +3352,7 @@ export interface OwnedObligationEvidenceViewResponse {
 export interface OwnedObligationViewResponse {
   obligation: SharedObligationSummary;
   latestServicingAction?: SandboxServicingActionSummary;
+  latestSourceCorrection?: SyntheticFeeSourceCorrectionResponse["receipt"];
   asOf: string;
   sandboxOnly: true;
   productionFundsMoved: false;
@@ -5123,6 +5140,7 @@ export interface LocalApprovalResponse {
   decisions: LocalApprovalDecision[];
   command: LocalServicingCommand;
   planSnapshot: Record<string, unknown>;
+  sourceCorrectionReview?: SyntheticFeeCorrectionReviewResponse;
   currentPlan?: { obligation: Record<string, unknown>; servicingStateHash: string; asOf: string };
   sandboxOnly: true;
   productionFundsMoved: false;
@@ -5139,6 +5157,13 @@ export interface LocalRiskAgentDirectoryResponse {
 }
 
 export type TenantProtocolResult =
+  | TenantProtocolResultBase<"pilotReconcileSyntheticFees", SyntheticFeesReconciledResponse>
+  | TenantProtocolResultBase<"pilotReadSyntheticFeeCorrectionCases", SyntheticFeeCorrectionCasesResponse>
+  | TenantProtocolResultBase<"pilotReviewSyntheticFeeCorrection", SyntheticFeeCorrectionReviewResponse>
+  | TenantProtocolResultBase<"pilotCorrectSyntheticFeeSource", SyntheticFeeSourceCorrectionResponse>
+  | TenantProtocolResultBase<"pilotReadSyntheticFees", SyntheticFeesResponse>
+  | TenantProtocolResultBase<"pilotReadSyntheticFeeSettlement", SyntheticFeeSettlementResponse>
+  | TenantProtocolResultBase<"pilotCloseSyntheticFeeStatement", SyntheticFeeStatementClosedResponse>
   | TenantProtocolResultBase<"pilotReadSyntheticCollateralProfile", SyntheticCollateralProfileResponse>
   | TenantProtocolResultBase<"pilotConfirmSyntheticCollateral", SyntheticCollateralTransitionResponse<"tenant_synthetic_collateral_confirmed.v1">>
   | TenantProtocolResultBase<"pilotReleaseSyntheticCollateral", SyntheticCollateralTransitionResponse<"tenant_synthetic_collateral_released.v1">>
@@ -6470,3 +6495,91 @@ export interface SyntheticCollateralTransitionResponse<Version extends "tenant_s
   obligation: SharedObligationSummary; receipt: SyntheticCollateralReceipt;
   syntheticOnly: true; productionFundsMoved: false; transactionHash: null; schemaVersion: Version;
 }
+
+export interface SyntheticFeePolicy {
+  profile: "synthetic_usd_platform_fee.v1"; schemaVersion: "synthetic_fee_policy.v1" | "synthetic_fee_terms.v1";
+  scope: "L0_LOCAL_NO_FUNDS"; currency: "USD"; minorUnitScale: 2;
+  borrowerRateBps: 10; borrowerCapMinor: "1000"; minimumFeeMinor: "0";
+  institutionRateBps: 1000; collectionMethod: "separate_receivable";
+  rounding: "cumulative_floor_minor_unit"; settlementPeriod: "utc_calendar_month";
+  fxMode: "not_applicable_usd_only"; syntheticOnly: true; productionPolicyAvailable: false;
+  productionFundsMoved: false; withdrawable: false;
+}
+export interface SyntheticFeeTerms extends SyntheticFeePolicy {
+  schemaVersion: "synthetic_fee_terms.v1"; policyHash: string; economicLoanId: string;
+  borrowerPayer: "obligation_subject"; institutionPayer: "synthetic_capital_partner";
+  institutionId: string; assetId: string; principalMinor: string;
+  borrowerFeeAtFullFundingMinor: string; providerOriginationFeeMinor: "0"; termsHash: string;
+  annualRateBps: number; scheduledTermDays: number; netProceedsMinor: string;
+  scheduledInterestEstimateMinor: string; estimatedTotalRepaymentMinor: string; estimatedTotalCostMinor: string;
+  disclosureBasis: "execute_at_offer_creation_hold_to_maturity_actual365";
+}
+export interface SyntheticFeeState {
+  schemaVersion: "synthetic_fee_state.v1"; terms: SyntheticFeeTerms; fundedBaseMinor: string;
+  pendingNormalInterestMinor: string; pendingEntryIds: string[];
+  principalUnpaidCreditMinor?: string; principalWrittenOffCreditMinor?: string;
+  principalRefundCreditDueMinor?: string; interestRefundCreditDueMinor?: string; feeWrittenOffCreditMinor?: string;
+  sourceCorrectionCount?: number; lastSourceCorrectionReceiptId?: string | null;
+  normalInterestBaseMinor: string; borrowerAssessedMinor: string; borrowerPaidMinor: string;
+  institutionAssessedMinor: string; institutionSettledMinor: string;
+  borrowerRefundDueMinor: string; institutionCreditDueMinor: string; revision: number;
+}
+export interface SyntheticFeeEntry {
+  feeEntryId: string; obligationId: string; economicLoanId: string; institutionId: string;
+  kind: "borrower" | "institution"; policyHash: string; termsHash: string;
+  sourceId: string; sourceHash: string; baseDeltaMinor: string; feeDeltaMinor: string;
+  cumulativeBaseMinor: string; cumulativeFeeMinor: string; remainderNumerator: string;
+  remainderDenominator: "10000"; reversesEntryId: string | null;
+  reasonCode: "funding_correction" | "normal_interest_refund" | null;
+  occurredAt: string; revision: number; syntheticOnly: true; productionFundsMoved: false;
+  schemaVersion: "synthetic_fee_entry.v1"; ledgerTransactionId?: string;
+  assessmentStatus: "assessed" | "pending_profile_disabled"; reconcilesPendingEntryIds: string[];
+}
+export interface SyntheticFeeStatement {
+  institutionId: string; month: string; periodStart: string; periodEnd: string;
+  openingMinor: string; additionsMinor: string; reversalsMinor: string; settledMinor: string;
+  closingMinor: string; lines: SyntheticFeeEntry[]; closed: boolean;
+  syntheticOnly: true; productionFundsMoved: false; schemaVersion: "synthetic_fee_statement.v1"; statementId: string;
+}
+export interface ReadSyntheticFeesRequest extends TenantProtocolRequestBase {
+  operationId: "pilotReadSyntheticFees"; payload: Record<string, never>;
+  resource: { resourceType: "obligation"; resourceId: string };
+}
+export interface ReadSyntheticFeeSettlementRequest extends TenantProtocolRequestBase {
+  operationId: "pilotReadSyntheticFeeSettlement"; payload: { month: string };
+}
+export interface CloseSyntheticFeeStatementRequest extends TenantProtocolRequestBase {
+  operationId: "pilotCloseSyntheticFeeStatement"; payload: { month: string }; idempotencyKey: string;
+}
+export interface SyntheticFeesResponse {
+  schemaVersion: "tenant_synthetic_fees.v1"; obligationId: string; fees: SyntheticFeeState;
+  sourceCorrections: SyntheticFeeSourceCorrectionResponse["receipt"][];
+  entries: SyntheticFeeEntry[]; syntheticOnly: true; productionFundsMoved: false;
+}
+export interface SyntheticFeeSettlementResponse {
+  schemaVersion: "tenant_synthetic_fee_settlement.v1"; enabled: boolean; policy: SyntheticFeePolicy; pendingBaseMinor: string;
+  pendingAssessmentMinor: string; pendingAssessmentStateHash: string;
+  statement: SyntheticFeeStatement; syntheticOnly: true; productionFundsMoved: false;
+}
+export interface SyntheticFeeStatementClosedResponse {
+  schemaVersion: "tenant_synthetic_fee_statement_closed.v1"; statement: SyntheticFeeStatement;
+  syntheticOnly: true; productionFundsMoved: false;
+}
+
+export interface ReconcileSyntheticFeesRequest extends TenantProtocolRequestBase {
+ operationId: "pilotReconcileSyntheticFees"; payload: { expectedStateHash: string }; idempotencyKey: string;
+}
+export interface SyntheticFeesReconciledResponse {
+ schemaVersion: "tenant_synthetic_fees_reconciled.v1"; assessedCount: number; feeEntryIds: string[];
+ syntheticOnly: true; productionFundsMoved: false;
+}
+
+export type SyntheticFeeCorrectionCasesResponse = { schemaVersion: "tenant_synthetic_fee_correction_cases.v1"; cases: ({ obligationId: string; reference: string; status: string; sourceFeeEntryId: string; kind: "borrower" | "institution"; sourceId: string; sourceHash: string; remainingSourceBaseMinor: string; occurredAt: string })[]; hasMore: boolean; asOf: string; syntheticOnly: true; productionFundsMoved: false };
+
+export type SyntheticFeeCorrectionReviewResponse = { schemaVersion: "tenant_synthetic_fee_correction_review.v1"; obligationId: string; sourceFeeEntryId: string; amountMinor: string; sourcePolicyHash: "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"; expectedFeeStateHash: string; expectedEffectsHash: string; effects: { sourceFeeEntryId: string; sourceHash: string; sourcePolicyHash: string; amountMinor: string; reasonCode: string; interestAccruedBeforeCreditMinor: string; accrualRemainder: string; unpaidPrincipalCreditMinor: string; writtenOffPrincipalCreditMinor: string; principalRefundCreditMinor: string; interestRefundCreditMinor: string; feeCreditMinor: string; unpaidFeeCreditMinor: string; writtenOffFeeCreditMinor: string; paidFeeCreditMinor: string; nextFundedBaseMinor: string; nextNormalInterestBaseMinor: string; nextBorrowerFeeMinor: string; nextInstitutionFeeMinor: string; nextOutstandingPrincipalMinor: string; nextOutstandingInterestMinor: string; nextOutstandingFeesMinor: string; nextStatus: string; kind: "borrower" | "institution"; pendingSource: boolean; syntheticOnly: true; productionFundsMoved: false; cashRefundRecorded: false; scheduleSequenceBefore:number; scheduleSequenceAfter:number; scheduleHashBefore:string; scheduleHashAfter:string }; syntheticOnly: true; productionFundsMoved: false };
+
+export type SyntheticFeeSourceCorrectionResponse = { schemaVersion: "tenant_synthetic_fee_source_corrected.v1"; obligationId: string; fees: SyntheticFeeState; receipt: { sourceFeeEntryId: string; amountMinor: string; expectedFeeStateHash: string; expectedEffectsHash: string; sourcePolicyHash: "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"; obligationId: string; originalSourceId: string; originalSourceHash: string; approvalExecutionId: string; actorId: string; reasonCode: string; syntheticOnly: true; productionFundsMoved: false; kind: "borrower" | "institution"; effects: { sourceFeeEntryId: string; sourceHash: string; sourcePolicyHash: string; amountMinor: string; reasonCode: string; interestAccruedBeforeCreditMinor: string; accrualRemainder: string; unpaidPrincipalCreditMinor: string; writtenOffPrincipalCreditMinor: string; principalRefundCreditMinor: string; interestRefundCreditMinor: string; feeCreditMinor: string; unpaidFeeCreditMinor: string; writtenOffFeeCreditMinor: string; paidFeeCreditMinor: string; nextFundedBaseMinor: string; nextNormalInterestBaseMinor: string; nextBorrowerFeeMinor: string; nextInstitutionFeeMinor: string; nextOutstandingPrincipalMinor: string; nextOutstandingInterestMinor: string; nextOutstandingFeesMinor: string; nextStatus: string; kind: "borrower" | "institution"; pendingSource: boolean; syntheticOnly: true; productionFundsMoved: false; cashRefundRecorded: false; scheduleSequenceBefore:number; scheduleSequenceAfter:number; scheduleHashBefore:string; scheduleHashAfter:string }; effectiveAt: string; refundStatus: "credit_due_only"; scope: "L0_LOCAL_NO_FUNDS"; profile: "synthetic_usd_platform_fee.v1"; chainTransactionHash: null; schemaVersion: "synthetic_fee_source_correction.v1"; receiptId: string; receiptHash: string; sourceLedgerTransactionId: string; feeLedgerTransactionId: string | null; feeEntryId: string }; syntheticOnly: true; productionFundsMoved: false };
+
+export interface SyntheticFeeCorrectionCasesRequest extends TenantProtocolRequestBase { operationId:"pilotReadSyntheticFeeCorrectionCases"; payload:Record<string,never>; }
+export interface SyntheticFeeCorrectionReviewRequest extends TenantProtocolRequestBase { operationId:"pilotReviewSyntheticFeeCorrection"; resource:{resourceType:"obligation";resourceId:string}; payload:{sourceFeeEntryId:string;amountMinor:string}; }
+export interface SyntheticFeeSourceCorrectionRequest extends TenantProtocolRequestBase { operationId:"pilotCorrectSyntheticFeeSource"; resource:{resourceType:"obligation";resourceId:string}; reasonCode:"synthetic_fee_source_correction"; idempotencyKey:string; approvalArtifact:{proposalId:string;proposalVersion:number}; payload:{sourceFeeEntryId:string;amountMinor:string;expectedFeeStateHash:string;expectedEffectsHash:string;sourcePolicyHash:string}; }

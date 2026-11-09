@@ -456,6 +456,7 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
       "/servicing-case-presentation.js",
       "/servicing-position-index.js",
       "/synthetic-collateral-presentation.js",
+      "/synthetic-fee-presentation.js",
       "/trading-capital-product-presentation.js",
       "/v9-trust-surfaces.js",
       "/wallet-authority-lifecycle.js",

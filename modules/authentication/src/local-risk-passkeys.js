@@ -10,6 +10,14 @@ export const LOCAL_PASSKEY_BINDINGS = Object.freeze({
   "http://localhost:8937": Object.freeze({ role: "risk_operator" }),
   "http://localhost:8947": Object.freeze({ role: "risk_operator" }),
   "http://localhost:8957": Object.freeze({ role: "risk_operator" }),
+  "http://localhost:8967": Object.freeze({role:"operations_operator",actorId:"actor_web027m_operations"}),
+  "http://localhost:8968": Object.freeze({role:"auditor",actorId:"actor_web027m_auditor"}),
+  "http://localhost:8969": Object.freeze({role:"risk_operator",actorId:"actor_web027m_risk_reviewer"}),
+  "http://localhost:8970": Object.freeze({role:"operations_operator",actorId:"actor_web027n_operations_reviewer"}),
+  "http://localhost:8981": Object.freeze({role:"operations_operator",actorId:"actor_web027m_operations"}),
+  "http://localhost:8982": Object.freeze({role:"auditor",actorId:"actor_web027m_auditor"}),
+  "http://localhost:8983": Object.freeze({role:"risk_operator",actorId:"actor_web027m_risk_reviewer"}),
+  "http://localhost:8984": Object.freeze({role:"operations_operator",actorId:"actor_web027n_operations_reviewer"}),
   "http://localhost:8939": Object.freeze({ role: "operations_operator", actorId: "actor_web027m_operations" }),
   "http://localhost:8940": Object.freeze({ role: "auditor", actorId: "actor_web027m_auditor" }),
   "http://localhost:8941": Object.freeze({ role: "risk_operator", actorId: "actor_web027m_risk_reviewer" }),
@@ -85,7 +93,7 @@ export async function verifyLocalRiskCeremony({ response, challenge, key }) {
 // Instantiated only by the exact reviewed loopback composition; no public enrollment.
 export class LocalRiskPasskeys {
   constructor({ origin, role = "risk_operator", specialRoles = false, independentOperationsReviewer = false }) {
-    if ((origin === "http://localhost:8942" && !independentOperationsReviewer) || !ORIGINS.has(origin) || LOCAL_PASSKEY_BINDINGS[origin].role !== role || (LOCAL_PASSKEY_BINDINGS[origin].actorId && !specialRoles)) throw authenticationError("authentication_deployment_gate_closed", "Risk Passkey origin is not approved");
+    if ((["http://localhost:8942","http://localhost:8970","http://localhost:8984"].includes(origin) && !independentOperationsReviewer) || !ORIGINS.has(origin) || LOCAL_PASSKEY_BINDINGS[origin].role !== role || (LOCAL_PASSKEY_BINDINGS[origin].actorId && !specialRoles)) throw authenticationError("authentication_deployment_gate_closed", "Risk Passkey origin is not approved");
     this.binding = LOCAL_PASSKEY_BINDINGS[origin];
     this.origin = origin;
     this.rpID = "localhost";

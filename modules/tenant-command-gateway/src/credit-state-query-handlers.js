@@ -71,7 +71,10 @@ export function readOwnCreditStateQueryHandler() {
                    AND c.subject_id = o.subject_id
                    AND c.risk_decision_id = d.id
                    AND c.decision_hash = d.decision_hash
-                   AND c.outcome_finalized_at = date_trunc('milliseconds', o.updated_at)
+                   AND (c.outcome_finalized_at = date_trunc('milliseconds', o.updated_at)
+                    OR (COALESCE((to_jsonb(o)#>>'{synthetic_fees,sourceCorrectionCount}')::BIGINT,0)>0
+                      AND to_jsonb(o)#>>'{synthetic_fees,lastSourceCorrectionReceiptId}' ~ '^0x[0-9a-f]{64}$'
+                      AND c.outcome_finalized_at < o.updated_at))
                   WHERE o.tenant_id = p.tenant_id AND o.subject_id = p.subject_id
                     AND ${TERMINAL_CREDIT_SOURCE_SQL}
                     AND c.id IS NULL

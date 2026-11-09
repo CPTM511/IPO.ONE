@@ -294,15 +294,19 @@ test("production runtime closes both pools when startup validation fails", async
 });
 
 
-test("B3 off runtime admits only the exact pre-migration set; activation and other drift fail closed",async()=>{
+test("B4 local files preserve exact pre-B3/off production schema admission without activation",async()=>{
   const {readMigrationSet}=await import("../../../scripts/migrate.mjs");
+  const {B4_LOCAL_ONLY_MIGRATIONS}=await import("../../../scripts/vercel-migration-profile.mjs");
   const full=(await readMigrationSet()).map(({name,checksum})=>({name,checksum}));
+  const beforeB4=full.filter(m=>!B4_LOCAL_ONLY_MIGRATIONS.includes(m.name));
+  const beforeB3=beforeB4.slice(0,-1);
   const pool=rows=>({query:async()=>({rowCount:rows.length,rows})});
   assert.equal(await assertProductionMigrationSet(pool(full),{syntheticCollateralEnabled:true}),"current");
-  assert.equal(await assertProductionMigrationSet(pool(full.slice(0,-1))),"b3_compatible_off_before_migration");
-  for(const rows of [full.slice(0,-2),[...full,{name:'future',checksum:'unknown'}],
-    [{...full[0],checksum:'modified'},...full.slice(1,-1)]]){
+  assert.equal(await assertProductionMigrationSet(pool(beforeB4),{syntheticCollateralEnabled:true}),"current");
+  assert.equal(await assertProductionMigrationSet(pool(beforeB3)),"b3_compatible_off_before_migration");
+  for(const rows of [full.slice(0,-1),beforeB4.slice(0,-2),[...full,{name:'future',checksum:'unknown'}],
+    [{...beforeB3[0],checksum:'modified'},...beforeB3.slice(1)]]){
     await assert.rejects(assertProductionMigrationSet(pool(rows)),{code:'production_database_migration_mismatch'});
   }
-  await assert.rejects(assertProductionMigrationSet(pool(full.slice(0,-1)),{syntheticCollateralEnabled:true}),{code:'production_database_migration_mismatch'});
+  await assert.rejects(assertProductionMigrationSet(pool(beforeB3),{syntheticCollateralEnabled:true}),{code:'production_database_migration_mismatch'});
 });

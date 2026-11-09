@@ -349,3 +349,20 @@ export function createServicingCasePresentation(obligation, servicingAction = nu
 export function hasVerifiedServicingCase(obligation, servicingAction = null) {
   return createServicingCasePresentation(obligation, servicingAction) !== null;
 }
+
+
+// A source credit is a different immutable action from repayment/servicing.
+// Match its exact current financial/schedule effect; never relabel an old cure.
+export function currentSyntheticSourceCorrection(obligation,receipt) {
+  if(!receipt || receipt.schemaVersion!=="synthetic_fee_source_correction.v1" ||
+    receipt.sourcePolicyHash!=="0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d" ||
+    receipt.syntheticOnly!==true || receipt.productionFundsMoved!==false || receipt.refundStatus!=="credit_due_only" ||
+    !HASH.test(receipt.receiptId??"") || receipt.receiptHash!==receipt.receiptId ||
+    receipt.receiptId!==obligation?.syntheticFees?.lastSourceCorrectionReceiptId || !(obligation.syntheticFees.sourceCorrectionCount>0) ||
+    receipt.obligationId!==obligation.obligationId || !validDateTime(receipt.effectiveAt) ||
+    receipt.effects?.nextOutstandingPrincipalMinor!==obligation.outstandingPrincipalMinor ||
+    receipt.effects.nextOutstandingInterestMinor!==obligation.outstandingInterestMinor ||
+    receipt.effects.nextOutstandingFeesMinor!==obligation.outstandingFeesMinor ||
+    receipt.effects.scheduleSequenceAfter!==obligation.scheduleSequence || receipt.effects.scheduleHashAfter!==obligation.scheduleHash)return null;
+  return deepFreeze(structuredClone(receipt));
+}

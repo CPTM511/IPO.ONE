@@ -1,3 +1,4 @@
+import { SYNTHETIC_FEE_PROFILE } from "../../../packages/domain/src/synthetic-fees.js";
 import {
   ConsentPurpose,
   CreditAuthorityType,
@@ -96,6 +97,7 @@ export function summarizeCreditOffer(offer) {
     creditOfferHash: offer.creditOfferHash,
     termsHash: offer.termsHash,
     ...(offer.collateralTerms ? { collateralTerms: offer.collateralTerms } : {}),
+    ...(offer.feeTerms ? { feeTerms: offer.feeTerms } : {}),
     creditIntentId: offer.creditIntentId,
     riskDecisionId: offer.riskDecisionId,
     subjectId: offer.subjectId,
@@ -367,7 +369,7 @@ async function loadDecisionResourceBaselines({ client, coreRepository }) {
   };
 }
 
-export function evaluateCreditApplicationCommandHandler() {
+export function evaluateCreditApplicationCommandHandler({ syntheticFeesEnabled = false } = {}) {
   return Object.freeze({
     operationId: "pilotEvaluateCreditApplication",
     kind: "command",
@@ -434,6 +436,7 @@ export function evaluateCreditApplicationCommandHandler() {
         eligibilityFacts: eligibility.eligibilityFacts,
         sourceEvidence: eligibility.sourceEvidence,
         riskState: eligibility.riskState,
+        feeProfile: syntheticFeesEnabled === true ? SYNTHETIC_FEE_PROFILE : undefined,
         now
       });
       const decidedIntent = {
@@ -553,6 +556,6 @@ export function evaluateCreditApplicationCommandHandler() {
   });
 }
 
-export function createCreditDecisionHandlers() {
-  return Object.freeze([evaluateCreditApplicationCommandHandler()]);
+export function createCreditDecisionHandlers(options) {
+  return Object.freeze([evaluateCreditApplicationCommandHandler(options)]);
 }

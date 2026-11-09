@@ -3,7 +3,7 @@ import { createHostedSyntheticMeteredResourceService } from "./hosted-synthetic-
 import { createLocalProductCapability } from "./local-product-capability.js";
 import { createLocalApprovalRuntimeFactory } from "../../../modules/tenant-command-gateway/src/local-approval-runtime.js";
 import { createLocalApprovalProofVerifier } from "./local-approval-proof.js";
-import { localSpecialRolesEnabled, assertLocalSpecialRoleDatabase, loadLocalSpecialRoleInvitations, localSpecialRoleSpecs } from "./local-special-role-access.js";
+import { localSyntheticFeeCorrectionsEnabled, localSpecialRolesEnabled, assertLocalSpecialRoleDatabase, loadLocalSpecialRoleInvitations, localSpecialRoleSpecs } from "./local-special-role-access.js";
 import { LocalRiskPasskeys } from "../../../modules/authentication/src/local-risk-passkeys.js";
 import { createLocalPrincipalAgentRuntime } from "./local-principal-agent-runtime.js";
 import { assertLocalAccessDatabase, localAccessCapabilities, localAccessEnabled } from "./local-access-repair.js";
@@ -115,7 +115,11 @@ function createGateway(
     referenceHasher = authentication.referenceHasher,
     meteredUsageProvider,
     approvalRuntimeFactory,
-    syntheticCollateralEnabled = false
+    syntheticCollateralEnabled = false,
+    syntheticFeesEnabled = false,
+    syntheticFeeOperatorActorId,
+    syntheticFeeCorrectionsEnabled = false,
+    syntheticFeesLocalContext = false
   } = {}
 ) {
   const durableGateway = new TenantCommandGateway({
@@ -124,6 +128,10 @@ function createGateway(
       createTenantFoundationHandlers({
         localSandboxHumanActivation: localAccessEnabled(),
         syntheticCollateralEnabled,
+        syntheticFeesEnabled,
+        syntheticFeeOperatorActorId,
+        syntheticFeesLocalContext,
+        syntheticFeeCorrectionsEnabled,
         localRiskAgentDirectory: localAccessEnabled(),
         hyperliquidInfoAdapter: new HyperliquidTestnetInfoAdapter(),
         hyperliquidBindingProofVerifier:
@@ -187,6 +195,7 @@ async function createLocalHumanAccess({
   authenticationPool,
   authenticationMaterial,
   ordinaryWalletEnrollmentAllowed = true,
+  syntheticFeeInstitution = false,
   identity,
   port,
   profile
@@ -208,15 +217,16 @@ async function createLocalHumanAccess({
 
   return createPostgresHumanAccessComposition({
     browserOrigin,
-    ...(localAccessEnabled() ? { localPasskeys: true, localPasskeyFactory: options => new LocalRiskPasskeys(options) } : {}),
-    ...(specialRole ? { localSpecialRoles: true, ...(port === 8942 ? { localIndependentOperationsReviewer: true } : {}) } : {}),
+    ...((localAccessEnabled() || localSyntheticFeeCorrectionsEnabled()) ? { localPasskeys: true, localPasskeyFactory: options => new LocalRiskPasskeys(options) } : {}),
+    ...(specialRole ? { localSpecialRoles: true, ...(identity.actorId === "actor_web027n_operations_reviewer" ? { localIndependentOperationsReviewer: true } : {}) } : {}),
     encryptionKey: authenticationMaterial.encryptionKey,
     encryptionKeyRef: "local-secret://authentication/encryption-key",
     oidcProviders: [],
     policyVersion: identity.createContext().policyVersion,
     pool: authenticationPool,
     profile: "local_no_funds",
-    ...(localAccessEnabled() && (["capital_partner_operator", "risk_operator"].includes(identity.roleBundle) || specialRole)
+    ...(((localAccessEnabled() && ["capital_partner_operator", "risk_operator"].includes(identity.roleBundle)) || specialRole ||
+        (syntheticFeeInstitution === true && identity.roleBundle === "capital_partner_operator"))
       ? { localInvitedWalletRole: identity.roleBundle } : {}),
     referenceHashKey: authenticationMaterial.referenceHashKey,
     referenceHashKeyRef:
@@ -250,6 +260,8 @@ export async function createPrivatePilotRuntime({
   ownerConnectionString,
   basePort = 8787,
   syntheticCollateralEnabled = false,
+  syntheticFeesEnabled = false,
+  syntheticFeeCorrectionsEnabled = false,
   profile,
   creditRegistryObservationArtifactPath =
     process.env.IPO_ONE_CREDIT_REGISTRY_OBSERVATION_ARTIFACT,
@@ -263,17 +275,31 @@ export async function createPrivatePilotRuntime({
     );
   }
   assertPort("basePort", basePort);
+  const feeDatabase = new URL(ownerConnectionString);
+  const syntheticFeesLocalContext = feeDatabase.hostname === "127.0.0.1" && feeDatabase.port === "59989" &&
+    ((feeDatabase.pathname === "/ipo_one_b4_fee_review" && basePort === 8907) ||
+     (feeDatabase.pathname === "/b4_fee_browser_test_20261109" && basePort === 8921));
+  if(syntheticFeeCorrectionsEnabled!==false && (syntheticFeeCorrectionsEnabled!==true || !syntheticFeesLocalContext || !localSyntheticFeeCorrectionsEnabled()))throw new DomainError("synthetic_fee_local_profile_invalid","B4-F1 requires the exact reviewed local correction context");
+  if (syntheticFeesEnabled !== false) {
+    const target = new URL(ownerConnectionString);
+    if (syntheticFeesEnabled !== true || target.hostname !== "127.0.0.1" || target.port !== "59989" ||
+        !((target.pathname === "/ipo_one_b4_fee_review" && basePort === 8907) ||
+          (target.pathname === "/b4_fee_browser_test_20261109" && basePort === 8921))) {
+      throw new DomainError("synthetic_fee_local_profile_invalid", "B4 requires its exact isolated local review/test database and ports");
+    }
+  }
   if (syntheticCollateralEnabled !== false) {
     const target = new URL(ownerConnectionString);
     if (syntheticCollateralEnabled !== true || target.hostname !== "127.0.0.1" ||
       target.port !== "59989" || !((target.pathname === "/ipo_one_b3_synthetic_review" && basePort === 8877) ||
-        (target.pathname === "/b3_browser_test_20261108" && basePort === 8891))) {
+        (target.pathname === "/b3_browser_test_20261108" && basePort === 8891) ||
+        syntheticFeesLocalContext)) {
       throw new DomainError("synthetic_collateral_local_profile_invalid", "B3 local activation requires its exact isolated review database and ports");
     }
   }
   if (localAccessEnabled()) assertLocalAccessDatabase(ownerConnectionString, basePort);
   if (localSpecialRolesEnabled()) {
-    if (!localAccessEnabled()) throw new Error("WEB-027M requires the existing local access gate");
+    if (!localAccessEnabled() && !localSyntheticFeeCorrectionsEnabled()) throw new Error("Special roles require their exact local access gate");
     assertLocalSpecialRoleDatabase(ownerConnectionString, basePort);
   }
   const specialRoleInvitations = localSpecialRolesEnabled() ? await loadLocalSpecialRoleInvitations() : undefined;
@@ -310,7 +336,7 @@ export async function createPrivatePilotRuntime({
     identities: authentication.identities,
     profile: authentication.profile,
     basePort,
-    localPasskeys: localAccessEnabled(),
+    localPasskeys: localAccessEnabled() || localSyntheticFeeCorrectionsEnabled(),
     specialRoleInvitations,
     serverMaterial,
     invitation
@@ -341,6 +367,7 @@ export async function createPrivatePilotRuntime({
         authenticationPool: durableAuthentication.pool,
         authenticationMaterial: durableAuthentication,
         identity: profile.identity,
+        syntheticFeeInstitution: syntheticFeesLocalContext && profile.name === "capitalPartner",
         port: profile.port,
         profile: authentication.profile
       });
@@ -353,6 +380,10 @@ export async function createPrivatePilotRuntime({
     ).humanAccess.credentialRegistry;
     gateway = createGateway(pool, authentication, {
       syntheticCollateralEnabled,
+      syntheticFeesEnabled,
+      syntheticFeeCorrectionsEnabled,
+      syntheticFeeOperatorActorId: authentication.identities.capitalPartner.actorId,
+      syntheticFeesLocalContext,
       credentialRegistry:
         humanAccessProfiles[0].humanAccess.credentialRegistry,
       referenceHasher: createReferenceHasher(
@@ -360,6 +391,7 @@ export async function createPrivatePilotRuntime({
       ),
       meteredUsageProvider,
       ...(localSpecialRolesEnabled() ? { approvalRuntimeFactory:createLocalApprovalRuntimeFactory({
+        syntheticFeeCorrectionsEnabled,
         verifyRecordedProof:createLocalApprovalProofVerifier({ pool:durableAuthentication.pool, tenantId:authentication.profile.tenantId, systemActorId:durableAuthentication.systemActorId })
       }) } : {})
     });
@@ -522,7 +554,7 @@ export async function createPrivatePilotRuntime({
           })
         : undefined;
       const host = createTenantPilotHost({
-        localRiskHostname: localAccessEnabled() && ([8937, 8947, 8957].includes(profile.port) || (localSpecialRolesEnabled() && Object.hasOwn(localSpecialRoleSpecs(), profile.name))),
+        localRiskHostname: (localAccessEnabled() && [8937, 8947, 8957].includes(profile.port)) || (localSpecialRolesEnabled() && Object.hasOwn(localSpecialRoleSpecs(), profile.name)),
         gateway,
         humanBff: humanAccess.humanSessionBff,
         machineAuthenticator: {
@@ -655,7 +687,7 @@ export async function createPrivatePilotGateway(
 ) {
   if (localAccessEnabled()) assertLocalAccessDatabase(ownerConnectionString, basePort);
   if (localSpecialRolesEnabled()) {
-    if (!localAccessEnabled()) throw new Error("WEB-027M requires the existing local access gate");
+    if (!localAccessEnabled() && !localSyntheticFeeCorrectionsEnabled()) throw new Error("Special roles require their exact local access gate");
     assertLocalSpecialRoleDatabase(ownerConnectionString, basePort);
   }
   const specialRoleInvitations = localSpecialRolesEnabled() ? await loadLocalSpecialRoleInvitations() : undefined;
@@ -698,7 +730,7 @@ export async function createPrivatePilotDurableAgentGateway(
 ) {
   if (localAccessEnabled()) assertLocalAccessDatabase(ownerConnectionString, basePort);
   if (localSpecialRolesEnabled()) {
-    if (!localAccessEnabled()) throw new Error("WEB-027M requires the existing local access gate");
+    if (!localAccessEnabled() && !localSyntheticFeeCorrectionsEnabled()) throw new Error("Special roles require their exact local access gate");
     assertLocalSpecialRoleDatabase(ownerConnectionString, basePort);
   }
   const specialRoleInvitations = localSpecialRolesEnabled() ? await loadLocalSpecialRoleInvitations() : undefined;

@@ -1569,6 +1569,90 @@
       "correlationId": "correlation-b3-fixture-0001",
       "schemaVersion": "tenant_protocol_request.v1",
       "idempotencyKey": "idempotency-b3-fixture-pilotReleaseSyntheticCollateral"
+    },
+    {
+      "operationId": "pilotReadSyntheticFees",
+      "payload": {},
+      "resource": {
+        "resourceType": "obligation",
+        "resourceId": "obligation_owned_view_fixture"
+      },
+      "requestId": "request_b4_fee_0",
+      "correlationId": "correlation_b4_fee",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotReadSyntheticFeeSettlement",
+      "payload": {
+        "month": "2026-10"
+      },
+      "requestId": "request_b4_fee_1",
+      "correlationId": "correlation_b4_fee",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotCloseSyntheticFeeStatement",
+      "payload": {
+        "month": "2026-10"
+      },
+      "requestId": "request_b4_fee_2",
+      "correlationId": "correlation_b4_fee",
+      "schemaVersion": "tenant_protocol_request.v1",
+      "idempotencyKey": "b4_close_october_fixture_0001"
+    },
+    {
+      "operationId": "pilotReconcileSyntheticFees",
+      "payload": {
+        "expectedStateHash": "0x7777777777777777777777777777777777777777777777777777777777777777"
+      },
+      "requestId": "request_b4_reconcile_fixture",
+      "correlationId": "correlation_b4_fee",
+      "schemaVersion": "tenant_protocol_request.v1",
+      "idempotencyKey": "b4_reconcile_fixture_0001"
+    },
+    {
+      "operationId": "pilotReadSyntheticFeeCorrectionCases",
+      "payload": {},
+      "requestId": "request_b4_f1_0",
+      "correlationId": "correlation_b4_f1",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotReviewSyntheticFeeCorrection",
+      "payload": {
+        "sourceFeeEntryId": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "amountMinor": "1"
+      },
+      "requestId": "request_b4_f1_1",
+      "correlationId": "correlation_b4_f1",
+      "schemaVersion": "tenant_protocol_request.v1",
+      "resource": {
+        "resourceType": "obligation",
+        "resourceId": "obligation_owned_view_fixture"
+      }
+    },
+    {
+      "operationId": "pilotCorrectSyntheticFeeSource",
+      "payload": {
+        "sourceFeeEntryId": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "amountMinor": "1",
+        "expectedFeeStateHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "expectedEffectsHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "sourcePolicyHash": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"
+      },
+      "requestId": "request_b4_f1_2",
+      "correlationId": "correlation_b4_f1",
+      "schemaVersion": "tenant_protocol_request.v1",
+      "resource": {
+        "resourceType": "obligation",
+        "resourceId": "obligation_owned_view_fixture"
+      },
+      "reasonCode": "synthetic_fee_source_correction",
+      "idempotencyKey": "b4-f1-source-correction-fixture",
+      "approvalArtifact": {
+        "proposalId": "approval_proposal_writeoff_fixture",
+        "proposalVersion": 3
+      }
     }
   ],
   "invalidRequests": [
@@ -8813,6 +8897,343 @@
         "productionFundsMoved": false,
         "transactionHash": null,
         "schemaVersion": "tenant_synthetic_collateral_released.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReadSyntheticFees",
+      "replayed": false,
+      "response": {
+        "schemaVersion": "tenant_synthetic_fees.v1",
+        "obligationId": "obligation_owned_view_fixture",
+        "fees": {
+          "schemaVersion": "synthetic_fee_state.v1",
+          "terms": {
+            "profile": "synthetic_usd_platform_fee.v1",
+            "schemaVersion": "synthetic_fee_terms.v1",
+            "scope": "L0_LOCAL_NO_FUNDS",
+            "currency": "USD",
+            "minorUnitScale": 2,
+            "borrowerRateBps": 10,
+            "borrowerCapMinor": "1000",
+            "minimumFeeMinor": "0",
+            "institutionRateBps": 1000,
+            "collectionMethod": "separate_receivable",
+            "rounding": "cumulative_floor_minor_unit",
+            "settlementPeriod": "utc_calendar_month",
+            "fxMode": "not_applicable_usd_only",
+            "syntheticOnly": true,
+            "productionPolicyAvailable": false,
+            "productionFundsMoved": false,
+            "withdrawable": false,
+            "policyHash": "0x0672e224b332ce6809160e633ede365456b3dd852fbffde2fbf188ff019edb70",
+            "economicLoanId": "credit_intent_b4_fixture",
+            "borrowerPayer": "obligation_subject",
+            "institutionPayer": "synthetic_capital_partner",
+            "institutionId": "urn:ipo-one:local:synthetic-capital-partner:b4",
+            "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+            "principalMinor": "12000",
+            "borrowerFeeAtFullFundingMinor": "12",
+            "providerOriginationFeeMinor": "0",
+            "annualRateBps": 0,
+            "scheduledTermDays": 0,
+            "netProceedsMinor": "12000",
+            "scheduledInterestEstimateMinor": "0",
+            "estimatedTotalRepaymentMinor": "12012",
+            "estimatedTotalCostMinor": "12",
+            "disclosureBasis": "execute_at_offer_creation_hold_to_maturity_actual365",
+            "termsHash": "0x19dff4848db003f37e19989a620f4ee9a24d9d048b37bd02cd969cbf8b452435"
+          },
+          "fundedBaseMinor": "0",
+          "normalInterestBaseMinor": "0",
+          "borrowerAssessedMinor": "0",
+          "borrowerPaidMinor": "0",
+          "institutionAssessedMinor": "0",
+          "institutionSettledMinor": "0",
+          "borrowerRefundDueMinor": "0",
+          "institutionCreditDueMinor": "0",
+          "revision": 0,
+          "pendingNormalInterestMinor": "0",
+          "pendingEntryIds": []
+        },
+        "entries": [],
+        "syntheticOnly": true,
+        "productionFundsMoved": false,
+        "sourceCorrections": []
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReadSyntheticFeeSettlement",
+      "replayed": false,
+      "response": {
+        "schemaVersion": "tenant_synthetic_fee_settlement.v1",
+        "enabled": true,
+        "policy": {
+          "profile": "synthetic_usd_platform_fee.v1",
+          "schemaVersion": "synthetic_fee_policy.v1",
+          "scope": "L0_LOCAL_NO_FUNDS",
+          "currency": "USD",
+          "minorUnitScale": 2,
+          "borrowerRateBps": 10,
+          "borrowerCapMinor": "1000",
+          "minimumFeeMinor": "0",
+          "institutionRateBps": 1000,
+          "collectionMethod": "separate_receivable",
+          "rounding": "cumulative_floor_minor_unit",
+          "settlementPeriod": "utc_calendar_month",
+          "fxMode": "not_applicable_usd_only",
+          "syntheticOnly": true,
+          "productionPolicyAvailable": false,
+          "productionFundsMoved": false,
+          "withdrawable": false
+        },
+        "statement": {
+          "institutionId": "urn:ipo-one:local:synthetic-capital-partner:b4",
+          "month": "2026-10",
+          "periodStart": "2026-10-01T00:00:00.000Z",
+          "periodEnd": "2026-11-01T00:00:00.000Z",
+          "openingMinor": "0",
+          "additionsMinor": "0",
+          "reversalsMinor": "0",
+          "settledMinor": "0",
+          "closingMinor": "0",
+          "lines": [],
+          "closed": true,
+          "syntheticOnly": true,
+          "productionFundsMoved": false,
+          "schemaVersion": "synthetic_fee_statement.v1",
+          "statementId": "0x5c636eae7cf466af1f484557ec8297b310a90c8dcb0ec1333088f4aca5edee44"
+        },
+        "syntheticOnly": true,
+        "productionFundsMoved": false,
+        "pendingBaseMinor": "0",
+        "pendingAssessmentMinor": "0",
+        "pendingAssessmentStateHash": "0x7777777777777777777777777777777777777777777777777777777777777777"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotCloseSyntheticFeeStatement",
+      "replayed": false,
+      "response": {
+        "schemaVersion": "tenant_synthetic_fee_statement_closed.v1",
+        "statement": {
+          "institutionId": "urn:ipo-one:local:synthetic-capital-partner:b4",
+          "month": "2026-10",
+          "periodStart": "2026-10-01T00:00:00.000Z",
+          "periodEnd": "2026-11-01T00:00:00.000Z",
+          "openingMinor": "0",
+          "additionsMinor": "0",
+          "reversalsMinor": "0",
+          "settledMinor": "0",
+          "closingMinor": "0",
+          "lines": [],
+          "closed": true,
+          "syntheticOnly": true,
+          "productionFundsMoved": false,
+          "schemaVersion": "synthetic_fee_statement.v1",
+          "statementId": "0x5c636eae7cf466af1f484557ec8297b310a90c8dcb0ec1333088f4aca5edee44"
+        },
+        "syntheticOnly": true,
+        "productionFundsMoved": false
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReconcileSyntheticFees",
+      "replayed": false,
+      "schemaVersion": "tenant_protocol_result.v1",
+      "response": {
+        "schemaVersion": "tenant_synthetic_fees_reconciled.v1",
+        "assessedCount": 0,
+        "feeEntryIds": [],
+        "syntheticOnly": true,
+        "productionFundsMoved": false
+      }
+    },
+    {
+      "operationId": "pilotReadSyntheticFeeCorrectionCases",
+      "replayed": false,
+      "response": {
+        "schemaVersion": "tenant_synthetic_fee_correction_cases.v1",
+        "cases": [],
+        "hasMore": false,
+        "asOf": "2026-11-09T00:00:00.000Z",
+        "syntheticOnly": true,
+        "productionFundsMoved": false
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReviewSyntheticFeeCorrection",
+      "replayed": false,
+      "response": {
+        "schemaVersion": "tenant_synthetic_fee_correction_review.v1",
+        "obligationId": "fixture_source",
+        "sourceFeeEntryId": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "amountMinor": "1",
+        "sourcePolicyHash": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d",
+        "expectedFeeStateHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "expectedEffectsHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "effects": {
+          "sourceFeeEntryId": "fixture_source",
+          "sourceHash": "fixture_source",
+          "sourcePolicyHash": "fixture_source",
+          "amountMinor": "1",
+          "reasonCode": "fixture_source",
+          "interestAccruedBeforeCreditMinor": "1",
+          "accrualRemainder": "1",
+          "unpaidPrincipalCreditMinor": "1",
+          "writtenOffPrincipalCreditMinor": "1",
+          "principalRefundCreditMinor": "1",
+          "interestRefundCreditMinor": "1",
+          "feeCreditMinor": "1",
+          "unpaidFeeCreditMinor": "1",
+          "writtenOffFeeCreditMinor": "1",
+          "paidFeeCreditMinor": "1",
+          "nextFundedBaseMinor": "1",
+          "nextNormalInterestBaseMinor": "1",
+          "nextBorrowerFeeMinor": "1",
+          "nextInstitutionFeeMinor": "1",
+          "nextOutstandingPrincipalMinor": "1",
+          "nextOutstandingInterestMinor": "1",
+          "nextOutstandingFeesMinor": "1",
+          "nextStatus": "fixture_source",
+          "kind": "borrower",
+          "pendingSource": false,
+          "syntheticOnly": true,
+          "productionFundsMoved": false,
+          "cashRefundRecorded": false,
+          "scheduleSequenceBefore": 1,
+          "scheduleSequenceAfter": 2,
+          "scheduleHashBefore": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "scheduleHashAfter": "0x2222222222222222222222222222222222222222222222222222222222222222"
+        },
+        "syntheticOnly": true,
+        "productionFundsMoved": false
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotCorrectSyntheticFeeSource",
+      "replayed": false,
+      "response": {
+        "schemaVersion": "tenant_synthetic_fee_source_corrected.v1",
+        "obligationId": "fixture_source",
+        "fees": {
+          "schemaVersion": "synthetic_fee_state.v1",
+          "terms": {
+            "profile": "synthetic_usd_platform_fee.v1",
+            "schemaVersion": "synthetic_fee_terms.v1",
+            "scope": "L0_LOCAL_NO_FUNDS",
+            "currency": "USD",
+            "minorUnitScale": 2,
+            "borrowerRateBps": 10,
+            "borrowerCapMinor": "1000",
+            "minimumFeeMinor": "0",
+            "institutionRateBps": 1000,
+            "collectionMethod": "separate_receivable",
+            "rounding": "cumulative_floor_minor_unit",
+            "settlementPeriod": "utc_calendar_month",
+            "fxMode": "not_applicable_usd_only",
+            "syntheticOnly": true,
+            "productionPolicyAvailable": false,
+            "productionFundsMoved": false,
+            "withdrawable": false,
+            "policyHash": "0x0672e224b332ce6809160e633ede365456b3dd852fbffde2fbf188ff019edb70",
+            "economicLoanId": "credit_intent_b4_fixture",
+            "borrowerPayer": "obligation_subject",
+            "institutionPayer": "synthetic_capital_partner",
+            "institutionId": "urn:ipo-one:local:synthetic-capital-partner:b4",
+            "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+            "principalMinor": "12000",
+            "borrowerFeeAtFullFundingMinor": "12",
+            "providerOriginationFeeMinor": "0",
+            "annualRateBps": 0,
+            "scheduledTermDays": 0,
+            "netProceedsMinor": "12000",
+            "scheduledInterestEstimateMinor": "0",
+            "estimatedTotalRepaymentMinor": "12012",
+            "estimatedTotalCostMinor": "12",
+            "disclosureBasis": "execute_at_offer_creation_hold_to_maturity_actual365",
+            "termsHash": "0x19dff4848db003f37e19989a620f4ee9a24d9d048b37bd02cd969cbf8b452435"
+          },
+          "fundedBaseMinor": "0",
+          "normalInterestBaseMinor": "0",
+          "borrowerAssessedMinor": "0",
+          "borrowerPaidMinor": "0",
+          "institutionAssessedMinor": "0",
+          "institutionSettledMinor": "0",
+          "borrowerRefundDueMinor": "0",
+          "institutionCreditDueMinor": "0",
+          "revision": 0,
+          "pendingNormalInterestMinor": "0",
+          "pendingEntryIds": []
+        },
+        "receipt": {
+          "sourceFeeEntryId": "fixture_source",
+          "amountMinor": "1",
+          "expectedFeeStateHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "expectedEffectsHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "sourcePolicyHash": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d",
+          "obligationId": "fixture_source",
+          "originalSourceId": "fixture_source",
+          "originalSourceHash": "fixture_source",
+          "approvalExecutionId": "fixture_source",
+          "actorId": "fixture_source",
+          "reasonCode": "fixture_source",
+          "syntheticOnly": true,
+          "productionFundsMoved": false,
+          "kind": "borrower",
+          "effects": {
+            "sourceFeeEntryId": "fixture_source",
+            "sourceHash": "fixture_source",
+            "sourcePolicyHash": "fixture_source",
+            "amountMinor": "1",
+            "reasonCode": "fixture_source",
+            "interestAccruedBeforeCreditMinor": "1",
+            "accrualRemainder": "1",
+            "unpaidPrincipalCreditMinor": "1",
+            "writtenOffPrincipalCreditMinor": "1",
+            "principalRefundCreditMinor": "1",
+            "interestRefundCreditMinor": "1",
+            "feeCreditMinor": "1",
+            "unpaidFeeCreditMinor": "1",
+            "writtenOffFeeCreditMinor": "1",
+            "paidFeeCreditMinor": "1",
+            "nextFundedBaseMinor": "1",
+            "nextNormalInterestBaseMinor": "1",
+            "nextBorrowerFeeMinor": "1",
+            "nextInstitutionFeeMinor": "1",
+            "nextOutstandingPrincipalMinor": "1",
+            "nextOutstandingInterestMinor": "1",
+            "nextOutstandingFeesMinor": "1",
+            "nextStatus": "fixture_source",
+            "kind": "borrower",
+            "pendingSource": false,
+            "syntheticOnly": true,
+            "productionFundsMoved": false,
+            "cashRefundRecorded": false,
+            "scheduleSequenceBefore": 1,
+            "scheduleSequenceAfter": 2,
+            "scheduleHashBefore": "0x1111111111111111111111111111111111111111111111111111111111111111",
+            "scheduleHashAfter": "0x2222222222222222222222222222222222222222222222222222222222222222"
+          },
+          "effectiveAt": "2026-11-09T00:00:00.000Z",
+          "refundStatus": "credit_due_only",
+          "scope": "L0_LOCAL_NO_FUNDS",
+          "profile": "synthetic_usd_platform_fee.v1",
+          "chainTransactionHash": null,
+          "schemaVersion": "synthetic_fee_source_correction.v1",
+          "receiptId": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "receiptHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "sourceLedgerTransactionId": "fixture_source",
+          "feeLedgerTransactionId": null,
+          "feeEntryId": "0x1111111111111111111111111111111111111111111111111111111111111111"
+        },
+        "syntheticOnly": true,
+        "productionFundsMoved": false
       },
       "schemaVersion": "tenant_protocol_result.v1"
     }

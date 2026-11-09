@@ -170,3 +170,14 @@ test("portfolio detail fails closed on amount, authority, Evidence and output dr
   unknown.actorId = "attacker";
   assert.equal(createObligationPortfolioPresentation(unknown), null);
 });
+
+
+test("B4 portfolio does not treat interest and platform fee receipts as repaid principal",()=>{
+ const value=input();const loan=value.view.obligation;
+ loan.syntheticFees={terms:{profile:"synthetic_usd_platform_fee.v1",principalMinor:loan.originalPrincipalMinor},principalUnpaidCreditMinor:"0",sourceCorrectionCount:0};
+ const extra=13n;loan.totalRepaidMinor=(BigInt(loan.totalRepaidMinor)+extra).toString();
+ const row=loan.installments.at(-1);row.scheduledFeeMinor=(BigInt(row.scheduledFeeMinor)+extra).toString();row.paidFeeMinor=(BigInt(row.paidFeeMinor)+extra).toString();
+ assert.ok(createObligationPortfolioPresentation(value));
+ loan.syntheticFees.principalUnpaidCreditMinor="999999999999";loan.syntheticFees.sourceCorrectionCount=1;
+ assert.equal(createObligationPortfolioPresentation(value),null);
+});

@@ -2585,6 +2585,146 @@
         "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
         "apps/web/test-postgres/b3-synthetic-collateral-browser.test.mjs"
       ]
+    },
+    {
+      "operationId": "pilotReadSyntheticFees",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_synthetic_fees.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/synthetic-fee-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/synthetic-fee-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/synthetic-fees.test.js",
+        "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+        "apps/web/test-postgres/b4-synthetic-fee-browser.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotReadSyntheticFeeSettlement",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_synthetic_fee_settlement.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/synthetic-fee-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/synthetic-fee-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/synthetic-fees.test.js",
+        "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+        "apps/web/test-postgres/b4-synthetic-fee-browser.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotCloseSyntheticFeeStatement",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_synthetic_fee_statement_closed.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/synthetic-fee-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/synthetic-fee-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/synthetic-fees.test.js",
+        "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+        "apps/web/test-postgres/b4-synthetic-fee-browser.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotReconcileSyntheticFees",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_synthetic_fees_reconciled.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/synthetic-fee-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/synthetic-fee-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/synthetic-fees.test.js",
+        "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+        "apps/web/test-postgres/b4-synthetic-fee-browser.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotReadSyntheticFeeCorrectionCases",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_synthetic_fee_correction_cases.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/synthetic-fee-source-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/synthetic-fee-source-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/synthetic-fees.test.js",
+        "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+        "apps/web/test-postgres/b4-synthetic-fee-browser.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotReviewSyntheticFeeCorrection",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_synthetic_fee_correction_review.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/synthetic-fee-source-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/synthetic-fee-source-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/synthetic-fees.test.js",
+        "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+        "apps/web/test-postgres/b4-synthetic-fee-browser.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotCorrectSyntheticFeeSource",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_synthetic_fee_source_corrected.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/synthetic-fee-source-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/synthetic-fee-source-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/synthetic-fees.test.js",
+        "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+        "apps/web/test-postgres/b4-synthetic-fee-browser.test.mjs"
+      ]
     }
   ],
   "destinations": [
@@ -3150,6 +3290,31 @@
           "truthBoundary": "Settlement conserves synthetic contributions with zero caller-supplied PnL, costs, returns, fees, or prices. The worker creates no second Ledger and cannot move funds.",
           "nextTaskIds": [
             "TC-104"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "repay_settle.synthetic_fee_records",
+          "label": "Read accepted synthetic fee balances and their source-linked receipts",
+          "prototypeLabels": [],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotReadSyntheticFees"
+          ],
+          "authorityReferences": [
+            "docs/codex/tasks/B4_SYNTHETIC_FEE_POLICY_ALIGNMENT.md"
+          ],
+          "uiAdapters": [
+            "apps/web/src/synthetic-fee-presentation.js"
+          ],
+          "testFiles": [
+            "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+            "apps/web/test-postgres/b4-synthetic-fee-browser.test.mjs"
+          ],
+          "truthBoundary": "Approved L0 synthetic USD implementation only. Exact isolated database/origin/actor gates; no production deployment, cash fee/refund, chain write or external spend. Source credits retain recent native MFA and two independent approvals. Automated identities and virtual authenticators are local control evidence, not actual human professional sign-off.",
+          "nextTaskIds": [
+            "B4"
           ],
           "humanGateRequired": false
         }
@@ -3786,6 +3951,33 @@
             "V9-009"
           ],
           "humanGateRequired": true
+        },
+        {
+          "actionId": "capital_network.synthetic_fee_statements",
+          "label": "Review synthetic institution fees, admit exact pending receipts and freeze unpaid UTC statements",
+          "prototypeLabels": [],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotReadSyntheticFeeSettlement",
+            "pilotCloseSyntheticFeeStatement",
+            "pilotReconcileSyntheticFees"
+          ],
+          "authorityReferences": [
+            "docs/codex/tasks/B4_SYNTHETIC_FEE_POLICY_ALIGNMENT.md"
+          ],
+          "uiAdapters": [
+            "apps/web/src/synthetic-fee-presentation.js"
+          ],
+          "testFiles": [
+            "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+            "apps/web/test-postgres/b4-synthetic-fee-browser.test.mjs"
+          ],
+          "truthBoundary": "Approved L0 synthetic USD implementation only. Exact isolated database/origin/actor gates; no production deployment, cash fee/refund, chain write or external spend. Source credits retain recent native MFA and two independent approvals. Automated identities and virtual authenticators are local control evidence, not actual human professional sign-off.",
+          "nextTaskIds": [
+            "B4"
+          ],
+          "humanGateRequired": false
         }
       ]
     },
@@ -4616,6 +4808,33 @@
           "truthBoundary": "Exact WEB-027M candidate gate only; existing two independent approvers remain mandatory. The proposer has no approval.decide. No legitimately matured adverse plan or separate Operations approver has yet been established for final execution acceptance. No hosted or real-funds availability is claimed.",
           "nextTaskIds": [
             "WEB-027M"
+          ],
+          "humanGateRequired": true
+        },
+        {
+          "actionId": "risk_operations.synthetic_source_credit",
+          "label": "Select, review and independently approve exact local synthetic source credits",
+          "prototypeLabels": [],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotReadSyntheticFeeCorrectionCases",
+            "pilotReviewSyntheticFeeCorrection",
+            "pilotCorrectSyntheticFeeSource"
+          ],
+          "authorityReferences": [
+            "docs/codex/tasks/B4_SYNTHETIC_FEE_POLICY_ALIGNMENT.md"
+          ],
+          "uiAdapters": [
+            "apps/web/src/synthetic-fee-source-presentation.js"
+          ],
+          "testFiles": [
+            "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+            "apps/web/test-postgres/b4-synthetic-fee-browser.test.mjs"
+          ],
+          "truthBoundary": "Approved L0 synthetic USD implementation only. Exact isolated database/origin/actor gates; no production deployment, cash fee/refund, chain write or external spend. Source credits retain recent native MFA and two independent approvals. Automated identities and virtual authenticators are local control evidence, not actual human professional sign-off.",
+          "nextTaskIds": [
+            "B4-F1"
           ],
           "humanGateRequired": true
         }
