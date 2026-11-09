@@ -1,7 +1,10 @@
 {
   "schemaVersion": "durable_human_runtime_copy.v1",
-  "provenance": "Owned visible UI sources from the rejected 2026-11-08 B1 deployment, the same restored Human record on the rollback baseline, and the 2026-11-09 B3 restored Offer browser regression. Timestamps/hashes are substituted examples; no Actor/session/record identifiers. UI-copy regression only, never durable-service evidence.",
+  "provenance": "Owned visible UI sources from the rejected 2026-11-08 B1 deployment, the same restored Human record on the rollback baseline, and the 2026-11-09 B3 restored Offer and owned-position read regressions. Timestamps/hashes are substituted examples; no Actor/session/record identifiers. UI-copy regression only, never durable-service evidence.",
   "examples": [
+    "DPD 1–30 · DPD 12",
+    "Delinquent · DPD 1–30",
+    "Servicing DPD 1–30",
     "Borrower workspace restored from authenticated PostgreSQL server truth.",
     "Sandbox evaluation · $120.00 · 9% APR · 2 payments · Nov 9, 1:46:10 AM · Review Offer",
     "The Agent consumes one server-priced synthetic resource. The charge is admitted to the canonical Ledger and remains visible to the accountable Principal; external Provider execution and real funds remain disabled.",

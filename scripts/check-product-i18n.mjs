@@ -79,6 +79,11 @@ for (const count of [0, 1, 4, 513]) {
 for (const state of ["Approved", "Offered", "Accepted"]) {
   copy.add(`${state} · US$120.00`);
 }
+for (const count of [0, 1, 2]) {
+  copy.add(`${count} current ${count === 1 ? "position was" : "positions were"} loaded from exact owner-authorized server reads.`);
+  for (const unavailable of [1, 2]) copy.add(`${count} current ${count === 1 ? "position" : "positions"} loaded; ${unavailable} unavailable reference${unavailable === 1 ? "" : "s"} reveal no financial state.`);
+}
+for (const source of ["Refreshing exact reads…", "Reauthorizing each exact position and loading current server state…", "Current positions refreshed", "Position refresh completed with unavailable references"]) copy.add(source);
 for (const state of ["Created", "Active", "Fully Repaid", "Defaulted", "Written Off"])
   for (const version of [1, 12]) copy.add(`${state} · schedule v${version}`);
 copy.add("Anchor service unavailable");

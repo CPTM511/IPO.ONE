@@ -310,6 +310,22 @@ test("restored SIWE Offer reconnect stays localized in every product language", 
   }
 });
 
+test("owned position refresh remains localized in every product language", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('.nav-item[data-view="obligations"]').click();
+  for (const { code } of PRODUCT_LANGUAGES) {
+    await page.locator(".workspace-options > summary").click();
+    await page.locator("#productLanguage").selectOption(code);
+    await page.locator(".workspace-options > summary").click();
+    await page.locator("#obligationPortfolioRefreshBtn").click();
+    await expect(page.locator("#obligationPortfolioRefreshBtn")).toBeEnabled();
+    await expect.poll(async () => (await page.evaluate(async () =>
+      (await import("/product-localization.js")).productLocalizationAudit())).missing).toEqual([]);
+    await expect(page.locator("#productTranslationWarning")).toBeHidden();
+    await expect(page.locator("#obligationPortfolioRepaid")).not.toHaveText(translateCopy("Hidden", code).text);
+  }
+});
+
 
 test("Credit State refresh failure clears the previous verified history", async ({ page }) => {
   await page.goto("/");
