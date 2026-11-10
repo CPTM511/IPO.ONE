@@ -5,6 +5,7 @@ import {tmpdir} from 'node:os';
 import pg from 'pg';
 import {readMigrationSet} from '../migrate.mjs';
 import {selectVercelMigrations,LEGACY_VERCEL_MIGRATION_PROFILE} from '../vercel-migration-profile.mjs';
+import {dropB4DisposableDatabase} from './b4-hosted-database.mjs';
 
 // Historical DOWN/upgrade coverage runs against its exact historical SQL set.
 // New B4-H retention/atomicity is verified separately, never disabled for tests.
@@ -29,6 +30,6 @@ export async function createB4LegacyRegression({hosted79=false,gateway=false,cha
   process.env.DATABASE_URL=connection.toString();if(changeCwd)process.chdir(directory);
   return {directory,migrationDirectory:join(directory,'db','migrations'),connectionString:connection.toString(),
     async withSource(operation){const current=process.cwd();process.chdir(directory);try{return await operation();}finally{process.chdir(current);}},
-    async close(){process.chdir(originalDirectory);process.env.DATABASE_URL=originalUrl;try{await admin.query(`DROP DATABASE ${name} WITH (FORCE)`);}finally{await admin.end();await rm(directory,{recursive:true,force:true});}}
+    async close(){process.chdir(originalDirectory);process.env.DATABASE_URL=originalUrl;try{await dropB4DisposableDatabase(admin,name);}finally{await admin.end();await rm(directory,{recursive:true,force:true});}}
   };
 }

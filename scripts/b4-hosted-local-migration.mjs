@@ -1,5 +1,20 @@
 import { readMigrationSet, migrationChecksumMatches } from "./migrate.mjs";
 import { selectVercelMigrations, LEGACY_VERCEL_MIGRATION_PROFILE } from "./vercel-migration-profile.mjs";
+import {execFileSync} from 'node:child_process';
+
+export function assertB4HostedMigrationBoundary({name,address,connectionString,env=process.env,inspectDocker=execFileSync}) {
+  const fail=()=>{throw new Error('B4-H rehearsal requires an explicitly isolated local test database');};
+  let host;try{host=new URL(connectionString).hostname;}catch{fail();}
+  if(!/^ipo_one_b4h_[a-z0-9_]+_test$/.test(name??'') || !['127.0.0.1','localhost','[::1]'].includes(host))fail();
+  if(['127.0.0.1','::1',null].includes(address))return;
+  // A runner connects through a loopback published port, but PostgreSQL sees
+  // its own Docker interface. Admit only this job's existing inspected service,
+  // never an arbitrary private address, remote URL or production database.
+  const container=env.IPO_ONE_B4H_TEST_POSTGRES_CONTAINER;
+  if(env.CI!=='true' || !/^[a-f0-9]{12,64}$/.test(container??''))fail();
+  const networks=JSON.parse(inspectDocker('docker',['inspect','--format','{{json .NetworkSettings.Networks}}',container],{encoding:'utf8',stdio:['ignore','pipe','pipe']}));
+  if(!Object.values(networks).some(network=>[network.IPAddress,network.GlobalIPv6Address].filter(Boolean).includes(address)))fail();
+}
 
 function exact(rows, migrations) {
   return rows.length===migrations.length && migrations.every((migration,index)=>rows[index]?.name===migration.name &&
@@ -18,7 +33,7 @@ export async function rehearseB4HostedAtomicMigration({pool,faultAfter}={}) {
   let locked=false;
   try {
     const boundary=(await client.query("SELECT current_database() AS name,host(inet_server_addr()) AS address")).rows[0];
-    if(!/^ipo_one_b4h_[a-z0-9_]+_test$/.test(boundary?.name??"") || !["127.0.0.1","::1",null].includes(boundary.address))throw new Error("B4-H rehearsal requires an explicitly isolated local test database");
+    assertB4HostedMigrationBoundary({...boundary,connectionString:pool.options?.connectionString});
     await client.query("SELECT pg_advisory_lock(hashtext($1),hashtext($2))",["ipo.one","schema_migrations"]);
     locked=true;
     await client.query("BEGIN");

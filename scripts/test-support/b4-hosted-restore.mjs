@@ -5,6 +5,7 @@ import {mkdtemp,chmod,readFile,rm,writeFile,mkdir} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import pg from 'pg';
+import {dropB4DisposableDatabase} from './b4-hosted-database.mjs';
 
 async function databaseSnapshot(pool) {
  const tables=(await pool.query("SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename")).rows.map(row=>row.tablename);
@@ -59,7 +60,7 @@ export async function verifyB4HostedRestore(fixture,verifyRecovered) {
   console.log(`B4-H actual private pg_dump/pg_restore: ${Object.keys(before).length} tables match; restored OFF runtime, Agent authentication, financial receipts and revoked native proof history verified`);
  } finally {
   await fixture.stop();await clonePool?.end();
-  if(created)await fixture.db.pool.query(`DROP DATABASE ${cloneName} WITH (FORCE)`);
+  if(created)await dropB4DisposableDatabase(fixture.db.pool,cloneName);
   await rm(directory,{recursive:true,force:true});
  }
 }

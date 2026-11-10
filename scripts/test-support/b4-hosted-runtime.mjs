@@ -111,7 +111,11 @@ export async function createB4HostedTestRuntime({feesEnabled=true,correctionsEna
       gatewayPool=overrides.gatewayPool??new pg.Pool({connectionString:gatewayUrl.toString(),max:4});
       authenticationPool=overrides.authenticationPool??new pg.Pool({connectionString:authUrl.toString(),max:4});
       input.gatewayPool=gatewayPool;input.authenticationPool=authenticationPool;
-      runtime=await createProductionClosedPilotRuntime({...input,...overrides});await runtime.listen();return runtime;
+      try {
+        runtime=await createProductionClosedPilotRuntime({...input,...overrides});await runtime.listen();return runtime;
+      } catch(error) {
+        await Promise.allSettled([gatewayPool.end(),authenticationPool.end()]);throw error;
+      }
     };
     await start();
     const localOrigin=`http://127.0.0.1:${port}`;

@@ -84,6 +84,8 @@ jobs:
           node --test modules/abuse-control/test/abuse-policy-gate.test.js
 
       - name: Run repository quality gate
+        env:
+          IPO_ONE_B4H_TEST_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
         run: pnpm run check
 
       - name: Install Chromium for real click-path acceptance
