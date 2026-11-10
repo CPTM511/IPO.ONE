@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "ipo.one.scoped-founder-approval.v1",
+  "decisionDate": "2026-11-10",
+  "timezone": "Asia/Shanghai",
+  "owner": "IPO.ONE Founder",
+  "exactReply": "批准 B4-H 本地适配与受限 CI",
+  "baseCommit": "03de04251f2ceae090bdf98c0b59bce503de6fa5",
+  "scope": "B4-H default-off hosted synthetic adaptation, local implementation and verification, restricted existing CI",
+  "repository": "CPTM511/IPO.ONE",
+  "permittedReviewBranch": "codex/b4-hosted-synthetic",
+  "requirements": [
+    "B4 task section12.2",
+    "H01-H12 in hosting preparation checklist"
+  ],
+  "preserve": [
+    "Existing A/F1 economics",
+    "Frozen L0 policy and accepted terms",
+    "All existing financial facts",
+    "Recent MFA and independent dual approval",
+    "Default-off hosted activation"
+  ],
+  "productionConfiguration": false,
+  "productionDDL": false,
+  "productionRoleOrCredentialEnrollment": false,
+  "vercelUploadStagePromoteRollback": false,
+  "realFundsOrRefunds": false,
+  "chainWrites": false,
+  "newServicesOrExternalSpend": false,
+  "prePushConditions": [
+    "Recheck exact project Git linkage and no automatic Vercel deployment",
+    "No extra external charges; stop affected step if not established"
+  ]
+}
