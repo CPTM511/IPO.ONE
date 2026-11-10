@@ -98,7 +98,7 @@
       "minLength": 1
     },
     "termsVersion": {
-      "enum": ["credit_terms.v1", "credit_terms.synthetic_secured.v1", "credit_terms.synthetic_fee.v1"]
+      "enum": ["credit_terms.v1", "credit_terms.synthetic_secured.v1", "credit_terms.synthetic_fee.v1", "credit_terms.synthetic_fee_hosted.v1"]
     },
     "validUntil": {
       "type": "string",
@@ -226,7 +226,7 @@
       }
     },
     "feeTerms": {
-      "$ref": "https://schemas.ipo.one/v2/synthetic-fee-terms.schema.json"
+      "oneOf": [{ "$ref": "https://schemas.ipo.one/v2/synthetic-fee-terms.schema.json" }, { "$ref": "https://schemas.ipo.one/v2/hosted-synthetic-fee-terms.schema.json" }]
     }
   },
   "$defs": {

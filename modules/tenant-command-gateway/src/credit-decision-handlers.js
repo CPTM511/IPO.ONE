@@ -1,4 +1,5 @@
-import { SYNTHETIC_FEE_PROFILE } from "../../../packages/domain/src/synthetic-fees.js";
+import { SYNTHETIC_FEE_PROFILE, HOSTED_SYNTHETIC_FEE_PROFILE } from "../../../packages/domain/src/synthetic-fees.js";
+import { checkedHostedFeeGovernance } from "./synthetic-fee-context.js";
 import {
   ConsentPurpose,
   CreditAuthorityType,
@@ -369,7 +370,8 @@ async function loadDecisionResourceBaselines({ client, coreRepository }) {
   };
 }
 
-export function evaluateCreditApplicationCommandHandler({ syntheticFeesEnabled = false } = {}) {
+export function evaluateCreditApplicationCommandHandler({ syntheticFeesEnabled = false, hostedSyntheticFeeGovernance } = {}) {
+  const feeGovernance=checkedHostedFeeGovernance(hostedSyntheticFeeGovernance);
   return Object.freeze({
     operationId: "pilotEvaluateCreditApplication",
     kind: "command",
@@ -387,6 +389,7 @@ export function evaluateCreditApplicationCommandHandler({ syntheticFeesEnabled =
       requestId,
       correlationId
     }) {
+      if(feeGovernance && authenticationContext.tenantId!==feeGovernance.tenantId) unavailable();
       normalizeEmptyPayload(payload);
       if (authorizationDecision.resourceType !== "credit_intent") unavailable();
       const intentState = await coreRepository.getProjectionStateInTransaction(
@@ -436,7 +439,8 @@ export function evaluateCreditApplicationCommandHandler({ syntheticFeesEnabled =
         eligibilityFacts: eligibility.eligibilityFacts,
         sourceEvidence: eligibility.sourceEvidence,
         riskState: eligibility.riskState,
-        feeProfile: syntheticFeesEnabled === true ? SYNTHETIC_FEE_PROFILE : undefined,
+        feeProfile: syntheticFeesEnabled === true ? (feeGovernance ? HOSTED_SYNTHETIC_FEE_PROFILE : SYNTHETIC_FEE_PROFILE) : undefined,
+        feeInstitutionId: feeGovernance?.institutionId,
         now
       });
       const decidedIntent = {

@@ -1,3 +1,4 @@
+import { checkedHostedSyntheticFeeConfiguration } from "./hosted-synthetic-fee-configuration.js";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import {
@@ -549,6 +550,19 @@ export async function loadProductionClosedPilotEnvironment(environment = process
     { originOnly: true }
   );
   if (vercelSandbox) assertVercelPublicOrigin(environment, browserOrigin);
+  const feeGovernanceValue=environment.IPO_ONE_HOSTED_SYNTHETIC_FEE_GOVERNANCE_JSON;
+  let feeGovernance;
+  if(feeGovernanceValue!==undefined) {
+    if(!vercelSandbox)throw configError("Hosted fees require the reviewed Primary deployment");
+    const value=inlineSecret(environment,"IPO_ONE_HOSTED_SYNTHETIC_FEE_GOVERNANCE_JSON",16_384);
+    assertVercelSecretReference(environment,"IPO_ONE_HOSTED_SYNTHETIC_FEE_GOVERNANCE_REF","IPO_ONE_HOSTED_SYNTHETIC_FEE_GOVERNANCE_JSON",value);
+    feeGovernance=parseStrictJson(value);
+  } else if(environment.IPO_ONE_HOSTED_SYNTHETIC_FEE_GOVERNANCE_REF!==undefined)throw configError("Hosted governance reference has no document");
+  const hostedFees=checkedHostedSyntheticFeeConfiguration({governance:feeGovernance,
+    feeProfile:environment.IPO_ONE_SYNTHETIC_FEE_PROFILE,sourceProfile:environment.IPO_ONE_SYNTHETIC_FEE_SOURCE_PROFILE,
+    tenantId:environment.IPO_ONE_TENANT_ID,browserOrigin:browserOrigin.origin,
+    deploymentRole:vercelSandbox?environment.IPO_ONE_VERCEL_PROJECT_ROLE:"container",
+    noRealFunds:vercelSandbox && environment.IPO_ONE_NO_REAL_FUNDS_ACK==="I_UNDERSTAND_DEPLOYABLE_SANDBOX_NO_REAL_FUNDS"});
   const referenceHashMode = runtimeConfig.referenceHashMode;
   if (
     referenceHashMode === "single_v2" &&
@@ -640,6 +654,7 @@ export async function loadProductionClosedPilotEnvironment(environment = process
     gatewayPool,
     authenticationPool,
     syntheticCollateralEnabled: collateralProfile !== undefined,
+    ...hostedFees,
     ...(agentAccountAddress === undefined ? {} : { agentAccountAddress }),
     browserOrigin: browserOrigin.origin,
     ...(environment.IPO_ONE_WALLETCONNECT_PROJECT_ID === undefined ? {} : {

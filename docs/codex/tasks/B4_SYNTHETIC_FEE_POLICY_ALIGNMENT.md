@@ -207,7 +207,7 @@ Founder于2026-11-09明确回复：**“批准 B4-F1 本地合成扩展（推荐
 
 ### 12.2 首个阻断与有序解决方案
 
-| 顺序 | 已验证卡点 | B4-H本地适配及验收要求（待批准） |
+| 顺序 | 已验证卡点 | B4-H已批准的本地适配及验收要求 |
 | --- | --- | --- |
 | P0-H1 | 费用/来源政策的scope及哈希固定为L0，机构为local URN；生产配置与Gateway没有B4接线。 | 新增独立、默认停用的**托管合成**政策/接受条款版本，拟名`synthetic_usd_platform_fee_hosted.v1`、scope `L2_PUBLIC_AUTHENTICATED_NO_FUNDS`、`credit_terms.synthetic_fee_hosted.v1`；新哈希且旧L0/已接受条款逐字保留。复用同一累计算法/内核；费率10bps/1000bps、$10封顶、A单列、舍入、UTC月结、无现金信用及其他第2/10节含义不变。不得把`syntheticFeesLocalContext=true`硬塞进生产或把旧L0政策重标为已托管。新profile/配置缺失、未知或不匹配均拒绝新有费准入。 |
 | P0-H2 | 本地5迁移均未入托管包，且0092引用本机MFA表/数据库/来源，不能全搬；旧79代码不接受新集合。 | 保留0090–0094成对校验和；将0090/0091/0093/0094作为受审数据基础候选，**排除0092**，另用新增迁移支持托管条款与最小SELECT/INSERT权限。初步数据集合为79+4+1=84，尚非最终可执行集合；F1所需HTTPS/MFA/治理DDL须另列，最终数量/逐项checksum/集合哈希必须先冻结。先在本地证明兼容OFF接受精确S79和最终SB4，启用仅接受SB4；未知/缺项/改checksum拒绝。现有migrateUp逐项提交，故专用B4切换须在既有迁移锁下将完整批准增量及元数据一次事务提交；中途故障回到S79，不放宽成任意中间集合。 |
@@ -233,4 +233,38 @@ B4-H只拟适配现有Vercel/Neon/单内核的无真实资金模型，不增加�
 
 ### 12.5 B4-H当前执行记录
 
-2026-11-10：从03de042创建专用分支`codex/b4-hosted-synthetic`，隔离源码`/private/tmp/ipo-one-b4-hosted-synthetic-20261110`。实施与验证H01–H12；应用配置默认停用，所有迁移仅在明确隔离本地test数据库执行，线上、真实身份/凭证及原B3生产记录不操作。最终精确SHA/CI/迁移集合/OFF产物尚待实现后记录，不提前标记通过。
+2026-11-10：从03de042创建专用分支`codex/b4-hosted-synthetic`，隔离源码`/private/tmp/ipo-one-b4-hosted-synthetic-20261110`。默认停用的独立L2政策/接受条款、机构治理及原生HTTPS MFA/独立双审接线已实现；真实验收补齐托管API Schema、报价恢复、受管工作区可见入口及审批最小数据库权限。原L0条款/政策及0090–0094字节保留。最终SB4为86项、7项原子增量，集合SHA256 `91e0b8eaf995c67ea7a2fd32fa7b2c4ac864648f6ee91a58609758ce1a1c6cea`；旧85项是已替换的未发布候选。
+
+Founder已明确批准一次性本地test身份夹具，见[精确补充许可](../../governance/approvals/B4_HOSTED_LOCAL_TEST_IDENTITIES_20261110.json)。Node26完整`pnpm check`通过（1617单元、35安全、106传输、120 PostgreSQL）；Node24.19.0安全/传输141项、PostgreSQL120项通过。两运行时的4项真实HTTP/原生浏览器闭环均通过：5受管角色可见登录、近期MFA重放/过期/新会话、Human已付合成退款信用、Agent未还本金信用/停用还款、独立双审/撤销后拒绝/事务故障回滚、机构pending与UTC月冻结、实际167表备份恢复。Human和机构各6语×双主题×1440/390并核对六语确认框；操作员本轮只验收英文。测试使用一次性隔离数据库与测试私钥，结束后删除身份/备份，不等于生产TLS或真人签核。
+
+当前冻结前：精确源码提交、指定分支远程CI及OFF产物待登记；不得提前标记远程CI或部署验收通过。GitHub仓库为public，复用既有标准Ubuntu/固定PostgreSQL服务与只读权限；无新增job、服务、缓存/产物上传或部署步骤。为容纳Node24完整回归，既有单job时限由30调整至45分钟。CI备份使用现有固定PostgreSQL17服务自身工具，不新增客户端依赖。指定Vercel项目Git link为null、仓库hooks为空，推送前已只读复核；此次仍不授予生产配置/DDL/身份/Vercel操作权限。
+
+
+### 12.6 B4-H实现中的具体契约（2026-11-10）
+
+- L0政策/条款及0090–0094成对字节不改；新增hosted政策hash `0xd84dc6bbf05319c56bc75546b1f5bac2963e724932c1994f72605ce60de2b5b8`、源政策hash `0x7f123be43dc8022cf91440dc22d558df3f161d583b3cc0ab48203dbc973a2eeb`，scope L2、独立hosted terms/schema。金额/信用算法共享。已在原0f95独立计算并固定L0条款golden hash，新增域向量验证其未变。
+- 托管治理使用严格闭合、带hash的**部署方配置**，不创建第二套经济账或从操作payload接收权限。绑定Tenant、带同Tenant命名空间的合成机构、机构操作人、Operations执行人、Risk/独立Operations审阅人、可选Auditor及审批引用；现有Actor/当前有效enrollment/Gateway/MFA仍独立校验，配置本身不注册身份或授予capability。费用与源纠错开关分别默认关闭；实际配置未设置。
+- native WebAuthn仅允许精确`https://ipo.one`/RP `ipo.one`，不复用localhost key。现有本地来源规则保持；新增MFA DDL只追加精确HTTPS/RP支持。测试通过隔离浏览器中的first-party请求转发到本地真实HTTP/Gateway/PostgreSQL验证规范HTTPS origin/RP，不接触真实ipo.one状态、不模拟金融结果，不将本地传输夹具记为实际部署/TLS或真人签核。
+- 财务/权限追加迁移拟0095，受管HTTPS/MFA追加拟0096；托管数据基础排除0092及原本机身份/来源迁移，最终集合与hash须在全部DDL完成后冻结。迁移执行器仅在隔离test数据库演练，完整批准增量与元数据单事务提交；旧通用migrateUp逐项行为不静默改变。实际生产执行仍不在本次范围。
+
+- 追加实现记录：托管配置/费用和源纠错两开关分别默认关闭，治理绑定不创建Actor或capability；机构角色对应Human Actor。HTTPS登录支持受管现有Ops/Auditor可见入口，两个Ops工作区由服务端绑定区分，原本地边界不复用。SB4候选85项hash `204ee7ed26c06302c4113507d1199714f403d97e591030de6f290844fcde523c`；新0095/0096的DOWN主动拒绝，回退保留财务及MFA历史。当前无生产DDL执行器授权，新增迁移演练器明确仅接收本机隔离test数据库。
+
+- 验收发现并追加0097：现有托管Gateway缺少审批记录写权限；仅为原受管Gateway授予proposal/decision/execution的SELECT/INSERT，以及proposal现有状态转换列UPDATE，不授予DELETE、不改审批主体/条款/command hash，不修改0090–0096字节。候选SB4因此为86项/7项原子增量，最终checksum在完整验证后冻结；旧85项仅为未发布候选，不列为已部署兼容集合。
+
+- 启用前校验实际绑定：新计费需当前有效机构操作人登记及必要capability；源纠错另需Ops执行人、Risk和独立Ops审阅人的当前有效Actor/Membership/Credential/Enrollment及精确钱包client/policy。配置文档不代替登记；任何必需绑定缺失时拒绝启用组合层。全停用兼容模式可启动，后续每个操作继续独立实时检查；机构下线不能阻止独立获准的源纠错。此校验只读，不注册身份或授予权限。
+
+### 12.7 本地验收与后续发布门槛
+
+| 门槛 | 已验证证据及当前边界 |
+| --- | --- |
+| H01–H02 | 独立托管政策/接受条款hash；旧L0 golden hash与经济向量不变；生产配置缺失/错profile/权限绑定失败均拒绝启用。 |
+| H03–H05 | 精确S79/SB4的OFF兼容与ON限定；86项集合/逐项checksum；7项完整增量及元数据在同一锁/事务提交，故障全部回S79；最小表/列权限及保留历史。 |
+| H06–H07 | 实际受管角色/机构对象与Tenant/RLS；精确HTTPS/RP原生MFA；重放、过期、跨会话、未来证明、撤销后执行拒绝，Risk+独立Ops双审实时重验。 |
+| H08–H09 | 真实Human/Agent同一Gateway/账本/费用/信用内核；已付和未还源信用分开，取消本金不计还款；并发重放、提交故障全量回滚、OFF还款/历史读取、pending与机构冻结。 |
+| H10 | Human/机构六语、明暗主题、桌面和390宽；确认框逐字核对，金额/日期格式一致。原生操作员面板本轮英文，不宣称六语签核。 |
+| H11 | Node26完整门禁、Node24实际HTTP/PostgreSQL/浏览器通过；Agent真实JWT/DPoP+REST/SDK/MCP。精确新SHA的远程CI仍须独立登记。 |
+| H12 | 不使用本机私钥/固定host端口；自包含loopback test数据库；真实pg_dump/pg_restore后167表行hash一致，恢复OFF运行时可鉴权读取费用/回执，撤销记录保留；夹具和私有备份清理。 |
+
+本地通过只满足本轮本地目标的一部分；受限CI和停用冻结产物完成前不关闭本轮。生产启用仍按12.3及原发布清单逐项审批/执行：真实受管身份、精确生产配置/DDL、迁移前恢复准备、先服务过production并验收的兼容OFF部署、同钱包/真人审批验收。当前新OFF部署ID必须为null，生产阶段为`NO-GO`。
+
+- 既有浏览器回归发现：B4目录增至132项后，Agent面板将全部目录交给128项上限的显示契约，关闭了原Principal/Agent任务入口。现改为只提交该面板实际注册且服务端已公布的Agent操作ID；128项上限、注册表缺项拒绝和独立服务端授权均保持。受影响的21项真实浏览器复验及原显示契约负例通过；未扩展Agent工具/权限。

@@ -1,3 +1,5 @@
+import { checkedHostedFeeGovernance, assertSyntheticFeeLoanContext } from "./synthetic-fee-context.js";
+import { hostedSyntheticFeeActorRole } from "../../../packages/domain/src/hosted-synthetic-fee-governance.js";
 import { normalizeSyntheticFeeCorrectionPayload,loadSyntheticFeeCorrectionReview } from "./synthetic-fee-source-handlers.js";
 import { DomainError, hashId } from "../../../packages/domain/src/index.js";
 import { ApprovalService, ApprovalProjectionType } from "../../approval/src/index.js";
@@ -23,12 +25,28 @@ export function authorizationCommandPayloadHash(envelope) {
   });
 }
 
-export function createLocalApprovalRuntimeFactory({ verifyRecordedProof,syntheticFeeCorrectionsEnabled=false }) {
+export function createLocalApprovalRuntimeFactory(options) { return createApprovalRuntimeFactory(options); }
+export function createHostedApprovalRuntimeFactory({governance,...options}) {
+  const hostedGovernance=checkedHostedFeeGovernance(governance);
+  if(!hostedGovernance || typeof options.verifyRecordedProof!=="function")unavailable();
+  return createApprovalRuntimeFactory({...options,hostedGovernance});
+}
+function createApprovalRuntimeFactory({ verifyRecordedProof,syntheticFeeCorrectionsEnabled=false,hostedGovernance }) {
   return async function createRuntime({ client, coreRepository, directory, authenticationContext,
     policyRegistry, credentialRegistry, referenceHasher, auditStore, handlers, livePolicyAdapterFactory }) {
-    const database=(await client.query("SELECT current_database() AS name")).rows[0]?.name;
-    const feeScope=syntheticFeeCorrectionsEnabled===true && ["ipo_one_b4_fee_review","b4_fee_browser_test_20261109","b4_fee_integration_test_20261109"].includes(database);
-    if(database!=="ipo_one_web027_candidate" && !feeScope)unavailable();
+    let feeScope;
+    const commandActorId=hostedGovernance?.operationsActorId??"actor_web027m_operations";
+    if(hostedGovernance) {
+      const role=hostedSyntheticFeeActorRole(hostedGovernance,authenticationContext.actorId);
+      if(authenticationContext.tenantId!==hostedGovernance.tenantId || !role || role==="capital_partner_operator")return undefined;
+      if(authenticationContext.actorType!==role)unavailable();
+      feeScope=syntheticFeeCorrectionsEnabled===true;
+    } else {
+      const database=(await client.query("SELECT current_database() AS name")).rows[0]?.name;
+      feeScope=syntheticFeeCorrectionsEnabled===true && ["ipo_one_b4_fee_review","b4_fee_browser_test_20261109","b4_fee_integration_test_20261109"].includes(database);
+      if(database!=="ipo_one_web027_candidate" && !feeScope)unavailable();
+    }
+    const allowedOperation=operation=>hostedGovernance?operation==="pilotCorrectSyntheticFeeSource":!!LOCAL_SERVICING_REASONS[operation];
     const recorded = new Map();
     let planned;
     const get = async (type, id) => (await coreRepository.getProjectionStateInTransaction(client, type, id, { lock: true }))?.value;
@@ -43,7 +61,7 @@ export function createLocalApprovalRuntimeFactory({ verifyRecordedProof,syntheti
       async getApprovalProposal(id) {
         const proposal = await get(ApprovalProjectionType.APPROVAL_PROPOSAL, id);
         if (!proposal || proposal.tenantId !== authenticationContext.tenantId ||
-            proposal.commandActorId !== "actor_web027m_operations" || !LOCAL_SERVICING_REASONS[proposal.operationId]) unavailable();
+            proposal.commandActorId !== commandActorId || !allowedOperation(proposal.operationId)) unavailable();
         return proposal;
       },
       async listApprovalDecisions(id) {
@@ -64,6 +82,7 @@ export function createLocalApprovalRuntimeFactory({ verifyRecordedProof,syntheti
         // This path may inspect only the exact immutable approver already read
         // from this proposal. It never authorizes another actor's command.
         const d = recorded.get(input.actorId);
+        if(hostedGovernance && ![hostedGovernance.riskReviewerActorId,hostedGovernance.operationsReviewerActorId].includes(input.actorId))unavailable();
         if (!d || input.tenantId !== authenticationContext.tenantId || input.tenantId !== d.tenantId ||
             input.actorType !== d.approverActorType || input.clientId !== d.approverClientId ||
             input.policyVersion !== d.policyVersion || !verifyRecordedProof || !(await verifyRecordedProof(d, input.now))) unavailable();
@@ -83,14 +102,18 @@ export function createLocalApprovalRuntimeFactory({ verifyRecordedProof,syntheti
     return Object.freeze({
       service,
       repository,
+      commandActorId,
+      ...(hostedGovernance?{operationId:"pilotCorrectSyntheticFeeSource"}:{}),
+      assertMutable() { if(hostedGovernance && !feeScope)unavailable(); },
       takePlan() { if (!planned) unavailable(); const plan = planned; planned = undefined; return plan; },
       async prepare(command, { requestId, correlationId, now }) {
-        if (authenticationContext.actorId !== "actor_web027m_operations" ||
+        if (authenticationContext.actorId !== commandActorId || !allowedOperation(command.operationId) ||
             command.reasonCode !== LOCAL_SERVICING_REASONS[command.operationId]) unavailable();
         if(command.operationId==="pilotCorrectSyntheticFeeSource") {
           if(!feeScope)unavailable();
           normalizeSyntheticFeeCorrectionPayload(command.payload);
           const data=await loadSyntheticFeeCorrectionReview({client,coreRepository,payload:command.payload,authorizationDecision:{resourceId:command.resource.resourceId},now});
+          if(hostedGovernance)assertSyntheticFeeLoanContext(hostedGovernance,{authenticationContext},data.obligation);
           if(data.review.expectedFeeStateHash!==command.payload.expectedFeeStateHash || data.review.expectedEffectsHash!==command.payload.expectedEffectsHash)throw new DomainError("synthetic_fee_correction_stale","Review the current source credit before proposing");
         } else {
           if(feeScope)unavailable();

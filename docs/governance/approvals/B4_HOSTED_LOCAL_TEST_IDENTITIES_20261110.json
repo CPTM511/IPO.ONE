@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "ipo.one.scoped-founder-approval.v1",
+  "decisionDate": "2026-11-10",
+  "timezone": "Asia/Shanghai",
+  "owner": "IPO.ONE Founder",
+  "exactReply": "批准一次性本地 test 身份夹具",
+  "parentApproval": "B4_HOSTED_LOCAL_CI_20261110.json",
+  "scope": "Disposable local-only B4-H acceptance fixtures: temporary Actors, Memberships, authentication credentials and role enrollments in fresh isolated test databases; native WebAuthn and independent dual-approval verification; cleanup after tests",
+  "questionReference": "request_user_input_async/call_2125e3e5fb224af1b1b911a38a54aa97/0",
+  "productionIdentities": false,
+  "realUsersOrFunds": false,
+  "externalServicesOrSpend": false,
+  "productionDDLOrDeployment": false,
+  "cleanupRequired": true
+}

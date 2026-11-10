@@ -1,3 +1,4 @@
+import { selectVercelMigrations, VERCEL_MIGRATION_PROFILE } from "../../../scripts/vercel-migration-profile.mjs";
 import { readFile } from "node:fs/promises";
 import {
   ActorType,
@@ -24,7 +25,7 @@ import {
   hashId
 } from "../../../packages/domain/src/index.js";
 import { parseStrictJson } from "../../../modules/authentication/src/strict-json.js";
-import { migrateUp } from "../../../scripts/migrate.mjs";
+import { migrateUp, readMigrationSet } from "../../../scripts/migrate.mjs";
 
 const ROLE_NAME = /^[a-z][a-z0-9_]{2,62}$/;
 const SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9._:@/-]{1,255}$/;
@@ -1333,7 +1334,7 @@ async function quoteLiteral(pool, value) {
   return (await pool.query("SELECT quote_literal($1) AS value", [value])).rows[0].value;
 }
 
-async function configureRole(client, { roleName, password, authenticationOnly }) {
+async function configureRole(client, { roleName, password, authenticationOnly,hostedSchema=false }) {
   const role = `"${roleName}"`;
   const passwordLiteral = await quoteLiteral(client, password);
   const exists = await client.query(
@@ -1376,9 +1377,18 @@ async function configureRole(client, { roleName, password, authenticationOnly })
     await client.query(
       `GRANT UPDATE (id) ON actors, memberships TO ${role}`
     );
+    if(hostedSchema) {
+      await client.query(`GRANT SELECT, INSERT, UPDATE ON authentication_passkeys, authentication_passkey_challenges TO ${role}`);
+      await client.query(`GRANT SELECT, INSERT ON authentication_passkey_evidence, authentication_passkey_audit TO ${role}`);
+    }
     return;
   }
   await client.query(`GRANT SELECT ON ALL TABLES IN SCHEMA public TO ${role}`);
+  if(hostedSchema) {
+    await client.query(`GRANT INSERT ON synthetic_fee_entries, synthetic_fee_statements, synthetic_fee_source_corrections TO ${role}`);
+    await client.query(`GRANT SELECT, INSERT ON approval_proposals, approval_decisions, approval_executions TO ${role}`);
+    await client.query(`GRANT UPDATE (status, version, approved_at, rejected_at, canceled_at, expired_at, superseded_at, superseded_by_proposal_id, executed_at, execution_id, updated_at) ON approval_proposals TO ${role}`);
+  }
   await client.query(`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${role}`);
   await client.query(`GRANT INSERT ON providers, spend_policies, spend_requests, mandate_reservations, mandate_releases, metered_usage_evidence, metered_usage_admissions TO ${role}`);
   await client.query(`GRANT UPDATE (status, risk_tier) ON providers TO ${role}`);
@@ -1688,7 +1698,8 @@ export async function bootstrapProductionDatabase({
   config,
   gatewayPassword,
   authenticationPassword,
-  referenceHashKey
+  referenceHashKey,
+  hostedMigrationDirectory
 }) {
   const checked = assertProductionBootstrapConfig(config);
   assertProvisioningWindow(checked, new Date());
@@ -1704,8 +1715,15 @@ export async function bootstrapProductionDatabase({
   });
   const adminPool = createPostgresPool({ connectionString: adminConnectionString, max: 2, applicationName: "ipo-one-production-bootstrap" });
   let insertedCredentials;
+  const sourceMigrations=await readMigrationSet(hostedMigrationDirectory);
+  const hostedSchema=hostedMigrationDirectory!==undefined || sourceMigrations.length===VERCEL_MIGRATION_PROFILE.count;
+  if(hostedSchema)selectVercelMigrations(sourceMigrations);
   try {
-    await migrateUp({ pool: adminPool });
+    if(hostedSchema && (await adminPool.query("SELECT to_regclass('schema_migrations') AS table_name")).rows[0].table_name) {
+      const rows=await adminPool.query("SELECT name,checksum FROM schema_migrations ORDER BY name");
+      if(rows.rowCount!==0 && rows.rowCount!==VERCEL_MIGRATION_PROFILE.count)throw fail("Existing hosted schemas require the separately reviewed atomic B4 cutover");
+    }
+    await migrateUp({ pool: adminPool,...(hostedMigrationDirectory?{directory:hostedMigrationDirectory}:{}) });
     const client = await adminPool.connect();
     try {
       await client.query("BEGIN");
@@ -1713,8 +1731,8 @@ export async function bootstrapProductionDatabase({
       await client.query("REVOKE CREATE ON SCHEMA public FROM PUBLIC");
       await client.query("REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM PUBLIC");
       await client.query("REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM PUBLIC");
-      await configureRole(client, { roleName: checked.gatewayRole, password: gatewayPassword, authenticationOnly: false });
-      await configureRole(client, { roleName: checked.authenticationRole, password: authenticationPassword, authenticationOnly: true });
+      await configureRole(client, { roleName: checked.gatewayRole, password: gatewayPassword, authenticationOnly: false,hostedSchema });
+      await configureRole(client, { roleName: checked.authenticationRole, password: authenticationPassword, authenticationOnly: true,hostedSchema });
       await setTenantTransactionContext(client, bootstrapContext);
       await setBootstrapIdentityRls(client, false);
       insertedCredentials = await seedTenantAndIdentity(client, checked, referenceHasher);
@@ -1741,7 +1759,7 @@ export async function bootstrapProductionDatabase({
   try {
     await Promise.all([
       assertTenantDatabaseRole(gatewayPool),
-      assertPostgresAuthenticationRole(authenticationPool)
+      assertPostgresAuthenticationRole(authenticationPool,{hostedPasskeys:hostedSchema})
     ]);
   } finally {
     await Promise.allSettled([gatewayPool.end(), authenticationPool.end()]);

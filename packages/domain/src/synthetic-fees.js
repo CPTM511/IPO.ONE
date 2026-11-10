@@ -2,6 +2,7 @@ import { DomainError } from "./errors.js";
 import { hashId } from "./ids.js";
 
 export const SYNTHETIC_FEE_PROFILE = "synthetic_usd_platform_fee.v1";
+export const HOSTED_SYNTHETIC_FEE_PROFILE = "synthetic_usd_platform_fee_hosted.v1";
 export const SYNTHETIC_FEE_ASSET = "urn:ipo-one:sandbox-asset:usd-cent";
 export const SYNTHETIC_FEE_POLICY = Object.freeze({
   profile: SYNTHETIC_FEE_PROFILE,
@@ -18,6 +19,18 @@ export const SYNTHETIC_FEE_POLICY = Object.freeze({
   productionFundsMoved: false, withdrawable: false
 });
 export const SYNTHETIC_FEE_POLICY_HASH = hashId("synthetic_fee_policy", SYNTHETIC_FEE_POLICY);
+export const HOSTED_SYNTHETIC_FEE_POLICY = Object.freeze({
+  ...SYNTHETIC_FEE_POLICY,
+  profile: HOSTED_SYNTHETIC_FEE_PROFILE,
+  schemaVersion: "synthetic_fee_policy.hosted.v1",
+  scope: "L2_PUBLIC_AUTHENTICATED_NO_FUNDS"
+});
+export const HOSTED_SYNTHETIC_FEE_POLICY_HASH = hashId("synthetic_fee_policy", HOSTED_SYNTHETIC_FEE_POLICY);
+export function syntheticFeeTermsVersion(terms) {
+  if (terms?.profile === SYNTHETIC_FEE_PROFILE) return "credit_terms.synthetic_fee.v1";
+  if (terms?.profile === HOSTED_SYNTHETIC_FEE_PROFILE) return "credit_terms.synthetic_fee_hosted.v1";
+  throw new DomainError("synthetic_fee_profile_invalid", "A known synthetic fee profile is required");
+}
 const immutable = value => Object.freeze(structuredClone(value));
 const fail = message => { throw new DomainError("synthetic_fee_integrity_mismatch", message); };
 function minor(value, signed = false) {
@@ -44,22 +57,26 @@ export function syntheticFeeTarget(kind, baseMinor) {
   fail("Unknown fee kind");
 }
 
-export function createSyntheticFeeTerms({ profile, assetId, economicLoanId, principalMinor, originationFeeMinor = "0", annualRateBps = 0, scheduledTermDays = 0 }) {
+export function createSyntheticFeeTerms({ profile, institutionId, assetId, economicLoanId, principalMinor, originationFeeMinor = "0", annualRateBps = 0, scheduledTermDays = 0 }) {
   if (profile === undefined || profile === null) return undefined;
-  if (profile !== SYNTHETIC_FEE_PROFILE || assetId !== SYNTHETIC_FEE_ASSET || originationFeeMinor !== "0") {
-    throw new DomainError("synthetic_fee_profile_invalid", "Only the approved local synthetic USD profile with no provider origination fee is supported");
+  const hosted = profile === HOSTED_SYNTHETIC_FEE_PROFILE;
+  const localInstitution = "urn:ipo-one:local:synthetic-capital-partner:b4";
+  if ((!hosted && profile !== SYNTHETIC_FEE_PROFILE) || assetId !== SYNTHETIC_FEE_ASSET || originationFeeMinor !== "0" ||
+      (hosted ? !/^urn:ipo-one:hosted:synthetic-capital-partner:[A-Za-z0-9_.-]{1,80}:[A-Za-z0-9_.-]{1,80}$/.test(institutionId ?? "")
+        : institutionId !== undefined && institutionId !== localInstitution)) {
+    throw new DomainError("synthetic_fee_profile_invalid", "An exact synthetic USD profile and its trusted synthetic institution are required");
   }
   if (minor(principalMinor) <= 0n) fail("Fee terms require a positive principal");
   if (!Number.isSafeInteger(annualRateBps) || annualRateBps < 0 || annualRateBps > 100000 || !Number.isInteger(scheduledTermDays) || scheduledTermDays < 0 || scheduledTermDays > 366) fail("Invalid fee cost disclosure schedule");
   const estimatedInterest = minor(principalMinor) * BigInt(annualRateBps) * BigInt(scheduledTermDays) / 3650000n;
   const estimatedFee = BigInt(syntheticFeeTarget("borrower", principalMinor));
   const core = {
-    ...SYNTHETIC_FEE_POLICY,
-    schemaVersion: "synthetic_fee_terms.v1",
-    policyHash: SYNTHETIC_FEE_POLICY_HASH,
+    ...(hosted ? HOSTED_SYNTHETIC_FEE_POLICY : SYNTHETIC_FEE_POLICY),
+    schemaVersion: hosted ? "synthetic_fee_terms.hosted.v1" : "synthetic_fee_terms.v1",
+    policyHash: hosted ? HOSTED_SYNTHETIC_FEE_POLICY_HASH : SYNTHETIC_FEE_POLICY_HASH,
     economicLoanId: identifier(economicLoanId),
     borrowerPayer: "obligation_subject", institutionPayer: "synthetic_capital_partner",
-    institutionId: "urn:ipo-one:local:synthetic-capital-partner:b4",
+    institutionId: hosted ? institutionId : localInstitution,
     assetId, principalMinor,
     borrowerFeeAtFullFundingMinor: syntheticFeeTarget("borrower", principalMinor),
     providerOriginationFeeMinor: "0",
@@ -74,7 +91,7 @@ export function createSyntheticFeeTerms({ profile, assetId, economicLoanId, prin
 }
 export function assertSyntheticFeeTerms(terms) {
   const expected = createSyntheticFeeTerms({
-    profile: terms?.profile, assetId: terms?.assetId,
+    profile: terms?.profile, institutionId: terms?.institutionId, assetId: terms?.assetId,
     economicLoanId: terms?.economicLoanId, principalMinor: terms?.principalMinor,
     originationFeeMinor: terms?.providerOriginationFeeMinor,
     annualRateBps: terms?.annualRateBps, scheduledTermDays: terms?.scheduledTermDays
@@ -223,8 +240,9 @@ export function createSyntheticFeeStatement({ institutionId, month, entries, now
 }
 
 export function restoreSyntheticFeeOfferTerms(offer) {
-  if (offer.termsVersion !== "credit_terms.synthetic_fee.v1") return offer;
+  if (!["credit_terms.synthetic_fee.v1", "credit_terms.synthetic_fee_hosted.v1"].includes(offer.termsVersion)) return offer;
   assertSyntheticFeeTerms(offer.feeTerms);
+  if (offer.termsVersion !== syntheticFeeTermsVersion(offer.feeTerms)) fail("Fee contract version does not match its policy");
   const keys = ["assetId", "approvedPrincipalMinor", "annualRateBps", "originationFeeMinor", "repaymentFrequency", "installmentCount", "firstPaymentAt", "maturityAt", "disclosureRef", "termsVersion"];
   const terms = { ...Object.fromEntries(keys.map(key => [key, offer[key]])),
     feeTerms: offer.feeTerms, ...(offer.collateralTerms ? { collateralTerms: offer.collateralTerms } : {}) };

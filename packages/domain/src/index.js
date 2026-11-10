@@ -44,5 +44,6 @@ export * from "./synthetic-collateral.js";
 export * from "./synthetic-fees.js";
 
 export * from "./synthetic-fee-source-policy.js";
+export * from "./hosted-synthetic-fee-governance.js";
 
 export { releaseAgentCreditLineForSourceCredit } from "./credit-line-projection.js";

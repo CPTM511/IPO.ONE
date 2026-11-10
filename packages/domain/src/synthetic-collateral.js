@@ -69,7 +69,7 @@ export function assertSyntheticCollateralProvenance({ intent, offer, obligation 
     principalMinor: offer.approvedPrincipalMinor
   });
   if (
-    (expected && !["credit_terms.synthetic_secured.v1", "credit_terms.synthetic_fee.v1"].includes(offer.termsVersion)) ||
+    (expected && !["credit_terms.synthetic_secured.v1", "credit_terms.synthetic_fee.v1", "credit_terms.synthetic_fee_hosted.v1"].includes(offer.termsVersion)) ||
     (!expected && offer.termsVersion === "credit_terms.synthetic_secured.v1") ||
     hashId("collateral_verify", expected) !== hashId("collateral_verify", offer.collateralTerms) ||
     (obligation && hashId("collateral_verify", expected) !==

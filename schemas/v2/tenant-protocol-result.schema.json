@@ -2190,7 +2190,10 @@
                   "pattern": "^0x[0-9a-f]{64}$"
                 },
                 "sourcePolicyHash": {
-                  "const": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"
+                  "enum": [
+                    "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d",
+                    "0x7f123be43dc8022cf91440dc22d558df3f161d583b3cc0ab48203dbc973a2eeb"
+                  ]
                 }
               }
             },
@@ -2351,7 +2354,10 @@
               "pattern": "^[1-9][0-9]*$"
             },
             "sourcePolicyHash": {
-              "const": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"
+              "enum": [
+                "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d",
+                "0x7f123be43dc8022cf91440dc22d558df3f161d583b3cc0ab48203dbc973a2eeb"
+              ]
             },
             "expectedFeeStateHash": {
               "type": "string",
@@ -2608,7 +2614,10 @@
               "pattern": "^[1-9][0-9]*$"
             },
             "sourcePolicyHash": {
-              "const": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"
+              "enum": [
+                "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d",
+                "0x7f123be43dc8022cf91440dc22d558df3f161d583b3cc0ab48203dbc973a2eeb"
+              ]
             },
             "expectedFeeStateHash": {
               "type": "string",
@@ -2856,7 +2865,10 @@
               "pattern": "^[1-9][0-9]*$"
             },
             "sourcePolicyHash": {
-              "const": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"
+              "enum": [
+                "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d",
+                "0x7f123be43dc8022cf91440dc22d558df3f161d583b3cc0ab48203dbc973a2eeb"
+              ]
             },
             "expectedFeeStateHash": {
               "type": "string",
@@ -3104,7 +3116,10 @@
               "pattern": "^[1-9][0-9]*$"
             },
             "sourcePolicyHash": {
-              "const": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"
+              "enum": [
+                "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d",
+                "0x7f123be43dc8022cf91440dc22d558df3f161d583b3cc0ab48203dbc973a2eeb"
+              ]
             },
             "expectedFeeStateHash": {
               "type": "string",
@@ -6474,7 +6489,7 @@
           "$ref": "#/$defs/identifier"
         },
         "termsVersion": {
-          "enum": ["credit_terms.v1", "credit_terms.synthetic_secured.v1", "credit_terms.synthetic_fee.v1"]
+          "enum": ["credit_terms.v1", "credit_terms.synthetic_secured.v1", "credit_terms.synthetic_fee.v1", "credit_terms.synthetic_fee_hosted.v1"]
         },
         "validUntil": {
           "$ref": "#/$defs/timestamp"
@@ -6597,7 +6612,54 @@
         "feeTerms": {
           "$ref": "#/$defs/syntheticFeeTerms"
         }
-      }
+      },
+      "allOf": [
+        {
+          "oneOf": [
+            {
+              "properties": {
+                "termsVersion": {
+                  "enum": [
+                    "credit_terms.v1",
+                    "credit_terms.synthetic_secured.v1"
+                  ]
+                }
+              },
+              "not": {
+                "required": [
+                  "feeTerms"
+                ]
+              }
+            },
+            {
+              "properties": {
+                "termsVersion": {
+                  "const": "credit_terms.synthetic_fee.v1"
+                },
+                "feeTerms": {
+                  "$ref": "https://schemas.ipo.one/v2/synthetic-fee-terms.schema.json"
+                }
+              },
+              "required": [
+                "feeTerms"
+              ]
+            },
+            {
+              "properties": {
+                "termsVersion": {
+                  "const": "credit_terms.synthetic_fee_hosted.v1"
+                },
+                "feeTerms": {
+                  "$ref": "https://schemas.ipo.one/v2/hosted-synthetic-fee-terms.schema.json"
+                }
+              },
+              "required": [
+                "feeTerms"
+              ]
+            }
+          ]
+        }
+      ]
     },
     "creditApplicationEvaluated": {
       "type": "object",
@@ -10041,7 +10103,10 @@
               "pattern": "^0x[0-9a-f]{64}$"
             },
             "sourcePolicyHash": {
-              "const": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"
+              "enum": [
+                "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d",
+                "0x7f123be43dc8022cf91440dc22d558df3f161d583b3cc0ab48203dbc973a2eeb"
+              ]
             },
             "obligationId": {
               "type": "string"
@@ -10242,10 +10307,16 @@
               "const": "credit_due_only"
             },
             "scope": {
-              "const": "L0_LOCAL_NO_FUNDS"
+              "enum": [
+                "L0_LOCAL_NO_FUNDS",
+                "L2_PUBLIC_AUTHENTICATED_NO_FUNDS"
+              ]
             },
             "profile": {
-              "const": "synthetic_usd_platform_fee.v1"
+              "enum": [
+                "synthetic_usd_platform_fee.v1",
+                "synthetic_usd_platform_fee_hosted.v1"
+              ]
             },
             "chainTransactionHash": {
               "type": "null"
@@ -10274,7 +10345,39 @@
               "type": "string",
               "pattern": "^0x[0-9a-f]{64}$"
             }
-          }
+          },
+          "allOf": [
+            {
+              "oneOf": [
+                {
+                  "properties": {
+                    "profile": {
+                      "const": "synthetic_usd_platform_fee.v1"
+                    },
+                    "scope": {
+                      "const": "L0_LOCAL_NO_FUNDS"
+                    },
+                    "sourcePolicyHash": {
+                      "const": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "profile": {
+                      "const": "synthetic_usd_platform_fee_hosted.v1"
+                    },
+                    "scope": {
+                      "const": "L2_PUBLIC_AUTHENTICATED_NO_FUNDS"
+                    },
+                    "sourcePolicyHash": {
+                      "const": "0x7f123be43dc8022cf91440dc22d558df3f161d583b3cc0ab48203dbc973a2eeb"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
         }
       }
     },
@@ -10351,7 +10454,10 @@
               "const": "synthetic_fee_credit_context.v1"
             },
             "scope": {
-              "const": "L0_LOCAL_NO_FUNDS"
+              "enum": [
+                "L0_LOCAL_NO_FUNDS",
+                "L2_PUBLIC_AUTHENTICATED_NO_FUNDS"
+              ]
             },
             "effectivePrincipalMinor": {
               "type": "string",
@@ -11172,7 +11278,14 @@
       }
     },
     "syntheticFeeTerms": {
-      "$ref": "https://schemas.ipo.one/v2/synthetic-fee-terms.schema.json"
+      "oneOf": [
+        {
+          "$ref": "https://schemas.ipo.one/v2/synthetic-fee-terms.schema.json"
+        },
+        {
+          "$ref": "https://schemas.ipo.one/v2/hosted-synthetic-fee-terms.schema.json"
+        }
+      ]
     },
     "syntheticFeeState": {
       "$ref": "https://schemas.ipo.one/v2/synthetic-fee-state.schema.json"
@@ -11270,7 +11383,10 @@
                 "pattern": "^0x[0-9a-f]{64}$"
               },
               "sourcePolicyHash": {
-                "const": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"
+                "enum": [
+                  "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d",
+                  "0x7f123be43dc8022cf91440dc22d558df3f161d583b3cc0ab48203dbc973a2eeb"
+                ]
               },
               "obligationId": {
                 "type": "string"
@@ -11471,10 +11587,16 @@
                 "const": "credit_due_only"
               },
               "scope": {
-                "const": "L0_LOCAL_NO_FUNDS"
+                "enum": [
+                  "L0_LOCAL_NO_FUNDS",
+                  "L2_PUBLIC_AUTHENTICATED_NO_FUNDS"
+                ]
               },
               "profile": {
-                "const": "synthetic_usd_platform_fee.v1"
+                "enum": [
+                  "synthetic_usd_platform_fee.v1",
+                  "synthetic_usd_platform_fee_hosted.v1"
+                ]
               },
               "chainTransactionHash": {
                 "type": "null"
@@ -11503,7 +11625,39 @@
                 "type": "string",
                 "pattern": "^0x[0-9a-f]{64}$"
               }
-            }
+            },
+            "allOf": [
+              {
+                "oneOf": [
+                  {
+                    "properties": {
+                      "profile": {
+                        "const": "synthetic_usd_platform_fee.v1"
+                      },
+                      "scope": {
+                        "const": "L0_LOCAL_NO_FUNDS"
+                      },
+                      "sourcePolicyHash": {
+                        "const": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "profile": {
+                        "const": "synthetic_usd_platform_fee_hosted.v1"
+                      },
+                      "scope": {
+                        "const": "L2_PUBLIC_AUTHENTICATED_NO_FUNDS"
+                      },
+                      "sourcePolicyHash": {
+                        "const": "0x7f123be43dc8022cf91440dc22d558df3f161d583b3cc0ab48203dbc973a2eeb"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
           }
         }
       }
@@ -11553,13 +11707,22 @@
           ],
           "properties": {
             "profile": {
-              "const": "synthetic_usd_platform_fee.v1"
+              "enum": [
+                "synthetic_usd_platform_fee.v1",
+                "synthetic_usd_platform_fee_hosted.v1"
+              ]
             },
             "schemaVersion": {
-              "const": "synthetic_fee_policy.v1"
+              "enum": [
+                "synthetic_fee_policy.v1",
+                "synthetic_fee_policy.hosted.v1"
+              ]
             },
             "scope": {
-              "const": "L0_LOCAL_NO_FUNDS"
+              "enum": [
+                "L0_LOCAL_NO_FUNDS",
+                "L2_PUBLIC_AUTHENTICATED_NO_FUNDS"
+              ]
             },
             "currency": {
               "const": "USD"
@@ -11603,7 +11766,39 @@
             "withdrawable": {
               "const": false
             }
-          }
+          },
+          "allOf": [
+            {
+              "oneOf": [
+                {
+                  "properties": {
+                    "profile": {
+                      "const": "synthetic_usd_platform_fee.v1"
+                    },
+                    "scope": {
+                      "const": "L0_LOCAL_NO_FUNDS"
+                    },
+                    "schemaVersion": {
+                      "const": "synthetic_fee_policy.v1"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "profile": {
+                      "const": "synthetic_usd_platform_fee_hosted.v1"
+                    },
+                    "scope": {
+                      "const": "L2_PUBLIC_AUTHENTICATED_NO_FUNDS"
+                    },
+                    "schemaVersion": {
+                      "const": "synthetic_fee_policy.hosted.v1"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
         },
         "statement": {
           "$ref": "#/$defs/syntheticFeeStatement"
@@ -11802,7 +11997,10 @@
           "pattern": "^[1-9][0-9]*$"
         },
         "sourcePolicyHash": {
-          "const": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"
+          "enum": [
+            "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d",
+            "0x7f123be43dc8022cf91440dc22d558df3f161d583b3cc0ab48203dbc973a2eeb"
+          ]
         },
         "expectedFeeStateHash": {
           "type": "string",
@@ -12050,7 +12248,10 @@
               "pattern": "^0x[0-9a-f]{64}$"
             },
             "sourcePolicyHash": {
-              "const": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"
+              "enum": [
+                "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d",
+                "0x7f123be43dc8022cf91440dc22d558df3f161d583b3cc0ab48203dbc973a2eeb"
+              ]
             },
             "obligationId": {
               "type": "string"
@@ -12251,10 +12452,16 @@
               "const": "credit_due_only"
             },
             "scope": {
-              "const": "L0_LOCAL_NO_FUNDS"
+              "enum": [
+                "L0_LOCAL_NO_FUNDS",
+                "L2_PUBLIC_AUTHENTICATED_NO_FUNDS"
+              ]
             },
             "profile": {
-              "const": "synthetic_usd_platform_fee.v1"
+              "enum": [
+                "synthetic_usd_platform_fee.v1",
+                "synthetic_usd_platform_fee_hosted.v1"
+              ]
             },
             "chainTransactionHash": {
               "type": "null"
@@ -12283,7 +12490,39 @@
               "type": "string",
               "pattern": "^0x[0-9a-f]{64}$"
             }
-          }
+          },
+          "allOf": [
+            {
+              "oneOf": [
+                {
+                  "properties": {
+                    "profile": {
+                      "const": "synthetic_usd_platform_fee.v1"
+                    },
+                    "scope": {
+                      "const": "L0_LOCAL_NO_FUNDS"
+                    },
+                    "sourcePolicyHash": {
+                      "const": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "profile": {
+                      "const": "synthetic_usd_platform_fee_hosted.v1"
+                    },
+                    "scope": {
+                      "const": "L2_PUBLIC_AUTHENTICATED_NO_FUNDS"
+                    },
+                    "sourcePolicyHash": {
+                      "const": "0x7f123be43dc8022cf91440dc22d558df3f161d583b3cc0ab48203dbc973a2eeb"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
         },
         "syntheticOnly": {
           "const": true

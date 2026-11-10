@@ -15,7 +15,7 @@ import {
 import { AUTHORIZATION_POLICY_VERSION } from "../../../authorization/src/index.js";
 import { SignedSandboxRailAdapter } from "../../../sandbox-rail/src/index.js";
 
-export async function persistSyntheticFeeInterestScenario({ pool, tenantId, actorId, subjectId, principalId, consentId, assessmentEnabled = true }) {
+export async function persistSyntheticFeeInterestScenario({ pool, tenantId, actorId, subjectId, principalId, consentId, assessmentEnabled = true, feeProfile=SYNTHETIC_FEE_PROFILE, feeInstitutionId }) {
   const start = new Date("2026-09-01T00:00:00Z"), repaidAt = new Date("2026-10-11T00:00:00Z");
   const context = createTenantSecurityContext({ tenantId, actorId, policyVersion: AUTHORIZATION_POLICY_VERSION, source: "local_test" });
   const events = new PostgresEventRepository({ pool, tenantContext: context });
@@ -24,7 +24,7 @@ export async function persistSyntheticFeeInterestScenario({ pool, tenantId, acto
     assetId: "urn:ipo-one:sandbox-asset:usd-cent", requestedPrincipalMinor: "100000", purposeCode: "working_capital",
     requestedTermDays: assessmentEnabled ? 90 : 89, repaymentFrequency: "end_of_term", installmentCount: 1, now: start });
   const intent = { ...submitted, status: "decided" };
-  const { decision, offer } = createDeterministicCreditDecisionOutcome({ intent: submitted, feeProfile: SYNTHETIC_FEE_PROFILE, now: start });
+  const { decision, offer } = createDeterministicCreditDecisionOutcome({ intent: submitted, feeProfile, feeInstitutionId, now: start });
   const acceptance = createCreditOfferAcceptance({ intent, decision, offer, authorityType: "consent", authorityRef: consentId,
     acknowledgementHash: hashId("controlled_synthetic_fee_terms", offer.termsHash), acceptedByActorId: actorId, now: start });
   const acceptedOffer=acceptCreditOffer(offer,{expectedOfferHash:offer.creditOfferHash,expectedTermsHash:offer.termsHash,acceptanceId:acceptance.creditOfferAcceptanceId,now:start});

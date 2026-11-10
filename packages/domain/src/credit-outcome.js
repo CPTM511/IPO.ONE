@@ -1,3 +1,4 @@
+import { assertSyntheticFeeTerms } from "./synthetic-fees.js";
 import { DomainError } from "./errors.js";
 import { hashId } from "./ids.js";
 
@@ -173,6 +174,7 @@ export function createFinalizedCreditOutcome({
   let syntheticFeeCreditContext;
   const fees=terminal.syntheticFees;
   if ((fees?.sourceCorrectionCount??0)>0) {
+    assertSyntheticFeeTerms(fees.terms);
     const effective=assertMinor("effectivePrincipalMinor",fees.fundedBaseMinor);
     if (effective===0n) throw new DomainError("synthetic_fee_cycle_cancelled","Fully cancelled synthetic funding does not earn a credit cycle");
     const refunded=[fees.principalRefundCreditDueMinor,fees.interestRefundCreditDueMinor,fees.borrowerRefundDueMinor]
@@ -180,7 +182,7 @@ export function createFinalizedCreditOutcome({
     const recoveredLoss=[fees.principalWrittenOffCreditMinor,fees.feeWrittenOffCreditMinor]
       .reduce((n,v)=>n+assertMinor("writtenOffCreditMinor",v??"0"),0n);
     if (refunded>totalRepaid || recoveredLoss>grossLossMinor) invalid("Source credit attribution exceeds gross historical facts");
-    syntheticFeeCreditContext={schemaVersion:"synthetic_fee_credit_context.v1",scope:"L0_LOCAL_NO_FUNDS",
+    syntheticFeeCreditContext={schemaVersion:"synthetic_fee_credit_context.v1",scope:fees.terms.scope,
       effectivePrincipalMinor:effective.toString(),netRepaidMinor:(totalRepaid-refunded).toString(),
       netLossMinor:(grossLossMinor-recoveredLoss).toString(),grossLossMinor:grossLossMinor.toString(),
       feeStateHash:hashId("fee_state",fees),sourceCorrectionCount:fees.sourceCorrectionCount,

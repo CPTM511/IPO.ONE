@@ -11,7 +11,7 @@ export function sourceCorrectionImpact(review){
 export function createSyntheticFeeCorrectionWorkspace({api,getState,has,run,showReview}){
   let cases=[],review,draft,epoch=0;
   const panel=el('syntheticFeeCorrectionPanel');
-  const allowed=()=>['http://localhost:8967','http://localhost:8981'].includes(globalThis.location?.origin) && getState().signedIn && getState().workspace==='operations' && has('pilotCorrectSyntheticFeeSource');
+  const allowed=()=>(['http://localhost:8967','http://localhost:8981'].includes(globalThis.location?.origin) || (globalThis.location?.origin==='https://ipo.one' && getState().hostedGoverned===true)) && getState().signedIn && getState().workspace==='operations' && has('pilotCorrectSyntheticFeeSource');
   const message=text=>el('syntheticFeeCorrectionStatus').textContent=copy(text);
   const invalidate=()=>{epoch++;review=undefined;draft=undefined;el('syntheticFeeCorrectionAcknowledge').checked=false;el('syntheticFeeCorrectionImpact').textContent='';render();};
   function render(){

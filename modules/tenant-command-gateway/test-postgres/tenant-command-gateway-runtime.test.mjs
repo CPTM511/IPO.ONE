@@ -1,3 +1,4 @@
+import {createB4LegacyRegression} from "../../../scripts/test-support/b4-legacy-regression.mjs";
 import assert from "node:assert/strict";
 import {
   createHash,
@@ -6,7 +7,7 @@ import {
   sign as signMessage,
   verify as verifyMessage
 } from "node:crypto";
-import test from "node:test";
+import test, {after} from "node:test";
 import { privateKeyToAccount, generatePrivateKey } from "viem/accounts";
 import {
   CreditEventType,
@@ -79,6 +80,9 @@ import {
   createPostgresTenantLivePolicyAdapter,
   createTenantFoundationHandlers
 } from "../src/index.js";
+
+const legacyB4Regression=await createB4LegacyRegression({gateway:true});
+after(()=>legacyB4Regression.close());
 
 const CONNECTION_STRING = process.env.DATABASE_URL;
 const RUN_ID = randomBytes(5).toString("hex");

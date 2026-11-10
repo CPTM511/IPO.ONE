@@ -2,6 +2,9 @@
 // identifiers, protocol enums, receipts and economic values are never translated.
 // Columns: en, zh, es, fr, ru, vi. Placeholders must match in every language.
 export const PRODUCT_COPY = [
+  ["Auditor", "审计员", "Auditor", "Auditeur", "Аудитор", "Kiểm toán viên"],
+  ["Invitation required · assigned proposal or review permissions", "需邀请 · 按分配权限提案或审阅", "Requiere invitación · Permisos asignados de propuesta o revisión", "Invitation requise · Droits attribués de proposition ou de revue", "По приглашению · Назначенные права предложения или проверки", "Cần lời mời · Quyền đề xuất hoặc xét duyệt được chỉ định"],
+  ["Invitation required · read-only approval history", "需邀请 · 只读审批历史", "Requiere invitación · Historial de aprobación de solo lectura", "Invitation requise · Historique des approbations en lecture seule", "По приглашению · История согласований только для чтения", "Cần lời mời · Lịch sử phê duyệt chỉ đọc"],
   ["Wallet signature", "钱包签名", "Firma de cartera", "Signature du portefeuille", "Подпись кошелька", "Chữ ký ví"],
   ["Cleared by source credit","已通过来源信用调整结清","Saldado mediante abono de origen","Soldé par crédit source","Закрыто корректировкой источника","Đã tất toán bằng điều chỉnh nguồn"],
   ["Synthetic source credit", "合成来源信用调整", "Abono de fuente sintética", "Crédit sur source synthétique", "Коррекция синтетического источника", "Điều chỉnh tín dụng nguồn tổng hợp"],

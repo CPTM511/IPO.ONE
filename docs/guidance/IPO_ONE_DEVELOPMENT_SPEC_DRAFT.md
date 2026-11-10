@@ -109,7 +109,7 @@ B2 的直接回退基线为已验收 B1 bcce697 / dpl_3HJLd2Xi8EPA5eadzLqCtfaBxF
 
 **B4当前结果：PASS — LOCAL VERIFIED。** Founder已批准A额外单列费用及B4-F1本地源信用扩展；整数计算、借还/费用、受保护源信用及冲回、冻结UTC月结、Agent占用/信用归因、六语可见流程和数据库恢复已按L0目标通过。[B4契约与授权](../codex/tasks/B4_SYNTHETIC_FEE_POLICY_ALIGNMENT.md)及[逐项结果](../../output/b4-fee-policy-20261109/RESULT.md)。本地体验http://127.0.0.1:8907/#request-credit；F1执行在独立测试profile验证，Founder入口待真实独立审阅钱包绑定而保持关闭。尚无B4生产发布/验收或真实收费权限；若推进上线，先审阅精确发布与兼容回退方案。
 
-**B4托管准备（2026-11-09）：准备核实完成，功能发布 NO-GO。** 本轮确认ipo.one仍为56f2718；0f95f14本地费用政策绑定L0，托管运行时/机构授权/F1 HTTPS与MFA及追加schema尚未适配。精确0f95托管包239项通过但仍仅79迁移，不能启用B4。Founder已于2026-11-10批准B4-H本地适配与受限CI；现按[B4任务第12节](../codex/tasks/B4_SYNTHETIC_FEE_POLICY_ALIGNMENT.md#12-托管准备与-b4-h-待审范围2026-11-09)实施默认停用的本地托管适配，之后才有可审的真实新SHA/CI及迁移后兼容回退目标；本轮未修改生产或应用代码。详见[发布/回退清单](../../output/b4-hosted-preparation-20261109/RELEASE_CHECKLIST.md)。
+**B4-H本地适配（2026-11-10）：本地验收通过，远程CI/冻结产物待完成；生产功能发布 NO-GO。** 原L0费用政策、已接受条款及历史数据保持。隔离候选已实现默认停用的L2政策/配置、机构治理、原生HTTPS MFA/独立双审及86项SB4；Node26完整门禁与Node24实际HTTP/PostgreSQL/原生浏览器闭环通过，真实167表备份恢复一致。Founder补充批准的一次性test身份和私有备份已按测试清理；不等于生产身份或真人签核。当前没有新B4生产部署/已验证OFF回退ID。具体范围、H01–H12与剩余门槛见[B4任务第12节](../codex/tasks/B4_SYNTHETIC_FEE_POLICY_ALIGNMENT.md#12-托管准备与-b4-h-已批准实施范围2026-11-10)。
 
 并行准备三个明确决策包，不要求它们先阻断普通国际化工作：
 

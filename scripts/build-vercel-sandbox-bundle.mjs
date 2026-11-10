@@ -6,7 +6,7 @@ import { promisify } from "node:util";
 import { build } from "esbuild";
 import { materializeTrackedGitSource } from "./tracked-git-source.mjs";
 import { readMigrationSet } from "./migrate.mjs";
-import { selectVercelMigrations, VERCEL_MIGRATION_PROFILE } from "./vercel-migration-profile.mjs";
+import { selectVercelMigrations, VERCEL_MIGRATION_PROFILE, LEGACY_VERCEL_MIGRATION_PROFILE } from "./vercel-migration-profile.mjs";
 import { assertProductUiBaseline } from "../apps/tenant-api/src/product-ui-baseline.js";
 
 const execFileAsync = promisify(execFile);
@@ -161,14 +161,12 @@ try {
     migrationProfile: {
       ...VERCEL_MIGRATION_PROFILE,
       excludedLocalMigrations: allMigrations.filter(item => VERCEL_MIGRATION_PROFILE.localOnly.includes(item.name)).map(({ name, checksum }) => ({ name, checksum })),
-      runtimeMigrationCheck: "exact_current_set_or_exact_pre_b3_prefix_only_while_collateral_off",
-      compatibleOffPrefix: {
-        count: hostedMigrations.length - 1,
-        setSha256: createHash("sha256").update(JSON.stringify(hostedMigrations.slice(0,-1)
-          .map(({name,checksum})=>({name,checksum})))).digest("hex"),
-        onlyPendingMigration: "0089_synthetic_collateral_terms",
-        activationRequiresCurrentSet: true
-      },
+      runtimeMigrationCheck: "exact_S79_or_SB4_OFF__SB4_only_when_hosted_features_or_management_enabled",
+      compatibleOffSets: [
+        {count:LEGACY_VERCEL_MIGRATION_PROFILE.count,setSha256:LEGACY_VERCEL_MIGRATION_PROFILE.setSha256},
+        {count:VERCEL_MIGRATION_PROFILE.count,setSha256:VERCEL_MIGRATION_PROFILE.setSha256}
+      ],
+      retainedB3OffBeforeCollateralMigration: {count:78,setSha256:"8953e5caef5455d85a0bcb34a5ad117c59ebdfb84c193021a620536431e54275",allHostedFeaturesAndCollateralDisabled:true},
       productionDatabaseMutation: false
     },
     releaseClaim: false,

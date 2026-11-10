@@ -126,14 +126,16 @@ const EXPECTED_STEPS = Object.freeze([
 function offerReviewTermsVersion(offer, collateralProfile) {
   const fee = offer?.feeTerms;
   if (fee !== undefined) {
-    if (fee.profile !== "synthetic_usd_platform_fee.v1" || fee.scope !== "L0_LOCAL_NO_FUNDS" ||
+    const hosted = fee.profile === "synthetic_usd_platform_fee_hosted.v1" && fee.scope === "L2_PUBLIC_AUTHENTICATED_NO_FUNDS";
+    const local = fee.profile === "synthetic_usd_platform_fee.v1" && fee.scope === "L0_LOCAL_NO_FUNDS";
+    if ((!hosted && !local) ||
         fee.assetId !== offer.assetId || fee.economicLoanId !== offer.creditIntentId ||
         fee.principalMinor !== offer.approvedPrincipalMinor || fee.annualRateBps !== offer.annualRateBps ||
         fee.providerOriginationFeeMinor !== offer.originationFeeMinor || fee.currency !== "USD" ||
         fee.syntheticOnly !== true || fee.productionFundsMoved !== false || fee.productionPolicyAvailable !== false ||
         !HASH.test(fee.termsHash ?? "") ||
         ["netProceedsMinor", "borrowerFeeAtFullFundingMinor", "estimatedTotalRepaymentMinor", "scheduledInterestEstimateMinor", "estimatedTotalCostMinor"].some(k=>!CANONICAL_MINOR.test(fee[k] ?? ""))) return undefined;
-    return "credit_terms.synthetic_fee.v1";
+    return hosted ? "credit_terms.synthetic_fee_hosted.v1" : "credit_terms.synthetic_fee.v1";
   }
   return collateralProfile ? "credit_terms.synthetic_secured.v1" : "credit_terms.v1";
 }

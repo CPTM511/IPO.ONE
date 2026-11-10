@@ -296,12 +296,14 @@ test("production runtime closes both pools when startup validation fails", async
 
 test("B4 local files preserve exact pre-B3/off production schema admission without activation",async()=>{
   const {readMigrationSet}=await import("../../../scripts/migrate.mjs");
-  const {B4_LOCAL_ONLY_MIGRATIONS}=await import("../../../scripts/vercel-migration-profile.mjs");
+  const {selectVercelMigrations,LEGACY_VERCEL_MIGRATION_PROFILE}=await import("../../../scripts/vercel-migration-profile.mjs");
   const full=(await readMigrationSet()).map(({name,checksum})=>({name,checksum}));
-  const beforeB4=full.filter(m=>!B4_LOCAL_ONLY_MIGRATIONS.includes(m.name));
+  const beforeB4=selectVercelMigrations(full,{profile:LEGACY_VERCEL_MIGRATION_PROFILE});
+  const hosted=selectVercelMigrations(full);
   const beforeB3=beforeB4.slice(0,-1);
   const pool=rows=>({query:async()=>({rowCount:rows.length,rows})});
-  assert.equal(await assertProductionMigrationSet(pool(full),{syntheticCollateralEnabled:true}),"current");
+  await assert.rejects(assertProductionMigrationSet(pool(full)),{code:"production_database_migration_mismatch"});
+  assert.equal(await assertProductionMigrationSet(pool(hosted),{syntheticCollateralEnabled:true,hostedFeesEnabled:true}),"hosted_synthetic_schema");
   assert.equal(await assertProductionMigrationSet(pool(beforeB4),{syntheticCollateralEnabled:true}),"current");
   assert.equal(await assertProductionMigrationSet(pool(beforeB3)),"b3_compatible_off_before_migration");
   for(const rows of [full.slice(0,-1),beforeB4.slice(0,-2),[...full,{name:'future',checksum:'unknown'}],

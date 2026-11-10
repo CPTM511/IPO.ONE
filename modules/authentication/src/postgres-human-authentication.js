@@ -1,3 +1,4 @@
+import { checkedHostedManagementAccess } from "./hosted-management-access.js";
 import { randomBytes } from "node:crypto";
 import { createSiweMessage, parseSiweMessage } from "viem/siwe";
 import { getAddress } from "viem";
@@ -104,7 +105,9 @@ function assertRepository(repository, expectedTenantId) {
   return repository;
 }
 
-export async function assertPostgresAuthenticationRole(queryable, { localPasskeys = false } = {}) {
+export async function assertPostgresAuthenticationRole(queryable, { localPasskeys = false, hostedPasskeys = false } = {}) {
+  if(typeof localPasskeys!=="boolean" || typeof hostedPasskeys!=="boolean" || (localPasskeys && hostedPasskeys))throw authenticationError("invalid_authentication_configuration","One exact Passkey boundary is required");
+  const passkeys = localPasskeys || hostedPasskeys;
   if (!queryable || typeof queryable.query !== "function") {
     throw authenticationError(
       "invalid_authentication_configuration",
@@ -188,7 +191,7 @@ export async function assertPostgresAuthenticationRole(queryable, { localPasskey
     authentication_session_invalidations: [true, true, false, false, false, false, false],
     authentication_replay_entries: [true, true, false, true, false, false, false],
     authentication_events: [true, true, false, false, false, false, false],
-    ...(localPasskeys ? {
+    ...(passkeys ? {
       authentication_passkeys: [true, true, true, false, false, false, false],
       authentication_passkey_challenges: [true, true, true, false, false, false, false],
       authentication_passkey_evidence: [true, true, false, false, false, false, false],
@@ -310,7 +313,7 @@ export async function assertPostgresAuthenticationRole(queryable, { localPasskey
       "authentication tables must enforce the reviewed RLS boundary"
     );
   }
-  const expectedPolicies = authenticationRlsPolicies(localPasskeys);
+  const expectedPolicies = authenticationRlsPolicies(passkeys);
   const rlsPolicies = await queryable.query(
     `SELECT tablename AS table_name, policyname AS policy_name,
             permissive, roles::text[] AS roles, cmd,
@@ -900,6 +903,7 @@ export class PostgresCredentialRegistry {
     referenceHasher,
     systemActorId,
     publicBetaWalletRoleProfiles,
+    hostedManagementAccess,
     maximumCredentials = 10_000
   }) {
     this.tenantId = tenantId(configuredTenantId);
@@ -916,6 +920,7 @@ export class PostgresCredentialRegistry {
       publicBetaWalletRoleProfiles
     );
     this.maximumCredentials = maximumCredentials;
+    this.hostedManagementAccess=checkedHostedManagementAccess(hostedManagementAccess,{tenantId:this.tenantId,origin:hostedManagementAccess?.origin});
   }
 
   async provisionVerifiedPublicBetaHumanSubject({
@@ -1550,6 +1555,10 @@ export class PostgresCredentialRegistry {
     const checkedClientId = assertSafeIdentifier("clientId", clientId);
     return this.repository.withTenantWrite(async (client) => {
       const credential = await this.#activeInTransaction(client, checkedCredentialId, now);
+      if(this.hostedManagementAccess && !["human_borrower","principal_controller"].includes(checkedRole) &&
+          !this.hostedManagementAccess.bindings.some(binding=>binding.actorId===credential.actorId && binding.role===checkedRole)) {
+        throw authenticationError("authentication_role_rejected","selected Human workspace is not enrolled");
+      }
       const result = await client.query(
         `SELECT e.*
            FROM authentication_role_enrollments AS e

@@ -265,3 +265,8 @@ test("support diagnostic is bounded and contains no private account truth", () =
     "unavailable"
   );
 });
+
+test("reviewed hosted management advertises its installed MFA service only with the explicit server hint",()=>{
+  assert.equal(createManagementAccessPresentation({optionsState:"ready",authenticationProfile:"public_authenticated_no_funds_beta",riskPasskey:true,governedManagement:true}).passkeyAvailable,true);
+  assert.equal(createManagementAccessPresentation({optionsState:"ready",authenticationProfile:"public_authenticated_no_funds_beta",riskPasskey:false,governedManagement:true}).passkeyAvailable,false);
+});

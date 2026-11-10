@@ -1,6 +1,8 @@
+import {createB4HostedTestDatabase} from "../../../scripts/test-support/b4-hosted-database.mjs";
+import {migrateUp as migrateIsolatedDatabase} from "../../../scripts/migrate.mjs";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
-import test from "node:test";
+import test, {after} from "node:test";
 import {
   encodeAbiParameters,
   encodeEventTopics,
@@ -38,7 +40,10 @@ import {
   reviewSecuredPoolActionQueryHandler
 } from "../src/index.js";
 
-const CONNECTION_STRING = process.env.DATABASE_URL;
+const isolatedDatabase=await createB4HostedTestDatabase({baseline:false});
+after(()=>isolatedDatabase.close());
+await migrateIsolatedDatabase({pool:isolatedDatabase.pool});
+const CONNECTION_STRING = isolatedDatabase.connectionString;
 const TENANT_ID = "tenant_ipo_one_local_pilot";
 const OTHER_TENANT_ID = "tenant_m2a006_other";
 const CHAIN = "eip155:84532";

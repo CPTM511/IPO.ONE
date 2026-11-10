@@ -1,3 +1,4 @@
+import { checkedHostedFeeGovernance, syntheticFeeLoanMatchesContext, assertSyntheticFeeLoanContext } from "./synthetic-fee-context.js";
 import { assertSyntheticFeeProvenance } from "../../../packages/domain/src/synthetic-fees.js";
 import {
   assertSyntheticCollateralProvenance,
@@ -361,8 +362,9 @@ async function planAgentLockboxCreation({
 export function executeSandboxObligationCommandHandler({
   sandboxRailAdapter = LOCAL_SIGNED_SANDBOX_RAIL,
   syntheticCollateralEnabled = false,
-  syntheticFeesEnabled = false
+  syntheticFeesEnabled = false, hostedSyntheticFeeGovernance
 } = {}) {
+  const feeGovernance=checkedHostedFeeGovernance(hostedSyntheticFeeGovernance);
   if (
     !sandboxRailAdapter || typeof sandboxRailAdapter.execute !== "function" ||
     typeof sandboxRailAdapter.verify !== "function"
@@ -455,6 +457,7 @@ export function executeSandboxObligationCommandHandler({
         : undefined;
       if (creditLine) assertAgentProviderTarget({ input, authority, creditLine });
       assertSyntheticFeeProvenance({ offer, obligation });
+      if(obligation.syntheticFees && syntheticFeesEnabled===true)assertSyntheticFeeLoanContext(feeGovernance,{authenticationContext},obligation);
       if (obligation.syntheticFees && syntheticFeesEnabled !== true) {
         throw new DomainError("synthetic_fees_disabled", "Local synthetic fee policy is disabled");
       }
@@ -704,7 +707,8 @@ function createRevenueCaptureReceipt({ lockbox, repayment, now }) {
   });
 }
 
-export function postSandboxRepaymentCommandHandler({ syntheticFeesEnabled = false } = {}) {
+export function postSandboxRepaymentCommandHandler({ syntheticFeesEnabled = false, hostedSyntheticFeeGovernance } = {}) {
+  const feeGovernance=checkedHostedFeeGovernance(hostedSyntheticFeeGovernance);
   return Object.freeze({
     operationId: "pilotPostSandboxRepayment",
     kind: "command",
@@ -765,7 +769,7 @@ export function postSandboxRepaymentCommandHandler({ syntheticFeesEnabled = fals
         summarizeEconomicActionConfirmation(actionConfirmation);
       await assertSandboxAccountsAvailable({ client, coreRepository, obligation });
       const result = postSandboxRepayment(obligation, {
-        syntheticFeeAssessmentEnabled: syntheticFeesEnabled === true,
+        syntheticFeeAssessmentEnabled: syntheticFeesEnabled === true && (!obligation.syntheticFees || syntheticFeeLoanMatchesContext(feeGovernance,{authenticationContext},obligation)),
         amountMinor: input.amountMinor,
         sourceCode: input.sourceCode,
         actorId: authenticationContext.actorId,

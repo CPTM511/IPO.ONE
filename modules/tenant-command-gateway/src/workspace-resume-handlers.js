@@ -235,7 +235,7 @@ async function actionableHumanOfferReview({
       actorId: authenticationContext.actorId
     });
     const offerVersionMatchesTerms =
-      (offer.schemaVersion === "credit_offer.v1" && ["credit_terms.v1", "credit_terms.synthetic_secured.v1", "credit_terms.synthetic_fee.v1"].includes(offer.termsVersion)) ||
+      (offer.schemaVersion === "credit_offer.v1" && ["credit_terms.v1", "credit_terms.synthetic_secured.v1", "credit_terms.synthetic_fee.v1", "credit_terms.synthetic_fee_hosted.v1"].includes(offer.termsVersion)) ||
       (offer.schemaVersion === "credit_offer.v2" && offer.termsVersion === "credit_terms.v2");
     if (
       decisionState?.value?.riskDecisionId !== decision.riskDecisionId ||

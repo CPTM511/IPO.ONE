@@ -1,4 +1,8 @@
-import { B4_LOCAL_ONLY_MIGRATIONS } from "../../../scripts/vercel-migration-profile.mjs";
+import { checkedHostedSyntheticFeeConfiguration, hostedManagementAccessForFees, assertHostedFeeEnrollments, HOSTED_SYNTHETIC_SOURCE_PROFILE } from "./hosted-synthetic-fee-configuration.js";
+import { HOSTED_SYNTHETIC_FEE_PROFILE } from "../../../packages/domain/src/index.js";
+import { createHostedApprovalRuntimeFactory } from "../../../modules/tenant-command-gateway/src/local-approval-runtime.js";
+import { createHostedApprovalProofVerifier } from "./local-approval-proof.js";
+import { selectVercelMigrations, LEGACY_VERCEL_MIGRATION_PROFILE } from "../../../scripts/vercel-migration-profile.mjs";
 import {
   MachineAuthenticator,
   createReferenceHashKeyring
@@ -72,6 +76,9 @@ const CONFIG_KEYS = new Set([
   "releaseId",
   "runtimeConfig",
   "syntheticCollateralEnabled",
+  "syntheticFeesEnabled",
+  "syntheticFeeCorrectionsEnabled",
+  "hostedSyntheticFeeGovernance",
   "systemActorId",
   "tenantId",
   "verifyEdgeRequest",
@@ -136,17 +143,21 @@ function assertClosedConfig(input) {
 // The compatible-off deployment must be promotable before0089, avoiding an
 // interval where the old deployment rejects the newly migrated database. Only
 // this named terminal migration may be pending; activation still requires all.
-export async function assertProductionMigrationSet(pool, { syntheticCollateralEnabled = false } = {}) {
-  const expected = await readMigrationSet();
-  const result = await pool.query("SELECT name, checksum FROM schema_migrations ORDER BY name");
-  // B4 is L0-only. Retain the exact previously-approved schema admission
-  // while its named local migrations are absent; all checksums remain exact.
-  const beforeB4=expected.filter(migration=>!B4_LOCAL_ONLY_MIGRATIONS.includes(migration.name));
-  const candidates=[{value:expected,state:"current"},{value:beforeB4,state:"current"}];
-  if(syntheticCollateralEnabled===false && beforeB4.at(-1)?.name==="0089_synthetic_collateral_terms")candidates.push({value:beforeB4.slice(0,-1),state:"b3_compatible_off_before_migration"});
+export async function assertProductionMigrationSet(pool, { syntheticCollateralEnabled = false,
+  hostedFeesEnabled = false,hostedManagementEnabled = false } = {}) {
+  const migrations=await readMigrationSet();
+  const hosted=selectVercelMigrations(migrations);
+  const legacy=selectVercelMigrations(migrations,{profile:LEGACY_VERCEL_MIGRATION_PROFILE});
+  const result=await pool.query("SELECT name, checksum FROM schema_migrations ORDER BY name");
+  const candidates=[{value:hosted,state:"hosted_synthetic_schema"}];
+  if(!hostedFeesEnabled && !hostedManagementEnabled) {
+    candidates.push({value:legacy,state:"current"});
+    if(!syntheticCollateralEnabled)candidates.push({value:legacy.slice(0,-1),state:"b3_compatible_off_before_migration"});
+  }
   const match=candidates.find(({value})=>result.rowCount===value.length && value.every((migration,index)=>
-    result.rows[index]?.name===migration.name && migrationChecksumMatches({name:migration.name,recordedChecksum:result.rows[index]?.checksum,releaseChecksum:migration.checksum})));
-  if(!match)throw new DomainError("production_database_migration_mismatch","Production schema must match an exact known migration set; B4 local files grant no production activation");
+    result.rows[index]?.name===migration.name && migrationChecksumMatches({name:migration.name,
+      recordedChecksum:result.rows[index]?.checksum,releaseChecksum:migration.checksum})));
+  if(!match)throw new DomainError("production_database_migration_mismatch","Production schema must match an exact reviewed OFF or hosted migration set");
   return match.state;
 }
 
@@ -171,7 +182,15 @@ async function composeProductionClosedPilotRuntime(input) {
     typeof input.verifyEdgeRequest !== "function"
   ) throw invalidConfig();
 
-  await assertProductionMigrationSet(input.gatewayPool, { syntheticCollateralEnabled: input.syntheticCollateralEnabled === true });
+  for(const key of ["syntheticFeesEnabled","syntheticFeeCorrectionsEnabled"])if(input[key]!==undefined && typeof input[key]!=="boolean")throw invalidConfig();
+  const hostedFees=checkedHostedSyntheticFeeConfiguration({governance:input.hostedSyntheticFeeGovernance,
+    feeProfile:input.syntheticFeesEnabled===true?HOSTED_SYNTHETIC_FEE_PROFILE:undefined,
+    sourceProfile:input.syntheticFeeCorrectionsEnabled===true?HOSTED_SYNTHETIC_SOURCE_PROFILE:undefined,
+    tenantId:input.tenantId,browserOrigin:input.browserOrigin,deploymentRole:input.deploymentRole,
+    noRealFunds:launchPolicy.profiles.public_authenticated_no_funds_beta.capabilities.realFundsEnabled===false});
+  const migrationState=await assertProductionMigrationSet(input.gatewayPool, { syntheticCollateralEnabled: input.syntheticCollateralEnabled === true,
+    hostedFeesEnabled:hostedFees.syntheticFeesEnabled || hostedFees.syntheticFeeCorrectionsEnabled,
+    hostedManagementEnabled:hostedFees.hostedSyntheticFeeGovernance!==undefined });
   const gatewayRole = await assertTenantDatabaseRole(input.gatewayPool);
   const humanAccess = await createPostgresHumanAccessComposition({
     browserOrigin: input.browserOrigin,
@@ -180,6 +199,8 @@ async function composeProductionClosedPilotRuntime(input) {
     oidcProviders: input.oidcProviders,
     policyVersion: input.policyVersion,
     profile: "public_authenticated_no_funds_beta",
+    hostedPasskeySchema: migrationState==="hosted_synthetic_schema",
+    ...(hostedFees.hostedSyntheticFeeGovernance?{hostedManagementAccess:hostedManagementAccessForFees(hostedFees.hostedSyntheticFeeGovernance)}:{}),
     pool: input.authenticationPool,
     referenceHashKey: input.referenceHashKey,
     referenceHashKeyRef: input.referenceHashKeyRef,
@@ -206,6 +227,11 @@ async function composeProductionClosedPilotRuntime(input) {
     ...(input.clock === undefined ? {} : { clock: input.clock }),
     ...(input.wallet === undefined ? {} : { wallet: input.wallet })
   });
+
+  await assertHostedFeeEnrollments({pool:input.authenticationPool,governance:hostedFees.hostedSyntheticFeeGovernance,
+    syntheticFeesEnabled:hostedFees.syntheticFeesEnabled,syntheticFeeCorrectionsEnabled:hostedFees.syntheticFeeCorrectionsEnabled,
+    systemActorId:input.systemActorId,policyVersion:input.policyVersion,clientId:input.wallet?.clientId,
+    ...(input.clock?{now:input.clock()}: {})});
 
   const referenceHasher = createReferenceHashKeyring({
     mode: referenceHashMode,
@@ -257,6 +283,7 @@ async function composeProductionClosedPilotRuntime(input) {
     handlers: new TenantCommandHandlerRegistry(createTenantFoundationHandlers({
       proofAdapters: input.proofAdapters,
       syntheticCollateralEnabled: input.syntheticCollateralEnabled === true,
+      ...hostedFees,
       hyperliquidInfoAdapter: new HyperliquidTestnetInfoAdapter(),
       hyperliquidBindingProofVerifier:
         new HyperliquidBindingProofVerifier(),
@@ -267,6 +294,10 @@ async function composeProductionClosedPilotRuntime(input) {
         meteredUsageSignatureVerifier: input.meteredUsageProvider.verifySignature
       } : {})
     })),
+    ...(hostedFees.hostedSyntheticFeeGovernance?{approvalRuntimeFactory:createHostedApprovalRuntimeFactory({
+      governance:hostedFees.hostedSyntheticFeeGovernance,syntheticFeeCorrectionsEnabled:hostedFees.syntheticFeeCorrectionsEnabled,
+      verifyRecordedProof:createHostedApprovalProofVerifier({pool:input.authenticationPool,tenantId:input.tenantId,
+        systemActorId:input.systemActorId,governance:hostedFees.hostedSyntheticFeeGovernance})})}:{}),
     policyRegistry,
     credentialRegistry: meteredSystemBoundary?.credentialRegistry ?? humanAccess.credentialRegistry,
     referenceHasher,

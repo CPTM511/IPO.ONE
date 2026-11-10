@@ -1,3 +1,4 @@
+import hostedSyntheticFeeTermsSchema from "../../../schemas/v2/hosted-synthetic-fee-terms.schema.json" with { type: "json" };
 import syntheticFeeTermsSchema from "../../../schemas/v2/synthetic-fee-terms.schema.json" with { type: "json" };
 import syntheticFeeStateSchema from "../../../schemas/v2/synthetic-fee-state.schema.json" with { type: "json" };
 import syntheticFeeEntrySchema from "../../../schemas/v2/synthetic-fee-entry.schema.json" with { type: "json" };
@@ -65,6 +66,7 @@ const ajv = new Ajv2020({
 });
 ajv.addFormat("date-time", { type: "string", validate: dateTime });
 ajv.addSchema(syntheticFeeTermsSchema);
+ajv.addSchema(hostedSyntheticFeeTermsSchema);
 ajv.addSchema(syntheticFeeStateSchema);
 ajv.addSchema(syntheticFeeEntrySchema);
 ajv.addSchema(syntheticFeeStatementSchema);

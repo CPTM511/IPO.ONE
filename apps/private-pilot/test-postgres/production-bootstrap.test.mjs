@@ -1,6 +1,7 @@
+import {createB4LegacyRegression} from "../../../scripts/test-support/b4-legacy-regression.mjs";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
-import test from "node:test";
+import test, {after} from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 import pg from "pg";
 import { PostgresCredentialRegistry, createReferenceHashKeyring } from "../../../modules/authentication/src/index.js";
@@ -16,6 +17,9 @@ import {
   reprovisionProductionAgentReference,
   revokeProductionGoldenFlowAgentCredential
 } from "../src/production-bootstrap.js";
+
+const legacyB4Regression=await createB4LegacyRegression({});
+after(()=>legacyB4Regression.close());
 
 const { Pool } = pg;
 const futureCredentialExpiry = () =>

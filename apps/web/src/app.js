@@ -935,7 +935,8 @@ function renderAccess() {
   const managementAccess = createManagementAccessPresentation({
     optionsState: accessState.optionsState,
     authenticationProfile: accessState.authenticationProfile,
-    riskPasskey: riskPasskeyState.enabled
+    riskPasskey: riskPasskeyState.enabled,
+    governedManagement:accessState.governedManagement===true
   });
   el("managementAccessNotice").hidden = !managementAccess.publicScopeVisible;
   el("managementAccessNotice").textContent = managementAccess.publicScopeDetail;
@@ -1282,7 +1283,11 @@ async function probeAccessOptions() {
   try {
     const options = await authJson("/auth/v1/options");
     const authorityAvailable = walletAuthorityLifecycle.getSnapshot().status === "available";
-    riskPasskeyState.enabled = options?.profile === "local_no_funds" && options?.riskPasskey === true;
+    accessState.governedManagement=options?.profile==="public_authenticated_no_funds_beta" && options?.governedManagement===true;
+    riskPasskeyState.enabled = options?.riskPasskey === true && (options?.profile==="local_no_funds" ||
+      (accessState.governedManagement && ["operations","riskReviewer","operationsReviewer","auditor"].includes(options?.sessionGovernedWorkspace)));
+    accessState.governedWorkspace=options?.sessionActive===true && options?.profile==="public_authenticated_no_funds_beta" &&
+      ["capitalPartner","operations","operationsReviewer","riskReviewer","auditor"].includes(options?.sessionGovernedWorkspace)?options.sessionGovernedWorkspace:null;
     accessState.authenticationProfile =
       typeof options?.profile === "string" ? options.profile : null;
     accessState.localSessionSignedOut = false;
@@ -1318,6 +1323,10 @@ async function probeAccessOptions() {
       authorityAvailable &&
       (options?.sessionActive === true || tenantPilot.connected);
     accessState.pendingWorkspaceBootstrap = false;
+    if(accessState.sessionActive && accessState.governedWorkspace) {
+      const surface=applyWorkspaceSurfaceAccess();
+      if(!surface.allowedViews.has(currentView))showView(surface.defaultView,{focus:false,historyMode:"replace"});
+    }
     await refreshRiskPasskeyStatus();
     if (authorityAvailable) {
       accessState.helper = accessState.sessionActive
@@ -2185,6 +2194,7 @@ function localPilotAgentAccount() {
 function isReviewWorkspace() { return ["risk", "operations", "auditor", "riskReviewer", "operationsReviewer"].includes(currentWorkspaceName()); }
 
 function currentWorkspaceName() {
+  if(accessState.sessionActive && accessState.governedWorkspace)return accessState.governedWorkspace;
   const configuredWorkspaceName = document.querySelector(
     'meta[name="ipo-one-workspace-name"]'
   )?.content ?? "";
@@ -3159,9 +3169,14 @@ function currentAgentConsolePresentation() {
         schemaVersion: "agent_console_mandate_snapshot.v1"
       }
     : null;
+  const manifest = currentAgentPilotCapabilityPacket();
   return createAgentConsolePresentation({
-    manifest: currentAgentPilotCapabilityPacket(),
-    catalogOperationIds: [...serverCatalogOperations].sort(),
+    manifest,
+    // This bounded surface verifies availability of its registered Agent tools.
+    // Unrelated servicing/operator entries must not overflow its closed input.
+    catalogOperationIds: manifest.mcp.tools
+      .map(({ operationId }) => operationId)
+      .filter(operationId => serverCatalogOperations.has(operationId)).sort(),
     subject,
     accountBinding: binding,
     mandate: mandateSnapshot
@@ -13346,7 +13361,8 @@ function renderRiskPasskeys(message) {
   const capability = createManagementAccessPresentation({
     optionsState: accessState.optionsState,
     authenticationProfile: accessState.authenticationProfile,
-    riskPasskey: riskPasskeyState.enabled
+    riskPasskey: riskPasskeyState.enabled,
+    governedManagement:accessState.governedManagement===true
   });
   panel.hidden = false;
   el("riskPasskeyTitle").textContent = capability.passkeyAvailable
@@ -13372,7 +13388,7 @@ function renderRiskPasskeys(message) {
     ? "No active Passkey remains. Named operator recovery must be reviewed; wallet sign-in cannot replace a revoked key."
     : verified ? "Your presence is verified. This role’s authorized operations are available."
       : "Use your device or security key to verify your presence. Protected operations require verification within the last 15 minutes.");
-  el("riskPasskeyTime").textContent = verified ? `Verified ${new Date(status.verifiedAt).toLocaleTimeString()} · Expires ${new Date(status.expiresAt).toLocaleTimeString()}` : "Local invited workspace · No funds movement";
+  el("riskPasskeyTime").textContent = verified ? `Verified ${new Date(status.verifiedAt).toLocaleTimeString()} · Expires ${new Date(status.expiresAt).toLocaleTimeString()}` : (accessState.authenticationProfile==="local_no_funds"?"Local invited workspace · No funds movement":"Governed synthetic workspace · No funds movement");
   el("registerRiskPasskeyBtn").textContent = status?.keys?.length ? "Add backup Passkey" : "Register Passkey";
   el("registerRiskPasskeyBtn").className = status?.keys?.length ? "secondary" : "primary";
   el("registerRiskPasskeyBtn").hidden = !status?.canRegister;
@@ -14730,7 +14746,7 @@ async function boot() {
 syntheticFeeControls = initializeSyntheticFeeControls({ query: tenantApi, currentObligation: () => tenantPilot.obligation });
 localReviewWorkspace = createLocalReviewWorkspace({
   api:tenantApi,
-  getState:()=>({signedIn:accessState.sessionActive,workspace:currentWorkspaceName()}),
+  getState:()=>({signedIn:accessState.sessionActive,workspace:currentWorkspaceName(),hostedGoverned:!!accessState.governedWorkspace}),
   selectAgent(agent) {
     if (riskOperations.freezeBusy) return;
     riskOperations.freezeSubjectSelection=Object.freeze({source:"directory",subjectId:agent.subjectId,reference:agent.reference});

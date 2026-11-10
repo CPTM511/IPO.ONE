@@ -1,6 +1,9 @@
+import { checkedHostedFeeGovernance, assertSyntheticFeeLoanContext } from "./synthetic-fee-context.js";
+import { assertHostedSyntheticFeeActor } from "../../../packages/domain/src/hosted-synthetic-fee-governance.js";
+import { HOSTED_SYNTHETIC_FEE_PROFILE, SYNTHETIC_FEE_PROFILE } from "../../../packages/domain/src/synthetic-fees.js";
 import { DomainError,hashId,createOperationalId,createCreditEvent,reviewSyntheticFeeSourceCorrection,correctSyntheticFeeSource,
   releaseAgentCreditLineForSourceCredit,updateAgentLockboxAfterRepayment } from '../../../packages/domain/src/index.js';
-import { SYNTHETIC_FEE_SOURCE_POLICY_HASH } from '../../../packages/domain/src/synthetic-fee-source-policy.js';
+import { SYNTHETIC_FEE_SOURCE_POLICY_HASH, HOSTED_SYNTHETIC_FEE_SOURCE_POLICY_HASH } from '../../../packages/domain/src/synthetic-fee-source-policy.js';
 import { CoreProjectionType as P } from '../../persistence/src/index.js';
 import { ApprovalProjectionType as A,ApprovalProposalStatus,createApprovalExecution,transitionApprovalProposal } from '../../approval/src/index.js';
 import { verifiedSyntheticFeeEntries } from './synthetic-fee-handlers.js';
@@ -10,7 +13,7 @@ export function normalizeSyntheticFeeCorrectionPayload(payload,{review=false}={}
   const keys=review?['sourceFeeEntryId','amountMinor']:['sourceFeeEntryId','amountMinor','expectedFeeStateHash','expectedEffectsHash','sourcePolicyHash'];
   if(!payload || Object.keys(payload).length!==keys.length || keys.some(k=>!Object.hasOwn(payload,k)) ||
     !/^[1-9][0-9]*$/.test(payload.amountMinor) || keys.filter(k=>k!=='amountMinor').some(k=>!/^0x[0-9a-f]{64}$/.test(payload[k])) ||
-    (!review && payload.sourcePolicyHash!==SYNTHETIC_FEE_SOURCE_POLICY_HASH)) throw new DomainError('invalid_tenant_command_payload','An exact approved synthetic source credit is required');
+    (!review && ![SYNTHETIC_FEE_SOURCE_POLICY_HASH,HOSTED_SYNTHETIC_FEE_SOURCE_POLICY_HASH].includes(payload.sourcePolicyHash))) throw new DomainError('invalid_tenant_command_payload','An exact approved synthetic source credit is required');
   return payload;
 }
 export async function loadSyntheticFeeCorrectionReview(input,{lock=false}={}) {
@@ -23,17 +26,20 @@ export async function loadSyntheticFeeCorrectionReview(input,{lock=false}={}) {
   const remainingSourceBaseMinor=entries.filter(e=>e.reversesEntryId===originalEntry.feeEntryId)
     .reduce((n,e)=>n+BigInt(e.baseDeltaMinor),BigInt(originalEntry.baseDeltaMinor)).toString();
   const review=reviewSyntheticFeeSourceCorrection(obligation,{originalEntry,amountMinor:input.payload.amountMinor,remainingSourceBaseMinor,now:input.now});
+  if(input.payload.sourcePolicyHash!==undefined && input.payload.sourcePolicyHash!==review.sourcePolicyHash)throw new DomainError("invalid_tenant_command_payload","The source policy does not match the exact accepted loan");
   return {state,obligation,originalEntry,remainingSourceBaseMinor,review};
 }
-export function createSyntheticFeeSourceHandlers({syntheticFeeCorrectionsEnabled=false,syntheticFeesLocalContext=false}={}) {
+export function createSyntheticFeeSourceHandlers({syntheticFeeCorrectionsEnabled=false,syntheticFeesLocalContext=false,hostedSyntheticFeeGovernance}={}) {
+  const feeGovernance=checkedHostedFeeGovernance(hostedSyntheticFeeGovernance);
   const gate=input=>{
+    if(feeGovernance){if(syntheticFeeCorrectionsEnabled!==true)throw new DomainError("synthetic_fee_source_corrections_disabled","Synthetic source correction is disabled. A reviewed governed activation is required; existing approval history remains readable.");return assertHostedSyntheticFeeActor(feeGovernance,input.authenticationContext);}
     if(syntheticFeeCorrectionsEnabled!==true || syntheticFeesLocalContext!==true ||
       !['actor_web027m_operations','actor_web027m_auditor','actor_web027m_risk_reviewer','actor_web027n_operations_reviewer'].includes(input.authenticationContext.actorId))denied();
   };
   return [
     {operationId:'pilotReadSyntheticFeeCorrectionCases',kind:'query',async execute(input){
       gate(input);if(!input.payload || Object.keys(input.payload).length)throw new DomainError('invalid_tenant_command_payload','Empty query required');
-      const rows=await input.client.query(`SELECT id FROM obligations WHERE synthetic_fees IS NOT NULL AND execution_status='executed' ORDER BY updated_at DESC,id DESC LIMIT 26`);
+      const rows=await input.client.query(`SELECT id FROM obligations WHERE synthetic_fees IS NOT NULL AND execution_status='executed' AND synthetic_fees#>>'{terms,profile}'=$1 AND ($2::text IS NULL OR synthetic_fees#>>'{terms,institutionId}'=$2) ORDER BY updated_at DESC,id DESC LIMIT 26`,[feeGovernance?HOSTED_SYNTHETIC_FEE_PROFILE:SYNTHETIC_FEE_PROFILE,feeGovernance?.institutionId??null]);
       const cases=[];
       for(const row of rows.rows.slice(0,25)) {
         const loan=await input.coreRepository.getProjectionInTransaction(input.client,P.OBLIGATION,row.id);
@@ -48,12 +54,14 @@ export function createSyntheticFeeSourceHandlers({syntheticFeeCorrectionsEnabled
     {operationId:'pilotReviewSyntheticFeeCorrection',kind:'query',async execute(input){
       gate(input);normalizeSyntheticFeeCorrectionPayload(input.payload,{review:true});
       const data=await loadSyntheticFeeCorrectionReview(input);
+      assertSyntheticFeeLoanContext(feeGovernance,input,data.obligation);
       return {schemaVersion:'tenant_synthetic_fee_correction_review.v1',obligationId:data.obligation.obligationId,sourceFeeEntryId:data.originalEntry.feeEntryId,amountMinor:input.payload.amountMinor,...data.review};
     }},
     {operationId:'pilotCorrectSyntheticFeeSource',kind:'command',async plan(input){
       gate(input);normalizeSyntheticFeeCorrectionPayload(input.payload);
       if(input.reasonCode!=='synthetic_fee_source_correction')denied();
       const data=await loadSyntheticFeeCorrectionReview(input,{lock:true});
+      assertSyntheticFeeLoanContext(feeGovernance,input,data.obligation);
       const proposalState=await input.coreRepository.getProjectionStateInTransaction(input.client,A.APPROVAL_PROPOSAL,input.authorizationDecision.approvalProposalId,{lock:true});
       const proposal=proposalState?.value;
       if(!proposal || proposal.status!==ApprovalProposalStatus.APPROVED || proposal.version!==input.authorizationDecision.approvalProposalVersion)throw new DomainError('approved_execution_rejected','An exact independent dual approval is required');

@@ -61,6 +61,7 @@ export function createLocalReviewHandlers({ localRiskAgentDirectory = false } = 
       operationId, kind:"command",
       async plan(input) {
         const r = runtime(input.approvalRuntime);
+        r.assertMutable?.();
         const result = await r.service[method]({ approvalProposalId:input.authorizationDecision.resourceId,
           expectedVersion:input.payload.expectedVersion,
           ...(method === "decide" ? { decision:input.payload.decision } : {}),
@@ -82,10 +83,10 @@ export function createLocalReviewHandlers({ localRiskAgentDirectory = false } = 
     {
       operationId:"pilotReadApprovalInbox", kind:"query",
       async execute(input) {
-        empty(input.payload); runtime(input.approvalRuntime);
+        empty(input.payload); const r=runtime(input.approvalRuntime);
         const rows = await input.client.query(`SELECT id,operation_id,resource_id,status,version,expires_at,created_at
-          FROM approval_proposals WHERE tenant_id=$1 AND command_actor_id='actor_web027m_operations'
-          ORDER BY created_at DESC,id DESC LIMIT 26`, [input.authenticationContext.tenantId]);
+          FROM approval_proposals WHERE tenant_id=$1 AND command_actor_id=$2 AND ($3::text IS NULL OR operation_id=$3)
+          ORDER BY created_at DESC,id DESC LIMIT 26`, [input.authenticationContext.tenantId,r.commandActorId,r.operationId??null]);
         return { schemaVersion:"tenant_approval_inbox.v1", asOf:input.now.toISOString(), readOnly:true, serverTruth:true,
           hasMore:rows.rows.length > 25, proposals:rows.rows.slice(0,25).map(row => ({
             proposalId:row.id, operationId:row.operation_id, obligationId:row.resource_id, status:row.status,

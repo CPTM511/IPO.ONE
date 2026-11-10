@@ -24,7 +24,7 @@ export function localReviewOperationAvailable(workspace, operationId, available)
 export function createLocalReviewWorkspace({ api, getState, selectAgent }) {
   let epoch = 0, busy = false, capabilities = new Set(), cases = [], agents = [], selected = null, draft = null;
   const panel = el("localReviewPanel"), directory = el("localAgentDirectory");
-  const sourceProfile=/^http:\/\/localhost:(8967|8968|8969|8970|8981|8982|8983|8984)$/.test(globalThis.location?.origin??"");
+  const localSourceProfile=/^http:\/\/localhost:(8967|8968|8969|8970|8981|8982|8983|8984)$/.test(globalThis.location?.origin??"");
   const has = op => localReviewOperationAvailable(getState().workspace, op, capabilities);
   function message(text) { el("localReviewMessage").textContent = text; if (getState().workspace === "risk") el("localAgentDirectoryStatus").textContent = text; }
   function clearSelection() { selected = null; el("localApprovalDetail").hidden = true; el("localApprovalAcknowledge").checked = false; }
@@ -36,6 +36,7 @@ export function createLocalReviewWorkspace({ api, getState, selectAgent }) {
     el("loadLocalAgentsBtn").disabled = busy || !has("pilotReadRiskAgentDirectory");
     el("refreshLocalApprovalsBtn").disabled = busy || !has("pilotReadApprovalInbox");
     el("loadLocalServicingBtn").disabled = busy || !has("pilotReadServicingQueue");
+    const sourceProfile=localSourceProfile || (globalThis.location?.origin==="https://ipo.one" && state.hostedGoverned===true);
     el("localServicingForm").hidden = sourceProfile || !has("pilotProposeApproval");
     el("loadLocalServicingBtn").hidden=sourceProfile;
     el("localServicingPosition").disabled = busy || !cases.length;
@@ -90,7 +91,7 @@ export function createLocalReviewWorkspace({ api, getState, selectAgent }) {
       button.addEventListener("click",()=>run(async valid=>{ const response=await readProposal(item.proposalId);if(valid()) showReview(response); }));
       list.append(button);
     }
-    if (!result.proposals.length) list.textContent="No servicing proposals have been created in this local acceptance workspace.";
+    if (!result.proposals.length) list.textContent="No servicing proposals have been created in this workspace.";
     message(`Approval inbox verified ${date(result.asOf)}${result.hasMore ? " · Showing the latest 25 proposals" : ""}. Reads do not approve or execute a command.`);
   }
   el("refreshLocalApprovalsBtn").addEventListener("click",()=>run(inbox));

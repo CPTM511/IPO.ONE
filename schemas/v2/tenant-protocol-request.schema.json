@@ -3564,7 +3564,10 @@
               "pattern": "^0x[0-9a-f]{64}$"
             },
             "sourcePolicyHash": {
-              "const": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"
+              "enum": [
+                "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d",
+                "0x7f123be43dc8022cf91440dc22d558df3f161d583b3cc0ab48203dbc973a2eeb"
+              ]
             }
           }
         },
@@ -3769,7 +3772,10 @@
                   "pattern": "^0x[0-9a-f]{64}$"
                 },
                 "sourcePolicyHash": {
-                  "const": "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d"
+                  "enum": [
+                    "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d",
+                    "0x7f123be43dc8022cf91440dc22d558df3f161d583b3cc0ab48203dbc973a2eeb"
+                  ]
                 }
               }
             },

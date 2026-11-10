@@ -1,4 +1,4 @@
-import { SYNTHETIC_FEE_SOURCE_POLICY_HASH } from "./synthetic-fee-source-policy.js";
+import { syntheticFeeSourcePolicyHash } from "./synthetic-fee-source-policy.js";
 import { transitionSyntheticFeeBasis, recordSyntheticBorrowerFeePayment, assertSyntheticFees } from "./synthetic-fees.js";
 import {
   ConsentPurpose,
@@ -775,7 +775,7 @@ function deriveSyntheticFeeSourceCorrection(obligation, { originalEntry, amountM
   const allClear=BigInt(current.outstandingPrincipalMinor)===unpaidPrincipal &&
     BigInt(current.outstandingFeesMinor)===unpaidFee && current.outstandingInterestMinor==='0';
   const effect={
-    sourcePolicyHash:SYNTHETIC_FEE_SOURCE_POLICY_HASH,sourceFeeEntryId:originalEntry.feeEntryId,sourceHash:originalEntry.sourceHash,
+    sourcePolicyHash:syntheticFeeSourcePolicyHash(obligation.syntheticFees.terms.profile),sourceFeeEntryId:originalEntry.feeEntryId,sourceHash:originalEntry.sourceHash,
     kind:originalEntry.kind,amountMinor,reasonCode,
     interestAccruedBeforeCreditMinor:accrual.accruedInterestMinor,
     accrualRemainder:accrual.numeratorRemainder,
@@ -797,14 +797,15 @@ function deriveSyntheticFeeSourceCorrection(obligation, { originalEntry, amountM
 }
 export function reviewSyntheticFeeSourceCorrection(obligation, input) {
   const derived=deriveSyntheticFeeSourceCorrection(obligation,{...input,now:input.now??new Date()});
-  return Object.freeze({sourcePolicyHash:SYNTHETIC_FEE_SOURCE_POLICY_HASH,
+  return Object.freeze({sourcePolicyHash:syntheticFeeSourcePolicyHash(obligation.syntheticFees.terms.profile),
     expectedFeeStateHash:hashId('synthetic_fee_correction_state',obligation),
     expectedEffectsHash:hashId('synthetic_fee_correction_effects',derived.effect),
     effects:Object.freeze(derived.effect),syntheticOnly:true,productionFundsMoved:false});
 }
 export function correctSyntheticFeeSource(obligation, { originalEntry, amountMinor, remainingSourceBaseMinor,
-  expectedFeeStateHash,expectedEffectsHash,approvalExecutionId,actorId,now=new Date() }) {
+  expectedFeeStateHash,expectedEffectsHash,sourcePolicyHash:acceptedPolicyHash,approvalExecutionId,actorId,now=new Date() }) {
   const derived=deriveSyntheticFeeSourceCorrection(obligation,{originalEntry,amountMinor,remainingSourceBaseMinor,now});
+  if(acceptedPolicyHash!==undefined && acceptedPolicyHash!==syntheticFeeSourcePolicyHash(obligation.syntheticFees.terms.profile))throw new DomainError("synthetic_fee_profile_invalid","The source policy does not match the exact accepted loan");
   if(expectedFeeStateHash!==hashId('synthetic_fee_correction_state',obligation) ||
      expectedEffectsHash!==hashId('synthetic_fee_correction_effects',derived.effect)) {
     throw new DomainError('synthetic_fee_correction_stale','The source, accrued interest or reviewed effect changed; review again');
@@ -814,10 +815,10 @@ export function correctSyntheticFeeSource(obligation, { originalEntry, amountMin
   const core={obligationId:obligation.obligationId,sourceFeeEntryId:originalEntry.feeEntryId,
     originalSourceId:originalEntry.sourceId,originalSourceHash:originalEntry.sourceHash,
     amountMinor,kind:originalEntry.kind,reasonCode:effect.reasonCode,
-    expectedFeeStateHash,expectedEffectsHash,sourcePolicyHash:SYNTHETIC_FEE_SOURCE_POLICY_HASH,
+    expectedFeeStateHash,expectedEffectsHash,sourcePolicyHash:syntheticFeeSourcePolicyHash(obligation.syntheticFees.terms.profile),
     approvalExecutionId,actorId,effects:effect,effectiveAt:now.toISOString(),
     refundStatus:'credit_due_only',syntheticOnly:true,productionFundsMoved:false,
-    scope:'L0_LOCAL_NO_FUNDS',profile:'synthetic_usd_platform_fee.v1',chainTransactionHash:null,
+    scope:obligation.syntheticFees.terms.scope,profile:obligation.syntheticFees.terms.profile,chainTransactionHash:null,
     schemaVersion:'synthetic_fee_source_correction.v1'};
   const receiptId=hashId('synthetic_fee_source_correction',core);
   const transition=transitionSyntheticFeeBasis(current.syntheticFees,{obligationId:obligation.obligationId,

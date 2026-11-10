@@ -1,7 +1,8 @@
+import {createB4LegacyRegression} from "../../../scripts/test-support/b4-legacy-regression.mjs";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import test from "node:test";
+import test, {after} from "node:test";
 import {
   AccountPurpose,
   ConsentPurpose,
@@ -201,6 +202,9 @@ import {
   createPostgresPool,
   setTenantTransactionContext
 } from "../src/index.js";
+
+const legacyB4Regression=await createB4LegacyRegression({});
+after(()=>legacyB4Regression.close());
 
 const CONNECTION_STRING = process.env.DATABASE_URL;
 const FIXED_NOW = new Date("2026-07-11T00:00:00.000Z");

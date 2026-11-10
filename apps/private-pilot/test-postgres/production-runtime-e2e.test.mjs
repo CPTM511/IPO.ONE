@@ -1,7 +1,8 @@
+import {createB4LegacyRegression} from "../../../scripts/test-support/b4-legacy-regression.mjs";
 import assert from "node:assert/strict";
 import { generateKeyPairSync, randomBytes } from "node:crypto";
 import { createServer } from "node:net";
-import test from "node:test";
+import test, {after} from "node:test";
 import pg from "pg";
 import {
   generatePrivateKey,
@@ -35,6 +36,8 @@ import { createHostedSyntheticMeteredProvider } from "../src/local-synthetic-met
 import { createProductionClosedPilotRuntime, assertProductionMigrationSet } from "../src/production-runtime.js";
 
 const { Pool } = pg;
+const legacyB4Regression=await createB4LegacyRegression({hosted79:true,changeCwd:false});
+after(()=>legacyB4Regression.close());
 const CONNECTION_STRING = process.env.DATABASE_URL;
 const readBnbRollback = await readFile(new URL("../../../db/migrations/0074_bnb_no_funds_wallet_networks.down.sql", import.meta.url), "utf8");
 const SECRET_REF =
@@ -151,13 +154,13 @@ for (const walletChainId of [84532, 97, 56]) test(
           new Date(Date.now() + 30 * 24 * 60 * 60 * 1_000).toISOString()
       }]
     });
-    const bootstrap = await bootstrapProductionDatabase({
+    const bootstrap = await legacyB4Regression.withSource(()=>bootstrapProductionDatabase({
       adminConnectionString: CONNECTION_STRING,
       config,
       gatewayPassword,
       authenticationPassword,
       referenceHashKey
-    });
+    }));
     assert.equal(bootstrap.insertedCredentials, 1);
 
     const gatewayUrl = new URL(CONNECTION_STRING);
@@ -263,7 +266,7 @@ for (const walletChainId of [84532, 97, 56]) test(
         }
       };
       if (walletChainId === 84532) {
-        await migrateDown({pool:ownerPool,steps:6});
+        await migrateDown({pool:ownerPool,steps:1,directory:legacyB4Regression.migrationDirectory});
         await assert.rejects(assertProductionMigrationSet(ownerPool,{syntheticCollateralEnabled:true}),{code:"production_database_migration_mismatch"});
       }
       runtime = await createProductionClosedPilotRuntime(runtimeInput);
@@ -693,7 +696,7 @@ for (const walletChainId of [84532, 97, 56]) test(
           await rollback.query("ROLLBACK");
           rollback.release();
         }
-        assert.equal((await migrationStatus({ pool: ownerPool })).at(-1).applied, true);
+        assert.equal((await migrationStatus({ pool: ownerPool,directory:legacyB4Regression.migrationDirectory })).at(-1).applied, true);
         const after = await ownerPool.query(
           "SELECT count(*)::int AS count FROM authentication_wallet_transactions WHERE chain_id = $1",
           [walletChainId]
@@ -702,7 +705,7 @@ for (const walletChainId of [84532, 97, 56]) test(
       }
 
       if (walletChainId === 84532) {
-        assert.deepEqual(await migrateUp({pool:ownerPool}),["0089_synthetic_collateral_terms","0090_local_synthetic_platform_fees","0091_local_synthetic_fee_source_credits","0092_local_b4_source_review_origins","0093_local_synthetic_principal_credit_balances","0094_local_synthetic_source_credit_schedule"]);
+        assert.deepEqual(await migrateUp({pool:ownerPool,directory:legacyB4Regression.migrationDirectory}),["0089_synthetic_collateral_terms"]);
         assert.equal(await assertProductionMigrationSet(ownerPool,{syntheticCollateralEnabled:true}),"current");
         assert.equal((await fetch(`${baseUrl}/readyz`)).status,200);
       }

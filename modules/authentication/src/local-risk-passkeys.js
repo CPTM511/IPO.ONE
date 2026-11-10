@@ -71,8 +71,7 @@ function checkResponse(response, purpose, challenge) {
   }
 }
 
-export async function verifyLocalRiskCeremony({ response, challenge, key }) {
-  if (!ORIGINS.has(challenge.origin) || challenge.rp_id !== "localhost") throw rejected();
+async function verifyRiskCeremony({ response, challenge, key }) {
   checkResponse(response, challenge.purpose, challenge);
   if (challenge.purpose === "register") {
     const check = await verifyRegistrationResponse({ response, expectedChallenge: challenge.challenge,
@@ -90,29 +89,31 @@ export async function verifyLocalRiskCeremony({ response, challenge, key }) {
   return { counter: check.authenticationInfo.newCounter };
 }
 
-// Instantiated only by the exact reviewed loopback composition; no public enrollment.
-export class LocalRiskPasskeys {
-  constructor({ origin, role = "risk_operator", specialRoles = false, independentOperationsReviewer = false }) {
-    if ((["http://localhost:8942","http://localhost:8970","http://localhost:8984"].includes(origin) && !independentOperationsReviewer) || !ORIGINS.has(origin) || LOCAL_PASSKEY_BINDINGS[origin].role !== role || (LOCAL_PASSKEY_BINDINGS[origin].actorId && !specialRoles)) throw authenticationError("authentication_deployment_gate_closed", "Risk Passkey origin is not approved");
-    this.binding = LOCAL_PASSKEY_BINDINGS[origin];
-    this.origin = origin;
-    this.rpID = "localhost";
+// Shared cryptographic and persistence mechanism. Public construction remains
+// confined to the exact local or governed HTTPS adapters below.
+class RiskPasskeys {
+  constructor({origin,rpID,binding,verifyCeremony,schemaPrefix,rpName}) {
+    this.binding=binding;this.origin=origin;this.rpID=rpID;
+    this.verifyCeremony=verifyCeremony;this.schemaPrefix=schemaPrefix;this.rpName=rpName;
   }
+  bindingFor() { return this.binding; }
   async eligible(client, s, now) {
-    if (s.actorType !== this.binding.role || s.roles.length !== 1 || s.roles[0] !== this.binding.role ||
-        (this.binding.actorId && s.actorId !== this.binding.actorId)) throw rejected();
+    const binding=this.bindingFor(s);
+    if (!binding || s.actorType !== binding.role || s.roles.length !== 1 || s.roles[0] !== binding.role ||
+        (binding.actorId && s.actorId !== binding.actorId)) throw rejected();
     const enrollment = await client.query(`SELECT e.id FROM authentication_role_enrollments e
       WHERE e.tenant_id=$1 AND e.actor_id=$2 AND e.credential_id=$3 AND e.role_bundle=$8
         AND e.status='active' AND e.valid_from <= $4 AND (e.expires_at IS NULL OR e.expires_at > $4)
         AND e.client_ids ? $5 AND e.policy_version=$6 AND e.capabilities=$7::jsonb FOR SHARE`,
-    [s.tenantId, s.actorId, s.credentialId, now, s.clientId, s.policyVersion, JSON.stringify(s.capabilities), this.binding.role]);
+    [s.tenantId, s.actorId, s.credentialId, now, s.clientId, s.policyVersion, JSON.stringify(s.capabilities), binding.role]);
     if (enrollment.rowCount !== 1) throw rejected();
     // Serialize all sessions for this actor, including concurrent first-key enrollment/revocation.
     await client.query("SELECT pg_advisory_xact_lock(hashtext('local_risk_passkey'),hashtext($1))", [s.tenantId + ":" + s.actorId]);
   }
   async resolveStepUp(client, s, now) {
-    if (s.actorType !== this.binding.role || s.roles.length !== 1 || s.roles[0] !== this.binding.role ||
-        (this.binding.actorId && s.actorId !== this.binding.actorId)) return undefined;
+    const binding=this.bindingFor(s);
+    if (!binding || s.actorType !== binding.role || s.roles.length !== 1 || s.roles[0] !== binding.role ||
+        (binding.actorId && s.actorId !== binding.actorId)) return undefined;
     const operatorAliasKeys = this.origin === "http://localhost:8957"
       ? this.activeKeys(await this.keys(client, s), s).map(key => key.id) : [];
     const result = await client.query(`SELECT e.verified_at, e.expires_at, e.passkey_id
@@ -179,7 +180,7 @@ export class LocalRiskPasskeys {
     await this.eligible(client, s, now);
     const keys = await this.keys(client, s), active = this.activeKeys(keys, s);
     const evidence = await this.resolveStepUp(client, s, now);
-    return { schemaVersion: "local_risk_passkey_status.v1", verified: !!evidence,
+    return { schemaVersion: `${this.schemaPrefix}_status.v1`, verified: !!evidence,
       verifiedAt: evidence?.verifiedAt ?? null, expiresAt: evidence?.expiresAt ?? null,
       canRegister: keys.length === 0 || (!!evidence && active.length < 5),
       recoveryRequired: keys.length > 0 && active.length === 0,
@@ -199,8 +200,8 @@ export class LocalRiskPasskeys {
       WHERE tenant_id=$1 AND session_ref_hash=$2 AND used_at IS NULL`, [s.tenantId, s.sessionRefHash, now]);
     const id = "passkey_challenge_" + randomUUID(), challenge = randomBytes(32).toString("base64url");
     const options = body.purpose === "register"
-      ? await generateRegistrationOptions({ rpName: "IPO.ONE Local Verification", rpID: this.rpID,
-        userName: `Invited local ${this.binding.role}`, userDisplayName: "IPO.ONE verification", userID: binary(userHandle(s)),
+      ? await generateRegistrationOptions({ rpName: this.rpName, rpID: this.rpID,
+        userName: `${this.rpName} ${this.bindingFor(s).role}`, userDisplayName: "IPO.ONE verification", userID: binary(userHandle(s)),
         challenge: binary(challenge), timeout: 120000, attestationType: "none", supportedAlgorithmIDs: [-7],
         authenticatorSelection: { residentKey: "required", userVerification: "required" },
         excludeCredentials: keys.map(k => ({ id: k.credential_key })) })
@@ -209,7 +210,7 @@ export class LocalRiskPasskeys {
     await client.query(`INSERT INTO authentication_passkey_challenges(tenant_id,id,session_ref_hash,purpose,challenge,origin,rp_id,created_at,expires_at)
       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [s.tenantId,id,s.sessionRefHash,body.purpose,challenge,this.origin,this.rpID,now,new Date(now.getTime()+120000)]);
     await this.audit(client,s,"challenge_created",id,now);
-    return { schemaVersion: "local_risk_passkey_options.v1", challengeId: id, options };
+    return { schemaVersion: `${this.schemaPrefix}_options.v1`, challengeId: id, options };
   }
   async finish(client, s, now, body) {
     // Consume before parsing untrusted authenticator data, and commit rejection, too.
@@ -228,11 +229,11 @@ export class LocalRiskPasskeys {
       if (c.origin !== this.origin || c.rp_id !== this.rpID || new Date(c.created_at) > now || new Date(c.expires_at) <= now) throw rejected();
       if (c.purpose === "register") {
         if (active.length >= 5 || (keys.length && !(await this.resolveStepUp(client,s,now)))) throw rejected();
-        verified = await verifyLocalRiskCeremony({ response: body.response, challenge: c });
+        verified = await this.verifyCeremony({ response: body.response, challenge: c });
         if (keys.some(k => k.credential_key === verified.id)) throw rejected();
       } else {
         key = active.find(k => k.credential_key === body.response.id);
-        verified = await verifyLocalRiskCeremony({ response: body.response, challenge: c, key });
+        verified = await this.verifyCeremony({ response: body.response, challenge: c, key });
       }
     } catch { return fail("ceremony_rejected"); }
     // SQL failures roll back rather than reporting a successful cryptographic ceremony.
@@ -263,5 +264,51 @@ export class LocalRiskPasskeys {
     await client.query("UPDATE authentication_passkeys SET revoked_at=GREATEST(created_at,$3) WHERE tenant_id=$1 AND id=$2",[s.tenantId,key.id,now]);
     await this.audit(client,s,"revoked",key.id,now);
     return this.status(client,s,now);
+  }
+}
+
+
+export async function verifyLocalRiskCeremony(input) {
+  if (!ORIGINS.has(input.challenge.origin) || input.challenge.rp_id !== "localhost") throw rejected();
+  return verifyRiskCeremony(input);
+}
+export async function verifyHostedRiskCeremony(input) {
+  if (input.challenge.origin !== "https://ipo.one" || input.challenge.rp_id !== "ipo.one") throw rejected();
+  return verifyRiskCeremony(input);
+}
+
+// Original local origins, credentials and alias semantics remain unchanged.
+export class LocalRiskPasskeys extends RiskPasskeys {
+  constructor({ origin, role = "risk_operator", specialRoles = false, independentOperationsReviewer = false }) {
+    if ((["http://localhost:8942","http://localhost:8970","http://localhost:8984"].includes(origin) && !independentOperationsReviewer) || !ORIGINS.has(origin) || LOCAL_PASSKEY_BINDINGS[origin].role !== role || (LOCAL_PASSKEY_BINDINGS[origin].actorId && !specialRoles)) throw authenticationError("authentication_deployment_gate_closed", "Risk Passkey origin is not approved");
+    super({origin,rpID:"localhost",binding:LOCAL_PASSKEY_BINDINGS[origin],verifyCeremony:verifyLocalRiskCeremony,
+      schemaPrefix:"local_risk_passkey",rpName:"IPO.ONE Local Verification"});
+  }
+}
+
+// This server-owned adapter does not enroll identities. Each ceremony rechecks
+// the current actor, role, credential and active enrollment in the same DB.
+export class HostedRiskPasskeys extends RiskPasskeys {
+  constructor(input) {
+    closedPasskeyObject(input,["tenantId","origin","rpId","bindings"]);
+    if(input.origin!=="https://ipo.one" || input.rpId!=="ipo.one" ||
+        typeof input.tenantId!=="string" || !/^[A-Za-z][A-Za-z0-9_.-]{0,79}$/.test(input.tenantId) ||
+        !Array.isArray(input.bindings) || input.bindings.length<3 || input.bindings.length>4)throw rejected();
+    const bindings=input.bindings.map(binding=>{
+      closedPasskeyObject(binding,["actorId","role"]);
+      if(!["operations_operator","risk_operator","auditor"].includes(binding.role) ||
+          typeof binding.actorId!=="string" || !/^[A-Za-z][A-Za-z0-9_.:-]{0,159}$/.test(binding.actorId))throw rejected();
+      return Object.freeze({...binding});
+    });
+    if(new Set(bindings.map(b=>b.actorId)).size!==bindings.length ||
+        bindings.filter(b=>b.role==="operations_operator").length!==2 ||
+        bindings.filter(b=>b.role==="risk_operator").length!==1 ||
+        bindings.filter(b=>b.role==="auditor").length>1)throw rejected();
+    super({origin:input.origin,rpID:input.rpId,verifyCeremony:verifyHostedRiskCeremony,
+      schemaPrefix:"hosted_risk_passkey",rpName:"IPO.ONE Governed Verification"});
+    this.tenantId=input.tenantId;this.bindings=Object.freeze(bindings);
+  }
+  bindingFor(session) {
+    return session?.tenantId===this.tenantId ? this.bindings.find(b=>b.actorId===session.actorId) : undefined;
   }
 }

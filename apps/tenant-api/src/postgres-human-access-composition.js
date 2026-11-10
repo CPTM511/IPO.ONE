@@ -1,3 +1,5 @@
+import {checkedHostedManagementAccess} from "../../../modules/authentication/src/hosted-management-access.js";
+import {HostedRiskPasskeys} from "../../../modules/authentication/src/local-risk-passkeys.js";
 import { INVITED_WALLET_ROLES, ORDINARY_WALLET_ROLES } from "../../../modules/authentication/src/wallet-workspace-roles.js";
 import {
   ActorType,
@@ -36,6 +38,8 @@ const ROOT_KEYS = new Set([
   "encryptionKey",
   "encryptionKeyRef",
   "idleTimeoutMs",
+  "hostedManagementAccess",
+  "hostedPasskeySchema",
   "localInvitedWalletRole",
   "localPasskeys",
   "localPasskeyFactory",
@@ -368,7 +372,8 @@ export async function createPostgresHumanAccessComposition(input) {
     throw authenticationError("authentication_deployment_gate_closed", "invited wallet role requires an explicit local host");
   }
   if (["operations_operator", "auditor"].includes(input.localInvitedWalletRole) && input.localSpecialRoles !== true) throw authenticationError("authentication_deployment_gate_closed", "Special roles require the exact local acceptance configuration");
-  const walletWorkspaceRoles = input.localInvitedWalletRole === undefined
+  const managedRoleChoices=input.hostedManagementAccess ? checkedHostedManagementAccess(input.hostedManagementAccess,{tenantId,origin:browserOrigin}) : undefined;
+  const walletWorkspaceRoles = managedRoleChoices ? Object.freeze([...ORDINARY_WALLET_ROLES,...new Set(managedRoleChoices.bindings.map(b=>b.role))]) : input.localInvitedWalletRole === undefined
     ? ORDINARY_WALLET_ROLES : [input.localInvitedWalletRole];
   const providers = normalizeOidcProviders(input.oidcProviders);
   const wallet = input.wallet === undefined
@@ -427,7 +432,10 @@ export async function createPostgresHumanAccessComposition(input) {
       (database==="b4_fee_browser_test_20261109" && /^http:\/\/127\.0\.0\.1:(8921|8922|8923|8924)$/.test(browserOrigin));
     if (!localProfile || (!feeLocal && !bnbLocal && !["ipo_one_web027_candidate", "ipo_one_web027_proof"].includes(database))) throw authenticationError("authentication_deployment_gate_closed", "Passkeys require the reviewed isolated database");
   }
-  const roleBoundary = await assertPostgresAuthenticationRole(input.pool, { localPasskeys: input.localPasskeys === true });
+  if(input.hostedPasskeySchema!==undefined && (typeof input.hostedPasskeySchema!=="boolean" || localProfile || input.profile!=="public_authenticated_no_funds_beta"))throw authenticationError("authentication_deployment_gate_closed","Hosted schema admission is invalid");
+  const hostedManagement=checkedHostedManagementAccess(input.hostedManagementAccess,{tenantId,origin:browserOrigin});
+  if(hostedManagement && (localProfile || input.profile!=="public_authenticated_no_funds_beta" || input.localPasskeys))throw authenticationError("authentication_deployment_gate_closed","Governed HTTPS and local Passkeys are separate boundaries");
+  const roleBoundary = await assertPostgresAuthenticationRole(input.pool, { localPasskeys: input.localPasskeys === true, hostedPasskeys: hostedManagement!==undefined || input.hostedPasskeySchema===true });
   const tenantContext = createTenantSecurityContext({
     tenantId,
     actorId: systemActorId,
@@ -454,6 +462,7 @@ export async function createPostgresHumanAccessComposition(input) {
     tenantId,
     referenceHasher,
     systemActorId,
+    ...(hostedManagement?{hostedManagementAccess:hostedManagement}:{}),
     ...((runtimeConfig.publicBetaSelfService === true || runtimeConfig.localWalletSelfService === true)
       ? { publicBetaWalletRoleProfiles: input.publicBetaWalletRoleProfiles }
       : {})
@@ -462,7 +471,7 @@ export async function createPostgresHumanAccessComposition(input) {
   if (passkeysRequired && typeof input.localPasskeyFactory !== "function") {
     throw authenticationError("authentication_deployment_gate_closed", "The reviewed local Passkey verifier is unavailable");
   }
-  const passkeys = passkeysRequired ? input.localPasskeyFactory({ origin: browserOrigin, role: input.localInvitedWalletRole,
+  const passkeys = hostedManagement ? new HostedRiskPasskeys({tenantId,origin:browserOrigin,rpId:hostedManagement.rpId,bindings:hostedManagement.bindings.filter(b=>b.role!=="capital_partner_operator").map(({actorId,role})=>({actorId,role}))}) : passkeysRequired ? input.localPasskeyFactory({ origin: browserOrigin, role: input.localInvitedWalletRole,
     specialRoles: input.localSpecialRoles === true, independentOperationsReviewer: input.localIndependentOperationsReviewer === true }) : undefined;
   const sessionStore = new PostgresHumanSessionStore({
     ...(passkeys ? { resolveStepUp: (client, session, now) => passkeys.resolveStepUp(client, session, now) } : {}),
@@ -559,6 +568,7 @@ export async function createPostgresHumanAccessComposition(input) {
       return value;
     } } : {}),
     browserOrigin,
+    ...(hostedManagement ? {hostedManagementAccess:hostedManagement} : {}),
     humanSessionBff,
     oidcProviders,
     walletBff,

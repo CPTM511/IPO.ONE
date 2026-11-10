@@ -2,15 +2,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash, randomBytes, generateKeyPairSync, sign } from "node:crypto";
 import { isoCBOR } from "@simplewebauthn/server/helpers";
-import { verifyLocalRiskCeremony, LocalRiskPasskeys } from "../src/local-risk-passkeys.js";
+import { verifyLocalRiskCeremony, LocalRiskPasskeys, verifyHostedRiskCeremony, HostedRiskPasskeys } from "../src/local-risk-passkeys.js";
 const b64 = b => Buffer.from(b).toString("base64url");
 const hash = b => createHash("sha256").update(b).digest();
-function fixture({ purpose = "register", flags, rp = "localhost", counter = 1, data = {}, duplicate = false } = {}) {
+function fixture({ purpose = "register", flags, rp = "localhost", counter = 1, data = {}, duplicate = false, origin = "http://localhost:8937", expectedRp = "localhost" } = {}) {
   const { privateKey, publicKey } = generateKeyPairSync("ec", { namedCurve: "prime256v1" });
   const jwk = publicKey.export({ format: "jwk" });
   const cose = isoCBOR.encode(new Map([[1,2],[3,-7],[-1,1],[-2,new Uint8Array(Buffer.from(jwk.x,"base64url"))],[-3,new Uint8Array(Buffer.from(jwk.y,"base64url"))]]));
   const id = randomBytes(32), userHandle = b64(randomBytes(32));
-  const challenge = { purpose, challenge: b64(randomBytes(32)), origin: "http://localhost:8937", rp_id: "localhost" };
+  const challenge = { purpose, challenge: b64(randomBytes(32)), origin, rp_id: expectedRp };
   const fields = { type: purpose === "register" ? "webauthn.create" : "webauthn.get", challenge: challenge.challenge, origin: challenge.origin, crossOrigin: false, ...data };
   const clientData = Buffer.from(duplicate ? JSON.stringify(fields).replace('"crossOrigin":false','"crossOrigin":false,"origin":"https://attacker.invalid"') : JSON.stringify(fields));
   const count = Buffer.alloc(4); count.writeUInt32BE(counter);
@@ -71,4 +71,29 @@ test("BNB operator network aliases require server-verified live bindings and nev
   assert.deepEqual(bnb.activeKeys([{...key,eligible_operator_alias:false}],session),[]);
   assert.deepEqual(bnb.activeKeys([{...key,eligible_operator_alias:true,revoked_at:new Date()}],session),[]);
   assert.deepEqual(bnb.activeKeys([{...key,eligible_operator_alias:true,rp_id:"other"}],session),[]);
+});
+
+
+const hostedCeremony = extra => fixture({origin:"https://ipo.one",expectedRp:"ipo.one",rp:"ipo.one",...extra});
+test("governed HTTPS native registration and assertion use ipo.one without admitting localhost credentials",async()=>{
+  assert.equal((await verifyHostedRiskCeremony(hostedCeremony())).id.length>0,true);
+  assert.equal((await verifyHostedRiskCeremony(hostedCeremony({purpose:"verify"}))).counter,1);
+  await assert.rejects(verifyHostedRiskCeremony(fixture()));
+  await assert.rejects(verifyLocalRiskCeremony(hostedCeremony()));
+});
+for(const [name,changes]of [
+  ["wrong RP hash",{rp:"localhost"}],["wrong expected RP",{expectedRp:"localhost"}],
+  ["wrong origin",{origin:"https://other.example"}],["insecure origin",{origin:"http://ipo.one"}],
+  ["cross origin",{data:{crossOrigin:true}}],["wrong challenge",{data:{challenge:b64(randomBytes(32))}}],
+  ["missing UV",{flags:0x41}],["missing UP",{flags:0x44}],["duplicate client data",{duplicate:true}]
+])test(`governed HTTPS ceremony rejects ${name}`,async()=>assert.rejects(verifyHostedRiskCeremony(hostedCeremony(changes))));
+test("governed HTTPS enrollment configuration keeps actor and Tenant binding closed",async()=>{
+  const config={tenantId:"tenant_hosted",origin:"https://ipo.one",rpId:"ipo.one",bindings:[{actorId:"actor_ops",role:"operations_operator"},{actorId:"actor_risk",role:"risk_operator"},{actorId:"actor_other_ops",role:"operations_operator"}]};
+  const service=new HostedRiskPasskeys(config);
+  assert.equal(service.bindingFor({tenantId:"tenant_hosted",actorId:"actor_risk"}).role,"risk_operator");
+  assert.equal(service.bindingFor({tenantId:"other",actorId:"actor_risk"}),undefined);
+  assert.equal(service.bindingFor({tenantId:"tenant_hosted",actorId:"actor_outside"}),undefined);
+  const client={query(){throw new Error("Wrong actor must be rejected before DB access");}};
+  await assert.rejects(service.eligible(client,{tenantId:"other",actorId:"actor_risk",actorType:"risk_operator",roles:["risk_operator"]},new Date()));
+  for(const change of [{origin:"http://ipo.one"},{origin:"https://localhost:443"},{rpId:"localhost"},{extra:true},{bindings:[config.bindings[0],config.bindings[1],config.bindings[0]]}])assert.throws(()=>new HostedRiskPasskeys({...config,...change}));
 });

@@ -354,8 +354,11 @@ export function hasVerifiedServicingCase(obligation, servicingAction = null) {
 // A source credit is a different immutable action from repayment/servicing.
 // Match its exact current financial/schedule effect; never relabel an old cure.
 export function currentSyntheticSourceCorrection(obligation,receipt) {
+  const expectedPolicy=obligation?.syntheticFees?.terms?.profile==="synthetic_usd_platform_fee_hosted.v1"
+    ? "0x7f123be43dc8022cf91440dc22d558df3f161d583b3cc0ab48203dbc973a2eeb"
+    : "0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d";
   if(!receipt || receipt.schemaVersion!=="synthetic_fee_source_correction.v1" ||
-    receipt.sourcePolicyHash!=="0xc0d300f7395703cb64ba198d4d6d97d02e3aaaf33c4f10cd59559b8224b4939d" ||
+    receipt.sourcePolicyHash!==expectedPolicy ||
     receipt.syntheticOnly!==true || receipt.productionFundsMoved!==false || receipt.refundStatus!=="credit_due_only" ||
     !HASH.test(receipt.receiptId??"") || receipt.receiptHash!==receipt.receiptId ||
     receipt.receiptId!==obligation?.syntheticFees?.lastSourceCorrectionReceiptId || !(obligation.syntheticFees.sourceCorrectionCount>0) ||

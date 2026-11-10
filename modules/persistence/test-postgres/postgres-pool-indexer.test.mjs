@@ -1,6 +1,8 @@
+import {createB4HostedTestDatabase} from "../../../scripts/test-support/b4-hosted-database.mjs";
+import {migrateUp as migrateIsolatedDatabase} from "../../../scripts/migrate.mjs";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
-import test from "node:test";
+import test, {after} from "node:test";
 import {
   encodeAbiParameters,
   encodeEventTopics,
@@ -24,7 +26,10 @@ import {
   setTenantTransactionContext
 } from "../src/index.js";
 
-const CONNECTION_STRING = process.env.DATABASE_URL;
+const isolatedDatabase=await createB4HostedTestDatabase({baseline:false});
+after(()=>isolatedDatabase.close());
+await migrateIsolatedDatabase({pool:isolatedDatabase.pool});
+const CONNECTION_STRING = isolatedDatabase.connectionString;
 const CHAIN_ID = "eip155:84532";
 const CONTRACT = "0x1111111111111111111111111111111111111111";
 const MARKET = keccak256(stringToHex("ipo.one:m2:postgres-market"));

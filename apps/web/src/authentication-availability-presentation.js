@@ -25,10 +25,10 @@ export function walletSelectedCopy(providerName) {
   return `${providerName} selected. No account, network, or signature was requested.`;
 }
 
-export function createManagementAccessPresentation({ optionsState, authenticationProfile, riskPasskey } = {}) {
+export function createManagementAccessPresentation({ optionsState, authenticationProfile, riskPasskey, governedManagement=false } = {}) {
   const ready = optionsState === "ready";
   // This describes installed authentication, never grants a role or approval.
-  const passkeyAvailable = ready && authenticationProfile === "local_no_funds" && riskPasskey === true;
+  const passkeyAvailable = ready && riskPasskey === true && (authenticationProfile==="local_no_funds" || (authenticationProfile==="public_authenticated_no_funds_beta" && governedManagement===true));
   return {
     publicScopeVisible: ready && authenticationProfile === "public_authenticated_no_funds_beta",
     publicScopeDetail: "Public access supports Human and Principal/Agent no-funds workflows. Capital Partner, Risk, Operations and Auditor workspaces remain private. Public management access requires a separately reviewed release, named role bindings and strong authentication; wallet sign-in does not grant these permissions.",

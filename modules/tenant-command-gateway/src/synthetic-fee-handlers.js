@@ -1,12 +1,14 @@
+import { checkedHostedFeeGovernance } from "./synthetic-fee-context.js";
+import { assertHostedSyntheticFeeActor } from "../../../packages/domain/src/hosted-synthetic-fee-governance.js";
 import { planSyntheticFeeWrites } from "./credit-execution-handlers.js";
 import {
   DomainError, CreditEventType, hashId, createCreditEvent,
   createSyntheticFeeStatement, transitionSyntheticFeeBasis, createSyntheticFeePosting, syntheticFeeTarget
 } from "../../../packages/domain/src/index.js";
-import { SYNTHETIC_FEE_POLICY } from "../../../packages/domain/src/synthetic-fees.js";
+import { SYNTHETIC_FEE_POLICY, HOSTED_SYNTHETIC_FEE_POLICY } from "../../../packages/domain/src/synthetic-fees.js";
 import { CoreProjectionType } from "../../persistence/src/index.js";
 
-const INSTITUTION = "urn:ipo-one:local:synthetic-capital-partner:b4";
+const LOCAL_INSTITUTION = "urn:ipo-one:local:synthetic-capital-partner:b4";
 const unavailable = () => { throw new DomainError("tenant_resource_unavailable", "The requested resource is not available."); };
 function monthPayload(payload) {
   if (!payload || Object.keys(payload).length !== 1 || !/^20[0-9]{2}-(0[1-9]|1[0-2])$/.test(payload.month)) {
@@ -92,8 +94,11 @@ export async function verifiedSyntheticFeeEntries(input, scope) {
   }
   return entries;
 }
-export function createSyntheticFeeHandlers({ syntheticFeesEnabled = false, syntheticFeeOperatorActorId, syntheticFeesLocalContext = false } = {}) {
+export function createSyntheticFeeHandlers({ syntheticFeesEnabled = false, syntheticFeeOperatorActorId, syntheticFeesLocalContext = false, hostedSyntheticFeeGovernance } = {}) {
+  const feeGovernance=checkedHostedFeeGovernance(hostedSyntheticFeeGovernance);
+  const INSTITUTION=feeGovernance?.institutionId??LOCAL_INSTITUTION;
   const assertOperator = input => {
+    if(feeGovernance)return assertHostedSyntheticFeeActor(feeGovernance,input.authenticationContext,{institution:true});
     if (syntheticFeesLocalContext !== true || typeof syntheticFeeOperatorActorId !== "string" ||
         input.authenticationContext.actorId !== syntheticFeeOperatorActorId) unavailable();
   };
@@ -176,7 +181,7 @@ export function createSyntheticFeeHandlers({ syntheticFeesEnabled = false, synth
         const preview=await assessmentPreview(input);
         return { schemaVersion: "tenant_synthetic_fee_settlement.v1", enabled: syntheticFeesEnabled === true,
           pendingAssessmentMinor: preview.amountMinor, pendingAssessmentStateHash: preview.stateHash,
-          policy: SYNTHETIC_FEE_POLICY, pendingBaseMinor: await pendingBases(input,month), statement, syntheticOnly: true, productionFundsMoved: false };
+          policy: feeGovernance?HOSTED_SYNTHETIC_FEE_POLICY:SYNTHETIC_FEE_POLICY, pendingBaseMinor: await pendingBases(input,month), statement, syntheticOnly: true, productionFundsMoved: false };
       }
     },
     {

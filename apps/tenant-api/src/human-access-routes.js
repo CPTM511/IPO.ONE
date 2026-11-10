@@ -1,3 +1,4 @@
+import {checkedHostedManagementAccess} from "../../../modules/authentication/src/hosted-management-access.js";
 import { allowedWalletRoles, ORDINARY_WALLET_ROLES } from "../../../modules/authentication/src/wallet-workspace-roles.js";
 import {
   SESSION_COOKIE_NAME,
@@ -26,6 +27,7 @@ export const HUMAN_ACCESS_ROUTES = Object.freeze({
 const CONFIG_KEYS = new Set([
   "browserOrigin",
   "passkeyOperation",
+  "hostedManagementAccess",
   "clock",
   "humanSessionBff",
   "oidcProviders",
@@ -342,8 +344,12 @@ export function createHumanAccessRouteHandler(input) {
     profile = "closed_non_funds_pilot",
     postLoginPath = "/#request-credit"
   } = input;
-  const passkeyEnabled = typeof input.passkeyOperation === "function" && profile === "local_no_funds" &&
+  const governedManagement=input.hostedManagementAccess ? checkedHostedManagementAccess(input.hostedManagementAccess,{tenantId:input.hostedManagementAccess.tenantId,origin:input.browserOrigin}) : undefined;
+  if(governedManagement && profile!=="public_authenticated_no_funds_beta")throw new DomainError("invalid_human_access_config","Governed management requires its exact HTTPS public composition");
+  const localPasskeyEnabled = typeof input.passkeyOperation === "function" && profile === "local_no_funds" &&
     walletWorkspaceRoles.length === 1 && ({ "http://localhost:8967": "operations_operator", "http://localhost:8968": "auditor", "http://localhost:8969": "risk_operator", "http://localhost:8970": "operations_operator", "http://localhost:8981": "operations_operator", "http://localhost:8982": "auditor", "http://localhost:8983": "risk_operator", "http://localhost:8984": "operations_operator", "http://localhost:8937": "risk_operator", "http://localhost:8947": "risk_operator", "http://localhost:8957": "risk_operator", "http://localhost:8939": "operations_operator", "http://localhost:8940": "auditor", "http://localhost:8941": "risk_operator", "http://localhost:8942": "operations_operator" })[input.browserOrigin] === walletWorkspaceRoles[0];
+  const hostedPasskeyEnabled=typeof input.passkeyOperation==="function" && governedManagement!==undefined;
+  const passkeyEnabled=localPasskeyEnabled || hostedPasskeyEnabled;
   if (input.passkeyOperation !== undefined && !passkeyEnabled) throw new DomainError("invalid_human_access_config", "Passkeys require the invited local Risk composition");
   const browserOrigin = exactBrowserOrigin(input.browserOrigin, passkeyEnabled);
   const providers = normalizeProviders(oidcProviders);
@@ -357,10 +363,11 @@ export function createHumanAccessRouteHandler(input) {
     throw new DomainError("invalid_human_access_config", "Human access adapters are required");
   }
   const checkedWalletRoles = allowedWalletRoles(walletWorkspaceRoles);
-  if (checkedWalletRoles.some(role => !ORDINARY_WALLET_ROLES.includes(role)) &&
+  if (checkedWalletRoles.some(role => !ORDINARY_WALLET_ROLES.includes(role)) && !governedManagement &&
       (profile !== "local_no_funds" || !(browserOrigin.startsWith("http://127.0.0.1:") || (passkeyEnabled && ["http://localhost:8937", "http://localhost:8947", "http://localhost:8957", "http://localhost:8939", "http://localhost:8940", "http://localhost:8941", "http://localhost:8942", "http://localhost:8967", "http://localhost:8968", "http://localhost:8969", "http://localhost:8970", "http://localhost:8981", "http://localhost:8982", "http://localhost:8983", "http://localhost:8984"].includes(browserOrigin))))) {
     throw new DomainError("invalid_human_access_config", "invited wallet roles require an explicit loopback local profile");
   }
+  if(governedManagement && checkedWalletRoles.some(role=>!ORDINARY_WALLET_ROLES.includes(role) && !governedManagement.bindings.some(b=>b.role===role)))throw new DomainError("invalid_human_access_config","Role is not in the governed bindings");
   const checkedProfile = assertSafeIdentifier("profile", profile);
   const successPath = exactPostLoginPath(postLoginPath);
 
@@ -389,7 +396,9 @@ export function createHumanAccessRouteHandler(input) {
       const workspaceRole = roles.length === 1 && checkedWalletRoles.includes(roles[0])
         ? roles[0]
         : null;
-      return Object.freeze({ active: true, authenticationMethod, workspaceRole });
+      const governedBinding=governedManagement?.bindings.find(binding=>binding.actorId===authenticationContext.actorId && binding.role===workspaceRole && authenticationContext.tenantId===governedManagement.tenantId);
+      if(governedManagement && !ORDINARY_WALLET_ROLES.includes(workspaceRole) && !governedBinding)return Object.freeze({active:false,authenticationMethod:null,workspaceRole:null});
+      return Object.freeze({ active: true, authenticationMethod, workspaceRole,...(governedBinding?{governedWorkspace:governedBinding.workspace}:{}) });
     } catch {
       return Object.freeze({ active: false, authenticationMethod: null, workspaceRole: null });
     }
@@ -427,9 +436,11 @@ export function createHumanAccessRouteHandler(input) {
         sessionActive: activeSession.active,
         sessionAuthenticationMethod: activeSession.authenticationMethod,
         sessionWorkspaceRole: activeSession.workspaceRole,
+        ...(activeSession.governedWorkspace?{sessionGovernedWorkspace:activeSession.governedWorkspace}:{}),
         oidcProviders: [...providers.keys()],
         walletAuthentication: walletBff !== undefined,
         riskPasskey: passkeyEnabled,
+        ...(governedManagement?{governedManagement:true}:{}),
         walletWorkspaceRoles: walletBff === undefined ? [] : checkedWalletRoles,
         supportedChains: SUPPORTED_CHAINS,
         boundary: "Authentication proves presence; internal policy and Mandates separately decide authority."

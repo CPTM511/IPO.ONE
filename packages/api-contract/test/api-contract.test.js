@@ -782,3 +782,14 @@ test("worker freshness metadata can be requested without caller identity or scop
   assert.equal(isTenantProtocolRequest({ ...base, payload: { includeRefreshMetadata: "true" } }), false);
   assert.equal(isTenantProtocolRequest({ ...base, payload: { includeRefreshMetadata: true, actorId: "actor_other" } }), false);
 });
+
+test("B4-H evaluated Offer summary preserves its exact hosted terms and rejects mixed contract versions",async()=>{
+  const {createSyntheticFeeTerms,HOSTED_SYNTHETIC_FEE_PROFILE}=await import("../../domain/src/index.js");
+  const value=structuredClone(fixtures.validResults.find(result=>result.operationId==="pilotEvaluateCreditApplication"));
+  value.response.offer.termsVersion="credit_terms.synthetic_fee_hosted.v1";
+  value.response.offer.feeTerms=createSyntheticFeeTerms({profile:HOSTED_SYNTHETIC_FEE_PROFILE,institutionId:"urn:ipo-one:hosted:synthetic-capital-partner:tenant_fixture:primary",assetId:value.response.offer.assetId,economicLoanId:value.response.offer.creditIntentId,principalMinor:value.response.offer.approvedPrincipalMinor,annualRateBps:900,scheduledTermDays:60});
+  assertTenantProtocolResult(value);
+  for(const mutate of [x=>x.response.offer.termsVersion="credit_terms.synthetic_fee.v1",x=>x.response.offer.feeTerms.scope="L0_LOCAL_NO_FUNDS",x=>x.response.offer.feeTerms.policyHash="0x"+"00".repeat(32)]) {
+    const invalid=structuredClone(value);mutate(invalid);assert.equal(isTenantProtocolResult(invalid),false);
+  }
+});

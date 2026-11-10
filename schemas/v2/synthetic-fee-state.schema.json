@@ -24,7 +24,7 @@
       "const": "synthetic_fee_state.v1"
     },
     "terms": {
-      "$ref": "https://schemas.ipo.one/v2/synthetic-fee-terms.schema.json"
+      "oneOf": [{ "$ref": "https://schemas.ipo.one/v2/synthetic-fee-terms.schema.json" }, { "$ref": "https://schemas.ipo.one/v2/hosted-synthetic-fee-terms.schema.json" }]
     },
     "fundedBaseMinor": {
       "type": "string",

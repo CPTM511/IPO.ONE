@@ -1,4 +1,4 @@
-import { createSyntheticFeeTerms } from "./synthetic-fees.js";
+import { createSyntheticFeeTerms, syntheticFeeTermsVersion } from "./synthetic-fees.js";
 import {
   CreditAuthorityType,
   CreditIntentStatus,
@@ -130,6 +130,7 @@ export function createCreditOffer({
   approvedPrincipalMinor,
   collateralProfile,
   feeProfile,
+  feeInstitutionId,
   annualRateBps,
   originationFeeMinor = "0",
   repaymentFrequency,
@@ -175,7 +176,7 @@ export function createCreditOffer({
 
   const normalizedReasonCodes = uniqueReasonCodes(reasonCodes);
   const collateralTerms = createSyntheticCollateralTerms({ profile: collateralProfile, assetId, principalMinor: approvedPrincipalMinor });
-  const feeTerms = createSyntheticFeeTerms({ profile: feeProfile, assetId, economicLoanId: creditIntentId, principalMinor: approvedPrincipalMinor, originationFeeMinor, annualRateBps, scheduledTermDays: (new Date(normalizedMaturityAt) - now) / 86400000 });
+  const feeTerms = createSyntheticFeeTerms({ profile: feeProfile, institutionId: feeInstitutionId, assetId, economicLoanId: creditIntentId, principalMinor: approvedPrincipalMinor, originationFeeMinor, annualRateBps, scheduledTermDays: (new Date(normalizedMaturityAt) - now) / 86400000 });
   const termsCore = {
     assetId,
     approvedPrincipalMinor,
@@ -188,7 +189,7 @@ export function createCreditOffer({
     disclosureRef,
     ...(collateralTerms ? { collateralTerms } : {}),
     ...(feeTerms ? { feeTerms } : {}),
-    termsVersion: feeTerms ? "credit_terms.synthetic_fee.v1" : collateralTerms ? "credit_terms.synthetic_secured.v1" : "credit_terms.v1"
+    termsVersion: feeTerms ? syntheticFeeTermsVersion(feeTerms) : collateralTerms ? "credit_terms.synthetic_secured.v1" : "credit_terms.v1"
   };
   const offerCore = {
     creditIntentId,
