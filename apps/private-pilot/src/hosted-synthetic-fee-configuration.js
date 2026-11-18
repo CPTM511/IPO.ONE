@@ -15,6 +15,7 @@ export function checkedHostedSyntheticFeeConfiguration({ governance, feeProfile,
   }
   if(deploymentRole!=="primary" || noRealFunds!==true)invalid();
   const checked=assertHostedSyntheticFeeGovernance(governance,{tenantId,browserOrigin});
+  if(sourceProfile!==undefined && checked.operationsActorId===null)invalid();
   return Object.freeze({hostedSyntheticFeeGovernance:checked,
     syntheticFeesEnabled:feeProfile!==undefined,syntheticFeeCorrectionsEnabled:sourceProfile!==undefined});
 }
@@ -25,9 +26,11 @@ export function hostedManagementAccessForFees(governance) {
     origin:governance.browserOrigin,rpId:governance.rpId,approvalReference:governance.approvalReference,
     bindings:Object.freeze([
       {actorId:governance.institutionOperatorActorId,role:"capital_partner_operator",workspace:"capitalPartner"},
-      {actorId:governance.operationsActorId,role:"operations_operator",workspace:"operations"},
-      {actorId:governance.riskReviewerActorId,role:"risk_operator",workspace:"riskReviewer"},
-      {actorId:governance.operationsReviewerActorId,role:"operations_operator",workspace:"operationsReviewer"},
+      ...(governance.operationsActorId===null?[]:[
+        {actorId:governance.operationsActorId,role:"operations_operator",workspace:"operations"},
+        {actorId:governance.riskReviewerActorId,role:"risk_operator",workspace:"riskReviewer"},
+        {actorId:governance.operationsReviewerActorId,role:"operations_operator",workspace:"operationsReviewer"}
+      ]),
       ...(governance.auditorActorId===null?[]:[{actorId:governance.auditorActorId,role:"auditor",workspace:"auditor"}])
     ].map(Object.freeze))});
 }

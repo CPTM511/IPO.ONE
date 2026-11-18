@@ -12,11 +12,23 @@ import {HOSTED_SYNTHETIC_FEE_PROFILE} from '../../../packages/domain/src/index.j
 import {PRODUCT_LANGUAGES,normalizeCopy,translateCopy} from '../src/product-i18n.js';
 
 test('B4-H production composition: visible Human and institution lifecycle, canonical WebAuthn and durable source credit', {timeout:300000}, async()=>{
-  const fixture=await createB4HostedTestRuntime();
+  const fixture=await createB4HostedTestRuntime({correctionsEnabled:false});
   const origin=fixture.origin,account=fixture.accounts.borrower;
   await mkdir('output/playwright',{recursive:true});
   let browser;
   try{
+    const {createHostedSyntheticFeeGovernance}=await import('../../../packages/domain/src/index.js');
+    const {governanceHash:_,...core}=fixture.governance;
+    const feeOnlyGovernance=createHostedSyntheticFeeGovernance({
+      ...core,
+      operationsActorId:null,
+      riskReviewerActorId:null,
+      operationsReviewerActorId:null,
+      auditorActorId:null
+    });
+    const feeOnly={hostedSyntheticFeeGovernance:feeOnlyGovernance,syntheticFeesEnabled:true,syntheticFeeCorrectionsEnabled:false};
+    const feeOff={...feeOnly,syntheticFeesEnabled:false};
+    await fixture.restart(feeOnly);
     browser=await chromium.launch({headless:true});
     const context=await browser.newContext({viewport:{width:1440,height:1000}});
     await fixture.proxy(context);
@@ -146,6 +158,11 @@ test('B4-H production composition: visible Human and institution lifecycle, cano
     await expect(page.locator('#postHumanRepaymentBtn')).toBeEnabled();
     await click('humanReadFeesBtn');await expect(page.locator('#humanFeeReceiptRows strong')).toHaveCount(1);
     await expect(page.locator('#humanFeeAssessed')).toHaveText('$0.12');
+    await fixture.restart(feeOff);
+    await page.reload();await openView(page,'request-credit');await reconnect();
+    await click('humanReadFeesBtn');
+    await expect(page.locator('#humanFeeAssessed')).toHaveText('$0.12');
+    await expect(page.locator('#humanFeeReceiptRows strong')).toHaveCount(1);
     await page.locator('#humanRepaymentAmount').fill('120');await click('postHumanRepaymentBtn');await confirm();
     await expect(page.locator('#releaseSyntheticCollateralBtn')).toBeDisabled();
     await expect(page.locator('#humanObligationOutstanding')).toHaveText('$0.12');
@@ -156,7 +173,7 @@ test('B4-H production composition: visible Human and institution lifecycle, cano
     await click('releaseSyntheticCollateralBtn');await confirm();
     await expect(page.locator('#syntheticCollateralState')).toHaveText('Synthetic collateral released');
     const releaseReceipt=await page.locator('#syntheticCollateralReceipt').textContent();
-    await fixture.restart();await page.reload();await openView(page,'request-credit');
+    await fixture.restart(feeOff);await page.reload();await openView(page,'request-credit');
     await expect(page.locator('#syntheticCollateralState')).toHaveText('Synthetic collateral released');
     assert.equal(await page.locator('#syntheticCollateralReceipt').textContent(),releaseReceipt);
     await click('topbarSignOutBtn');
@@ -187,6 +204,7 @@ test('B4-H production composition: visible Human and institution lifecycle, cano
     const fixtureOptions={pool:fixture.db.pool,tenantId:fixture.governance.tenantId,actorId:activeBorrower,subjectId:acceptedLoan.subjectId,principalId:acceptedLoan.principalId,consentId:acceptedLoan.authorityId,feeProfile:HOSTED_SYNTHETIC_FEE_PROFILE,feeInstitutionId:fixture.governance.institutionId};
     const normalScenario=await persistSyntheticFeeInterestScenario(fixtureOptions);
     await persistSyntheticFeeInterestScenario({...fixtureOptions,assessmentEnabled:false});
+    await fixture.restart(feeOnly);
     await page.setViewportSize({width:1440,height:1000});
     await click("topbarSignOutBtn");await expect(page.locator("#humanObligationCard")).toBeHidden();
     const cpContext=await browser.newContext({viewport:{width:1440,height:1000}});await fixture.proxy(cpContext);
@@ -211,6 +229,10 @@ test('B4-H production composition: visible Human and institution lifecycle, cano
     await cp.locator('#walletProviderList button').filter({hasText:'MetaMask'}).click();
     await cp.locator('[data-wallet-chain="84532"]').click();await cp.locator('#walletSignInBtn').click();
     await expect(cp.locator('#sidebarApiStatus')).toHaveText('Authenticated',{timeout:15000});
+    const access=await cp.evaluate(()=>fetch('/auth/v1/options').then(response=>response.json()));
+    assert.equal(access.sessionGovernedWorkspace,'capitalPartner');
+    assert.equal(access.riskPasskey,false);
+    assert.deepEqual([...access.walletWorkspaceRoles].sort(),['capital_partner_operator','human_borrower','principal_controller']);
     await cp.locator('[data-view="capital-partners"]').filter({visible:true}).first().click();
     await cp.locator('#syntheticFeeMonth').fill('2026-10');await cp.locator('#loadSyntheticFeeStatementBtn').click();
     await expect(cp.locator('#syntheticFeeStatementValues')).toBeVisible();
@@ -223,6 +245,7 @@ test('B4-H production composition: visible Human and institution lifecycle, cano
     await cp.locator('#closeSyntheticFeeStatementBtn').click();await expect(cp.locator('#syntheticFeeCloseDialog')).toBeVisible();
     await cp.locator('#syntheticFeeCloseConfirmBtn').click();await expect(cp.locator('#syntheticFeeSettlementStatus')).toHaveText('Statement frozen; payment remains separate.');
     const statementId=await cp.locator('#syntheticFeeStatementReference').textContent();
+    await fixture.restart(feeOff);
     await cp.reload();await openView(cp,'capital-partners');await cp.locator('#syntheticFeeMonth').fill('2026-10');await cp.locator('#loadSyntheticFeeStatementBtn').click();
     await expect(cp.locator('#syntheticFeeStatementReference')).toHaveText(statementId);
     await expect(cp.locator('#syntheticFeeSettled')).toHaveText('$0.00');
@@ -243,6 +266,8 @@ test('B4-H production composition: visible Human and institution lifecycle, cano
     }
     await cp.locator("#topbarSignOutBtn").click();await expect(cp.locator("#syntheticFeeSettlementPanel")).toBeHidden();
     await cp.close();
+    console.log('Fee-only governance exposed the institution role alone; compatible OFF retained borrower servicing and the frozen institution statement.');
+    await fixture.restart({syntheticFeeCorrectionsEnabled:true});
     console.log('B4 institution visible portal: controlled-clock interest/fee receipts, exact pending assessment, frozen UTC statement, reload, six languages/two themes/narrow screen; settled amount remains0');
     const {verifyVisibleSourceCredit}=await import('./support/b4-hosted-source-credit-browser.mjs');
     // Execute the existing trusted materializer as a separate local worker

@@ -10,17 +10,18 @@ export function checkedHostedManagementAccess(value,{tenantId,origin}={}) {
   if(value.schemaVersion!=="hosted_governed_human_access.v1" || value.tenantId!==tenantId ||
       value.origin!==origin || origin!=="https://ipo.one" || value.rpId!=="ipo.one" ||
       typeof value.approvalReference!=="string" || !/^[A-Za-z][A-Za-z0-9_.:-]{0,159}$/.test(value.approvalReference) ||
-      !Array.isArray(value.bindings) || value.bindings.length<4 || value.bindings.length>5)denied();
+      !Array.isArray(value.bindings) || ![1,4,5].includes(value.bindings.length))denied();
   const bindings=value.bindings.map(binding=>{
     closedPasskeyObject(binding,["actorId","role","workspace"]);
     if(typeof binding.actorId!=="string" || !/^[A-Za-z][A-Za-z0-9_.:-]{0,159}$/.test(binding.actorId) ||
         !({capital_partner_operator:["capitalPartner"],operations_operator:["operations","operationsReviewer"],risk_operator:["riskReviewer"],auditor:["auditor"]}[binding.role]??[]).includes(binding.workspace))denied();
     return Object.freeze({...binding});
   });
+  const hasCorrectionGroup=bindings.length>1;
   if(new Set(bindings.map(b=>b.actorId)).size!==bindings.length || new Set(bindings.map(b=>b.workspace)).size!==bindings.length ||
       bindings.filter(b=>b.role==="capital_partner_operator").length!==1 ||
-      bindings.filter(b=>b.role==="operations_operator").length!==2 ||
-      bindings.filter(b=>b.role==="risk_operator").length!==1 ||
+      bindings.filter(b=>b.role==="operations_operator").length!==(hasCorrectionGroup?2:0) ||
+      bindings.filter(b=>b.role==="risk_operator").length!==(hasCorrectionGroup?1:0) ||
       bindings.filter(b=>b.role==="auditor").length>1)denied();
   return Object.freeze({...value,bindings:Object.freeze(bindings)});
 }

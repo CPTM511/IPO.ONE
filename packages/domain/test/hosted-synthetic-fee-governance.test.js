@@ -18,3 +18,14 @@ test("Tenant punctuation cannot broaden the institution namespace",()=>{
   assert.throws(()=>createHostedSyntheticFeeGovernance({...input,tenantId:"tenant.with_dot",institutionId:"urn:ipo-one:hosted:synthetic-capital-partner:tenantXwith_dot:primary"}));
   assert.doesNotThrow(()=>createHostedSyntheticFeeGovernance({...input,tenantId:"tenant.with_dot",institutionId:"urn:ipo-one:hosted:synthetic-capital-partner:tenant.with_dot:primary"}));
 });
+
+test("Fee-only governance requires the entire correction group to be absent",()=>{
+  const feeOnly={...input,operationsActorId:null,riskReviewerActorId:null,operationsReviewerActorId:null};
+  const value=createHostedSyntheticFeeGovernance(feeOnly);
+  assertHostedSyntheticFeeActor(value,{tenantId:input.tenantId,actorId:input.institutionOperatorActorId,actorType:"human"},{institution:true});
+  for(const actorId of [null,input.operationsActorId,input.riskReviewerActorId,input.operationsReviewerActorId]) {
+    assert.throws(()=>assertHostedSyntheticFeeActor(value,{tenantId:input.tenantId,actorId,actorType:"operations_operator"}));
+  }
+  assert.throws(()=>createHostedSyntheticFeeGovernance({...feeOnly,operationsActorId:input.operationsActorId}));
+  assert.throws(()=>createHostedSyntheticFeeGovernance({...feeOnly,auditorActorId:"actor_auditor"}));
+});

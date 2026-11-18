@@ -471,7 +471,10 @@ export async function createPostgresHumanAccessComposition(input) {
   if (passkeysRequired && typeof input.localPasskeyFactory !== "function") {
     throw authenticationError("authentication_deployment_gate_closed", "The reviewed local Passkey verifier is unavailable");
   }
-  const passkeys = hostedManagement ? new HostedRiskPasskeys({tenantId,origin:browserOrigin,rpId:hostedManagement.rpId,bindings:hostedManagement.bindings.filter(b=>b.role!=="capital_partner_operator").map(({actorId,role})=>({actorId,role}))}) : passkeysRequired ? input.localPasskeyFactory({ origin: browserOrigin, role: input.localInvitedWalletRole,
+  const hostedPasskeyBindings=hostedManagement?.bindings
+    .filter(binding=>binding.role!=="capital_partner_operator")
+    .map(({actorId,role})=>({actorId,role}));
+  const passkeys = hostedPasskeyBindings?.length ? new HostedRiskPasskeys({tenantId,origin:browserOrigin,rpId:hostedManagement.rpId,bindings:hostedPasskeyBindings}) : passkeysRequired ? input.localPasskeyFactory({ origin: browserOrigin, role: input.localInvitedWalletRole,
     specialRoles: input.localSpecialRoles === true, independentOperationsReviewer: input.localIndependentOperationsReviewer === true }) : undefined;
   const sessionStore = new PostgresHumanSessionStore({
     ...(passkeys ? { resolveStepUp: (client, session, now) => passkeys.resolveStepUp(client, session, now) } : {}),

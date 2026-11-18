@@ -14,5 +14,11 @@ test('B4-H cannot enable from a governance document without actual current actor
   await assert.rejects(fixture.restart({hostedSyntheticFeeGovernance:missingInstitution,syntheticFeeCorrectionsEnabled:false}),{code:'hosted_synthetic_fee_enrollment_unavailable'});
   await fixture.start({hostedSyntheticFeeGovernance:missingInstitution,syntheticFeesEnabled:false,syntheticFeeCorrectionsEnabled:true});
   assert.equal((await fetch(fixture.localOrigin+'/readyz')).status,200);
+  const feeOnly=createHostedSyntheticFeeGovernance({...core,operationsActorId:null,riskReviewerActorId:null,operationsReviewerActorId:null,auditorActorId:null});
+  await assert.rejects(fixture.restart({hostedSyntheticFeeGovernance:feeOnly,syntheticFeeCorrectionsEnabled:true}),{code:'invalid_production_environment'});
+  await fixture.start({hostedSyntheticFeeGovernance:feeOnly,syntheticFeesEnabled:true,syntheticFeeCorrectionsEnabled:false});
+  assert.equal((await fetch(fixture.localOrigin+'/readyz')).status,200);
+  const noInstitution=createHostedSyntheticFeeGovernance({...core,institutionOperatorActorId:'actor_b4h_missing_institution',operationsActorId:null,riskReviewerActorId:null,operationsReviewerActorId:null,auditorActorId:null});
+  await assert.rejects(fixture.restart({hostedSyntheticFeeGovernance:noInstitution,syntheticFeeCorrectionsEnabled:false}),{code:'hosted_synthetic_fee_enrollment_unavailable'});
  } finally {await fixture.close();}
 });

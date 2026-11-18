@@ -20,7 +20,10 @@ export function createHostedSyntheticFeeGovernance(input) {
       !identifier(input.approvalReference) ||
       typeof input.institutionId!=="string" || !input.institutionId.startsWith(`urn:ipo-one:hosted:synthetic-capital-partner:${input.tenantId}:`) ||
       !/^[A-Za-z0-9_.-]{1,80}$/.test(input.institutionId.slice(`urn:ipo-one:hosted:synthetic-capital-partner:${input.tenantId}:`.length))) fail();
-  const actors=[input.institutionOperatorActorId,input.operationsActorId,input.riskReviewerActorId,input.operationsReviewerActorId];
+  const correctionActors=[input.operationsActorId,input.riskReviewerActorId,input.operationsReviewerActorId];
+  const hasCorrectionActors=correctionActors.every(identifier);
+  if(!hasCorrectionActors && (!correctionActors.every(actor=>actor===null) || input.auditorActorId!==null))fail();
+  const actors=[input.institutionOperatorActorId,...(hasCorrectionActors?correctionActors:[])];
   if (input.auditorActorId!==null)actors.push(input.auditorActorId);
   if(actors.some(a=>!identifier(a)) || new Set(actors).size!==actors.length)fail();
   const core=Object.fromEntries(fields.map(k=>[k,input[k]]));
@@ -33,6 +36,7 @@ export function assertHostedSyntheticFeeGovernance(input,{tenantId,browserOrigin
   return expected;
 }
 export function hostedSyntheticFeeActorRole(governance,actorId) {
+  if(!identifier(actorId))return undefined;
   if(actorId===governance.institutionOperatorActorId)return "capital_partner_operator";
   if(actorId===governance.operationsActorId || actorId===governance.operationsReviewerActorId)return "operations_operator";
   if(actorId===governance.riskReviewerActorId)return "risk_operator";
