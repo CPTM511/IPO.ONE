@@ -87,7 +87,7 @@ try {
         "vercel-sandbox-cron": "api/vercel-sandbox-cron.mjs"
       }
     : { "vercel-sandbox": "api/vercel-sandbox.mjs" };
-  await build({
+  const serverBuild = await build({
     absWorkingDir: trackedSource,
     nodePaths: [resolve(trackedSource, "node_modules")],
     entryPoints,
@@ -100,6 +100,7 @@ try {
     sourcemap: "external",
     sourcesContent: false,
     legalComments: "none",
+    metafile: true,
     logLevel: "warning",
     banner: {
       js: "import { createRequire as __ipoOneCreateRequire } from 'node:module'; const require = __ipoOneCreateRequire(import.meta.url);"
@@ -108,6 +109,13 @@ try {
       "process.env.IPO_ONE_BUNDLED_RELEASE_ID": JSON.stringify(releaseId)
     }
   });
+  for (const { inputs } of Object.values(serverBuild.metafile.outputs)) {
+    if (Object.entries(inputs).some(([path, { bytesInOutput }]) =>
+      bytesInOutput > 0 && /(?:^|\/)node_modules\/(?:anymatch|picomatch)\//.test(path)
+    )) {
+      throw new Error("Hosted server bundle must not ship the wallet build's filesystem matchers");
+    }
+  }
   const allMigrations = await readMigrationSet(join(trackedSource, "db/migrations"));
   const hostedMigrations = selectVercelMigrations(allMigrations);
   await mkdir(join(output, "db/migrations"), { recursive: true });

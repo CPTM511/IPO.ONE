@@ -23,6 +23,7 @@ const LICENSE = new URL(
   "../node_modules/@walletconnect/ethereum-provider/LICENSE.md",
   import.meta.url
 );
+const verifyOnly = process.argv.includes("--check");
 
 const packageDocument = JSON.parse(await readFile(PACKAGE, "utf8"));
 const license = await readFile(LICENSE);
@@ -36,8 +37,6 @@ if (
   );
 }
 
-await mkdir(OUTPUT_DIRECTORY, { recursive: true });
-await writeFile(LICENSE_OUTPUT, license);
 const result = await build({
   entryPoints: [ENTRY.pathname],
   outfile: OUTPUT.pathname,
@@ -48,13 +47,23 @@ const result = await build({
   target: ["chrome120", "firefox121", "safari17"],
   minify: true,
   sourcemap: false,
+  write: false,
   legalComments: "eof",
   treeShaking: true,
   metafile: true,
   logLevel: "silent"
 });
-const output = await readFile(OUTPUT);
+const output = result.outputFiles[0].contents;
 const inputs = Object.keys(result.metafile.inputs);
+// The storage dependency can pull Node filesystem matchers into a full
+// development install. Keep this proof on emitted browser code, including
+// when the frozen SDK is moved out of the runtime dependency install.
+const shipped = Object.values(result.metafile.outputs).flatMap(({ inputs }) =>
+  Object.entries(inputs).filter(([, { bytesInOutput }]) => bytesInOutput > 0)
+);
+if (shipped.some(([path]) => /(?:^|\/)node_modules\/(?:anymatch|picomatch)\//.test(path))) {
+  throw new Error("walletconnect_browser_build_rejected: Node filesystem matcher was emitted");
+}
 if (
   output.length < 100_000 ||
   inputs.length < 10 ||
@@ -65,6 +74,16 @@ if (
   throw new Error(
     "walletconnect_browser_build_rejected: bundle did not include the exact provider"
   );
+}
+
+if (verifyOnly) {
+  if (!Buffer.from(output).equals(await readFile(OUTPUT)) || !license.equals(await readFile(LICENSE_OUTPUT))) {
+    throw new Error("walletconnect_browser_build_rejected: tracked browser bundle or license differs from locked build");
+  }
+} else {
+  await mkdir(OUTPUT_DIRECTORY, { recursive: true });
+  await writeFile(OUTPUT, output);
+  await writeFile(LICENSE_OUTPUT, license);
 }
 
 process.stdout.write(`${JSON.stringify({

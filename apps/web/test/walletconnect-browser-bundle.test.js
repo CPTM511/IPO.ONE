@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
@@ -33,4 +34,5 @@ test("fixed WalletConnect browser bundle is deterministic, same-origin, and carr
     license.toString("utf8"),
     /WALLETCONNECT COMMUNITY LICENSE AGREEMENT/
   );
+  execFileSync(process.execPath, [new URL("../../../scripts/build-walletconnect-browser.mjs", import.meta.url).pathname, "--check"]);
 });
