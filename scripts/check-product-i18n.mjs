@@ -12,8 +12,8 @@ import { WORKSPACE_NAVIGATION_MANIFEST } from "../apps/web/src/workspace-surface
 // owned labels/copy enter the catalog; input values and protocol/code are raw.
 const html = await readFile(new URL("../apps/web/src/index.html", import.meta.url), "utf8");
 const views = new Set(["overview", "obligations", "repay-settle", "activity-proofs", "credit-track-record"]);
-const ids = new Set(["sidebar", "accessLayer", "economicActionLayer", "humanActivationDialog", "authenticatedRuntimeGate", "appStartup"]);
-const classes = new Set(["topbar", "safety-banner", "request-credit-human", "web009-nav", "web009-hero"]);
+const ids = new Set(["sidebar", "accessLayer", "economicActionLayer", "humanActivationDialog", "authenticatedRuntimeGate", "appStartup", "web009PublicReview"]);
+const classes = new Set(["topbar", "safety-banner", "request-credit-human"]);
 const voidTags = new Set(["input", "meta", "link", "img", "br", "hr", "source", "wbr", "area", "base", "embed", "param", "track", "col"]);
 const excluded = new Set(["script", "style", "code", "pre", "textarea"]);
 const decode = value => value.replace(/&(?:amp|lt|gt|quot|apos|nbsp);|&#(?:x[\da-f]+|\d+);/gi, entity => {

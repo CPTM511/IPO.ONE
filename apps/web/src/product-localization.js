@@ -6,14 +6,14 @@ import {
 // Presentation boundary for the existing imperative UI. Only exact owned copy
 // and explicit templates can match. No innerHTML, input values, attributes that
 // carry protocol values, private API calls or remote translation services.
-const CORE = [".topbar", "#sidebar", ".skip-link", ".safety-banner", "#accessLayer", "#web009PublicReview .web009-nav", "#web009PublicReview .web009-hero",
+const CORE = [".topbar", "#sidebar", ".skip-link", ".safety-banner", "#accessLayer", "#web009PublicReview",
   "#economicActionLayer", "#humanActivationDialog", "#authenticatedRuntimeGate", "#toast", "#operationStatus", "#appStartup", "#syntheticFeeSettlementPanel",
   ...["request-credit", "obligations", "repay-settle", "activity-proofs", "credit-track-record", "overview"]
     .map(view => `.view[data-view-panel="${view}"]`)].join(",");
-const EXCLUDED = "script,style,code,pre,textarea,input,[translate=no],[data-i18n-raw],.b-hero-stage,#publicProductPage,#auditorEvidenceConsole,#agentAuthority";
-const EXCLUDED_ATTRIBUTES = "script,style,code,pre,[translate=no],[data-i18n-raw],.b-hero-stage,#publicProductPage,#auditorEvidenceConsole,#agentAuthority";
+const EXCLUDED = "script,style,code,pre,textarea,input,[translate=no],[data-i18n-raw],#publicProductPage,#auditorEvidenceConsole,#agentAuthority";
+const EXCLUDED_ATTRIBUTES = "script,style,code,pre,[translate=no],[data-i18n-raw],#publicProductPage,#auditorEvidenceConsole,#agentAuthority";
 const ATTRIBUTES = ["aria-label", "title", "placeholder", "aria-valuetext"];
-const TECHNICAL = /^(?:[\d\s\W]+|[a-z]+[a-z0-9]*_[a-z0-9_.:-]+|[a-z]+[A-Z][A-Za-z]+|0x[\da-f.]+|(?:USD|USDC|WETH|ETH|BNB|BSC|API|MCP|SIWE|KYC|CAIP-\d+|DPD|UTC|ONE|NL|Northstar Labs|IPO\.ONE|OKX Wallet|Binance Wallet|MetaMask|WalletConnect|Ethereum|Base Sepolia|X Layer Testnet|BSC Testnet|BNB Smart Chain|Beta|v\d+))$/;
+const TECHNICAL = /^(?:[\d\s\W]+|[a-z]+[a-z0-9]*_[a-z0-9_.:-]+|[a-z]+[A-Z][A-Za-z]+|0x[\da-f.]+|(?:USD|USDC|WETH|ETH|BNB|BSC|API|MCP|A2A|REST|TypeScript|Python|SIWE|KYC|CAIP-\d+|DPD|UTC|ONE|NL|Northstar Labs|IPO\.ONE|OKX Wallet|Binance Wallet|MetaMask|WalletConnect|Ethereum|Base Sepolia|X Layer Testnet|BSC Testnet|BNB Smart Chain|Beta|v\d+))$/;
 const datesOrAmounts = /^(?:[-+]?[$€₽]?\d[\d,.\s]*%?(?:\s*(?:USD|USDC|WETH))?|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}(?:, \d{4})?(?:, .+)?|\d{4}-\d{2}-\d{2}(?:T.+)?)$/;
 const localizedAmount = /^[-+−]?(?:(?:US\$|\$US|USD|[$€₽])\s*)?\d[\d\s.,]*\s*(?:US\$|\$US|USD|[$€₽]|%)?$/u;
 const localizedDate = /^\d{1,2}(?:\s+de)?\s+(?:ene|feb|mar|abr|may|jun|jul|ago|sept?|oct|nov|dic|janv|févr|mars|avr|mai|juin|juil|août|déc|thg)\.?\s*[\d,\s.:\w+−-]*(?:de\s+\d{4})?$/iu;
@@ -38,9 +38,7 @@ export function installProductLocalization(document, window) {
   const attributes = new WeakMap();
   let queued = false;
   let latestMissing = [];
-  // Editorial walkthroughs and unmodified operator workspaces remain original
-  // English source; B1 covers entry and the real Human core, not those demos.
-  for (const element of document.querySelectorAll("#web009PublicReview .web009-section,#web009PublicReview .web009-footer,.b-hero-stage")) element.lang = "en";
+  // Workspace views outside the current localization scope use their source language.
   for (const element of document.querySelectorAll(".view[data-view-panel]")) {
     if (!element.matches(CORE)) element.lang = "en";
   }

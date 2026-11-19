@@ -9,6 +9,10 @@ const SIGNED_NONZERO_MINOR = /^-?[1-9][0-9]{0,30}$/;
 const HASH = /^0x[a-fA-F0-9]{64}$/;
 const ENTRY_MODES = new Set(["human", "agent"]);
 const RELATIONSHIPS = new Set(["owner", "controller"]);
+const SYNTHETIC_FEE_PROFILES = new Set([
+  "synthetic_usd_platform_fee.v1",
+  "synthetic_usd_platform_fee_hosted.v1"
+]);
 const FINALITIES = new Set([
   "pending",
   "confirmed",
@@ -300,13 +304,15 @@ export function createObligationPortfolioPresentation(input) {
     writtenOffInterest,
     writtenOffFees
   ].some((value) => value === null)) return null;
-  const fees=obligation.syntheticFees;
-  const sourceCredit=fees?minor(fees.principalUnpaidCreditMinor??"0"):0n;
-  const actualPrincipalPaid=sourceCredit===null?null:originalPrincipal-outstandingPrincipal-sourceCredit;
-  const feePrincipalValid=!fees || (fees.terms?.profile==="synthetic_usd_platform_fee.v1" &&
-    fees.terms.principalMinor===obligation.originalPrincipalMinor && actualPrincipalPaid!==null &&
-    actualPrincipalPaid>=0n && actualPrincipalPaid<=totalRepaid &&
-    (sourceCredit===0n || (Number.isSafeInteger(fees.sourceCorrectionCount) && fees.sourceCorrectionCount>0)));
+  const fees = obligation.syntheticFees;
+  const sourceCredit = fees ? minor(fees.principalUnpaidCreditMinor ?? "0") : 0n;
+  const actualPrincipalPaid = sourceCredit === null ? null : originalPrincipal - outstandingPrincipal - sourceCredit;
+  const feePrincipalValid = !fees || (
+    SYNTHETIC_FEE_PROFILES.has(fees.terms?.profile) &&
+    fees.terms.principalMinor === obligation.originalPrincipalMinor &&
+    actualPrincipalPaid !== null && actualPrincipalPaid >= 0n && actualPrincipalPaid <= totalRepaid &&
+    (sourceCredit === 0n || (Number.isSafeInteger(fees.sourceCorrectionCount) && fees.sourceCorrectionCount > 0))
+  );
   if (
     !feePrincipalValid || (!fees && outstandingPrincipal + totalRepaid + writtenOffPrincipal > originalPrincipal) ||
     String(outstandingPrincipal + outstandingInterest + outstandingFees) !==

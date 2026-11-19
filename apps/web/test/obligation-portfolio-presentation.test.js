@@ -172,12 +172,34 @@ test("portfolio detail fails closed on amount, authority, Evidence and output dr
 });
 
 
-test("B4 portfolio does not treat interest and platform fee receipts as repaid principal",()=>{
- const value=input();const loan=value.view.obligation;
- loan.syntheticFees={terms:{profile:"synthetic_usd_platform_fee.v1",principalMinor:loan.originalPrincipalMinor},principalUnpaidCreditMinor:"0",sourceCorrectionCount:0};
- const extra=13n;loan.totalRepaidMinor=(BigInt(loan.totalRepaidMinor)+extra).toString();
- const row=loan.installments.at(-1);row.scheduledFeeMinor=(BigInt(row.scheduledFeeMinor)+extra).toString();row.paidFeeMinor=(BigInt(row.paidFeeMinor)+extra).toString();
- assert.ok(createObligationPortfolioPresentation(value));
- loan.syntheticFees.principalUnpaidCreditMinor="999999999999";loan.syntheticFees.sourceCorrectionCount=1;
- assert.equal(createObligationPortfolioPresentation(value),null);
+test("B4 portfolio reconciles a separate platform fee for each supported profile", () => {
+  const value = input();
+  const loan = value.view.obligation;
+  loan.totalRepaidMinor = "12";
+  const installment = loan.installments.at(-1);
+  installment.scheduledFeeMinor = "12";
+  installment.paidFeeMinor = "12";
+
+  for (const profile of ["synthetic_usd_platform_fee.v1", "synthetic_usd_platform_fee_hosted.v1"]) {
+    loan.syntheticFees = {
+      terms: { profile, principalMinor: loan.originalPrincipalMinor },
+      principalUnpaidCreditMinor: "0",
+      sourceCorrectionCount: 0
+    };
+    const detail = createObligationPortfolioPresentation(value);
+    assert.ok(detail, `${profile} should open`);
+    assert.equal(detail.amounts.totalRepaidMinor, "12");
+    assert.equal(detail.amounts.outstandingPrincipalMinor, "10000");
+    loan.syntheticFees.terms.principalMinor = "9999";
+    assert.equal(createObligationPortfolioPresentation(value), null);
+    loan.syntheticFees.terms.principalMinor = loan.originalPrincipalMinor;
+    loan.syntheticFees.principalUnpaidCreditMinor = "999999999999";
+    loan.syntheticFees.sourceCorrectionCount = 1;
+    assert.equal(createObligationPortfolioPresentation(value), null);
+  }
+
+  loan.syntheticFees.terms.profile = "unknown_fee_profile.v1";
+  loan.syntheticFees.principalUnpaidCreditMinor = "0";
+  loan.syntheticFees.sourceCorrectionCount = 0;
+  assert.equal(createObligationPortfolioPresentation(value), null);
 });

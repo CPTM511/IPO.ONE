@@ -180,6 +180,26 @@ test('B4-H production composition: visible Human and institution lifecycle, cano
     await expect(page.locator('#humanObligationCard')).toBeHidden();
     await login();await expect(page.locator('#syntheticCollateralState')).toHaveText('Synthetic collateral released');
     assert.equal(await page.locator('#syntheticCollateralReceipt').textContent(),releaseReceipt);
+    await openView(page, 'obligations');
+    await click('searchObligationHistoryBtn');
+    await page.getByRole('button', { name: /^Open record 1 · Fully Repaid/iu }).click();
+    await expect(page.locator('#obligationDetailContent')).toBeVisible();
+    await expect(page.locator('#obligationDetailPrincipal')).toHaveText('$0.00');
+    await expect(page.locator('#obligationDetailRepaid')).toHaveText('$120.12');
+    await click('obligationDetailEvidenceBtn');
+    await expect(page.locator('#obligationDetailHistory')).toContainText('Synthetic Collateral Released', { ignoreCase: true });
+    for (const { code: language } of PRODUCT_LANGUAGES) {
+      await page.locator('.workspace-options > summary').click();
+      await page.locator('#productLanguage').selectOption(language);
+      await page.locator('.workspace-options > summary').click();
+      await expect(page.locator('#obligationDetailHistory')).toContainText(translateCopy('Synthetic Fee Assessed', language).text);
+      await expect.poll(async () => (await page.evaluate(async () =>
+        (await import('/product-localization.js')).productLocalizationAudit())).missing).toEqual([]);
+    }
+    await page.locator('.workspace-options > summary').click();
+    await page.locator('#productLanguage').selectOption('en');
+    await page.locator('.workspace-options > summary').click();
+    await openView(page, 'request-credit');
     await page.locator('#syntheticCollateralPanel details summary').click();
     for(const language of ['en','zh','es','fr','ru','vi'])for(const theme of ['light','dark']){
       await page.setViewportSize({width:390,height:1000});

@@ -1,3 +1,5 @@
+import { translateCopy } from "./product-i18n.js";
+
 const REVIEW_QUERIES = new Set(["web-009", "web-010", "web-011"]);
 const AUTOPLAY_SESSION_KEY = "ipo-one-web010-agent-demo-played";
 
@@ -30,7 +32,11 @@ const examples = Object.freeze({
   typescript: `await tenantProtocol.execute({\n  operationId: "pilotRequestCredit",\n  request: creditIntentRequest\n});`,
   python: `requests.post(\n  f"{tenant_url}/tenant/v1/operations",\n  json={"operationId": "pilotRequestCredit", "request": credit_intent},\n  headers=session_headers,\n)`,
   mcp: `ipo_one_request_credit({\n  schemaVersion: "tenant_protocol_request.v1",\n  request: creditIntentRequest\n})`,
-  a2a: `// Capability discovery + authenticated handoff\n// Use the current versioned capability catalog.\n// Authority remains Principal- and Mandate-bound.`
+  a2a: [
+    "Capability discovery + authenticated handoff",
+    "Use the current versioned capability catalog.",
+    "Authority remains Principal- and Mandate-bound."
+  ]
 });
 
 function setPressed(buttons, active) {
@@ -266,10 +272,17 @@ function initializeCodeTabs(root) {
   const buttons = [...root.querySelectorAll("[data-web009-code]")];
   const panel = root.querySelector("[data-web009-code-panel]");
   const render = (button) => {
-    panel.textContent = examples[button.dataset.web009Code];
+    const example = examples[button.dataset.web009Code];
+    panel.textContent = Array.isArray(example)
+      ? example.map(line => `// ${translateCopy(line, document.documentElement.lang).text}`).join("\n")
+      : example;
     setPressed(buttons, button);
   };
   buttons.forEach((button) => button.addEventListener("click", () => render(button)));
+  document.addEventListener("ipo-product-language-change", () => {
+    const current = buttons.find(button => button.getAttribute("aria-selected") === "true");
+    if (current?.dataset.web009Code === "a2a") render(current);
+  });
   render(buttons[0]);
 }
 
