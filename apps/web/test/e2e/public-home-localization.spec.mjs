@@ -49,6 +49,9 @@ for (const width of [390, 1440]) {
       }
 
       const hero = page.locator(".b-hero-stage");
+      const accountablePrincipal = localized("Accountable Principal", language);
+      await expect(hero.locator(".b-identity").getByText(accountablePrincipal, { exact: true })).toBeVisible();
+      await expect(lifecycleCard.locator(".b-identity").getByText(accountablePrincipal, { exact: true })).toBeVisible();
       const heroDetails = hero.locator("[data-b-evidence-detail]");
       if (!(await heroDetails.isVisible())) await hero.locator("[data-b-evidence-toggle]").click();
       await expect(heroDetails.getByText(localized("About this example", language), { exact: true })).toBeVisible();
@@ -62,9 +65,13 @@ for (const width of [390, 1440]) {
         await expect(lifecycleCard.locator("[data-b-step-title]")).toHaveText(localized(step.title, language));
         await expect(lifecycleCard.locator("[data-b-pin-label]")).toHaveText(localized(`State ${index + 1} of 10`, language));
         await expect(lifecycleCard.locator("[data-web010-step-prohibited]")).toHaveText(localized(step.prohibited, language));
+        if (index === 8) {
+          await expect(lifecycleCard.locator('[data-b-term-label="0"]')).toHaveText(localized("Principal", language));
+        }
         await expectCompleteCopy(page);
       }
       await page.locator('[data-web009-path="agent"]').click();
+      await expect(page.locator("[data-web009-path-flow] li").first()).toContainText(accountablePrincipal);
       await expect(page.locator("[data-web009-path-note]"))
         .toHaveText(localized("An Agent begins with accountable Principal authority and a bounded execution plan.", language));
       await page.locator('[data-web009-rail="Stablecoin"]').click();

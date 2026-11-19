@@ -15,7 +15,7 @@ function remember(key) {
 const sceneTemplate = (hero) => `
   <div class="b-scene ${hero ? "b-hero-scene" : "b-lifecycle-scene"}" data-b-scene>
     <div class="b-scene-top"><span>${hero ? "AGENT WORKING CAPITAL" : "THE OBLIGATION RECORD"}</span><span class="b-environment">Illustrative · No real funds</span></div>
-    <div class="b-identity"><span class="b-initials" aria-hidden="true">NL</span><div><strong>Northstar Labs</strong><span>Principal</span></div><span class="b-binding-label">BOUND TO</span><div class="b-agent-name"><strong>Procurement Agent</strong><span>Compute + data + approved APIs</span></div></div>
+    <div class="b-identity"><span class="b-initials" aria-hidden="true">NL</span><div><strong>Northstar Labs</strong><span>Accountable Principal</span></div><span class="b-binding-label">BOUND TO</span><div class="b-agent-name"><strong>Procurement Agent</strong><span>Compute + data + approved APIs</span></div></div>
     <div class="b-authority"><span class="b-signal-mark" aria-hidden="true"></span><strong data-b-authority>Mandate-bound capital</strong><span data-b-cap>$4,000 / action</span></div>
     <div class="b-record" data-b-record>
       <div class="b-record-heading"><span data-b-kind>Credit Request</span><span class="b-record-state" data-b-status>Within Mandate</span></div>

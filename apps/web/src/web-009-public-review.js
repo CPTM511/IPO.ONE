@@ -22,7 +22,7 @@ const paths = Object.freeze({
     note: "A Human gives deliberate Consent and reviews exact terms before accepting the shared Obligation."
   },
   agent: {
-    objects: ["Principal", "Agent Identity", "Mandate", "Plan", "Request", "Offer", "Authorization", "Obligation", "Repayment", "Credit State"],
+    objects: ["Accountable Principal", "Agent Identity", "Mandate", "Plan", "Request", "Offer", "Authorization", "Obligation", "Repayment", "Credit State"],
     note: "An Agent begins with accountable Principal authority and a bounded execution plan."
   }
 });
