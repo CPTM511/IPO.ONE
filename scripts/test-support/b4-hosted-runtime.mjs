@@ -1,4 +1,4 @@
-import {calculateJwkThumbprint,importJWK} from "jose";
+import {calculateJwkThumbprint} from "jose";
 import {request as httpRequest} from "node:http";
 import {createVercelGoldenFlowAgentClient} from "../../apps/private-pilot/src/vercel-golden-flow-agent.js";
 import { randomBytes, generateKeyPairSync } from "node:crypto";
@@ -11,6 +11,7 @@ import { bootstrapProductionDatabase, PRODUCTION_BOOTSTRAP_PROFILES } from "../.
 import { createProductionClosedPilotRuntime } from "../../apps/private-pilot/src/production-runtime.js";
 import { createHostedSyntheticMeteredProvider } from "../../apps/private-pilot/src/local-synthetic-metered-provider.js";
 import { createReferenceHashKeyring, loadAuthenticationRuntimeConfig } from "../../modules/authentication/src/index.js";
+import { PinnedJwksResolver } from "../../modules/authentication/src/jwks-resolver.js";
 import { EvmWalletSignatureVerifier, EvmAccountProofAdapter, BASE_SEPOLIA_PROFILE, X_LAYER_TESTNET_PROFILE } from "../../modules/chain-adapter/src/index.js";
 import { createTenantSecurityContext, setTenantTransactionContext } from "../../modules/persistence/src/index.js";
 import { createTrustedNetworkContext, abuseHash } from "../../modules/abuse-control/src/index.js";
@@ -32,13 +33,13 @@ export async function createB4HostedTestRuntime({feesEnabled=true,correctionsEna
   const accounts=Object.fromEntries(["borrower","capitalPartner","operations","riskReviewer","operationsReviewer","auditor",...(withAgent?["controller","agent"]:[])].map(key=>[key,privateKeyToAccount(generatePrivateKey())]));
   const actors=Object.fromEntries(Object.keys(accounts).map(key=>[key,`actor_b4h_${key}_${suffix}`]));
   const hasher=createReferenceHashKeyring({mode:"single_v2",primary:{keyVersion:"v2",secret:referenceHashKey}});
-  let workloadPrivateJwk,workloadPublicKey,senderThumbprint;
+  let workloadPrivateJwk,workloadPublicJwk,senderThumbprint;
   const agentClientId=`client_b4h_agent_${suffix}`,agentSubject=`urn:ipo-one:test:agent:${suffix}`;
   if(withAgent) {
     const pair=generateKeyPairSync("ec",{namedCurve:"prime256v1"});
     workloadPrivateJwk={...pair.privateKey.export({format:"jwk"}),alg:"ES256",kid:`b4h_${suffix}`};
-    const publicJwk={...pair.publicKey.export({format:"jwk"}),alg:"ES256",kid:workloadPrivateJwk.kid};
-    senderThumbprint=await calculateJwkThumbprint(publicJwk,"sha256");workloadPublicKey=await importJWK(publicJwk,"ES256");
+    workloadPublicJwk={...pair.publicKey.export({format:"jwk"}),alg:"ES256",kid:workloadPrivateJwk.kid,use:"sig",key_ops:["verify"]};
+    senderThumbprint=await calculateJwkThumbprint(workloadPublicJwk,"sha256");
   }
   let runtime,gatewayPool,authenticationPool;
   const close=async()=>{
@@ -103,7 +104,10 @@ export async function createB4HostedTestRuntime({feesEnabled=true,correctionsEna
       runtimeConfig:loadAuthenticationRuntimeConfig({NODE_ENV:"production",IPO_ONE_AUTHENTICATION_MODE:"public_beta",IPO_ONE_IDP_DEPLOYMENT_APPROVAL:"APPROVED",IPO_ONE_IDP_VENDOR_ID:"wallet_only",IPO_ONE_IDP_DEPLOYMENT_APPROVAL_SHA:"a".repeat(40),IPO_ONE_IDP_CONFIGURATION_REF:secretRef,IPO_ONE_AUTH_REFERENCE_HASH_MODE:"single_v2",IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_REF:secretRef,IPO_ONE_AUTH_ENCRYPTION_KEY_REF:secretRef}),
       oidcProviders:[],proofAdapters:[BASE_SEPOLIA_PROFILE,X_LAYER_TESTNET_PROFILE].map(profile=>new EvmAccountProofAdapter({profile,signatureVerifier:verifier})),
       wallet:{issuer:origin,clientId:walletClientId,domain:"ipo.one",uri:origin,signatureVerifier:{verify:request=>verifier.verifyMessage(request)}},
-      machineIssuer:"https://workload.ipo.one",machineAudience:origin,machineResolver:{issuer:"https://workload.ipo.one",allowedAlgorithms:["ES256"],keyResolver(){return async(header)=>{if(!workloadPublicKey || header.kid!==workloadPrivateJwk.kid)throw new Error("Unconfigured machine key in Human browser fixture");return workloadPublicKey;};}},
+      machineIssuer:"https://workload.ipo.one",machineAudience:origin,machineResolver:new PinnedJwksResolver({
+        issuer:"https://workload.ipo.one",allowedAlgorithms:["ES256"],
+        fetchJwks:async()=>({keys:workloadPublicJwk?[workloadPublicJwk]:[]})
+      }),
       verifyEdgeRequest:request=>request.headers["x-ipo-one-edge-assertion"]===edgeAssertion,getTrustedMtlsEvidence:()=>undefined,
       createNetworkContext:()=>createTrustedNetworkContext({networkRefHash:abuseHash("verified_proxy_network",hasher.hash("network.b4h","127.0.0.1")),source:"verified_proxy"}),
       syntheticCollateralEnabled:true,syntheticFeesEnabled:feesEnabled,syntheticFeeCorrectionsEnabled:correctionsEnabled,hostedSyntheticFeeGovernance:governance};

@@ -461,6 +461,12 @@ async function loadProviderConfig(environment, publicOrigin, { vercelSandbox }) 
       ? async () => resolvedWorkloadJwks
       : ({ signal }) => fetchBoundedJson(workloadJwksUri, signal)
   });
+  if (resolvedWorkloadJwks) {
+    // The first resolution imports the entire inline set. Validate it before
+    // startup succeeds so one malformed supplement cannot break Agent login.
+    const [firstKey] = resolvedWorkloadJwks.keys;
+    await machineResolver.resolve({ alg: firstKey.alg, kid: firstKey.kid });
+  }
 
   const walletConfig = exactObject("wallet identity", config.wallet, WALLET_KEYS);
   const walletSignatureVerifier = new EvmWalletSignatureVerifier();

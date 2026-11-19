@@ -3,16 +3,132 @@ import {verifyB4HostedRestore} from "../../../scripts/test-support/b4-hosted-res
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {randomUUID} from 'node:crypto';
-import {chromium} from '@playwright/test';
+import {chromium,expect} from '@playwright/test';
 import {createB4HostedTestRuntime} from '../../../scripts/test-support/b4-hosted-runtime.mjs';
 import {closeB4BrowserContext,createB4BrowserRole} from '../../../scripts/test-support/b4-browser-context.mjs';
 import {createAuthenticatedProtocolActionConfirmation,economicActionTypeForOperation} from '../../../modules/tenant-command-gateway/src/economic-action-confirmation.js';
 import {IpoOneSyntheticCollateralClient} from '../../../packages/sdk/src/synthetic-collateral-client.js';
 import {createSyntheticCollateralMcpAdapter} from '../../agent-mcp/src/synthetic-collateral-mcp-adapter.js';
-import {hashId} from '../../../packages/domain/src/index.js';
+import {hashId,createHostedSyntheticFeeGovernance} from '../../../packages/domain/src/index.js';
+import {createProductionMcpHandle} from '../../private-pilot/src/vercel-golden-flow-agent.js';
+import {IpoOneAgentMcpClient} from '../../../packages/sdk/src/agent-mcp-client.js';
+import {createApplicationReadyAgentHandoffManifest} from '../src/agent-handoff-manifest.js';
 import {verifyVisibleSourceCredit} from './support/b4-hosted-source-credit-browser.mjs';
 const envelope=(operationId,payload={},resource,command=true)=>({schemaVersion:'tenant_protocol_request.v1',operationId,payload,...(resource?{resource}:{}),requestId:`request_${randomUUID()}`,correlationId:`correlation_${randomUUID()}`,...(command?{idempotencyKey:`b4h_${randomUUID()}`}:{})});
 const protectedRequest=request=>economicActionTypeForOperation(request.operationId)?{...request,payload:{...request.payload,actionConfirmation:createAuthenticatedProtocolActionConfirmation(request)}}:request;
+
+test('B4 accepts signed Agent traffic while fees are OFF, then prepares, funds and services the exact $120 fee-only offer', {timeout:150000},async()=>{
+  const fixture=await createB4HostedTestRuntime({withAgent:true,feesEnabled:false,correctionsEnabled:false});
+  let browser,principal;
+  try {
+    const agent=fixture.agent;
+    const execute=(...args)=>agent.execute(protectedRequest(envelope(...args)));
+    const resume=async()=> (await execute('pilotReadWorkspaceResume',{},undefined,false)).response;
+    const initial=await resume();
+    assert.equal(initial.workspaceKind,'agent_runtime');
+    assert.deepEqual(initial.resources,[]);
+
+    browser=await chromium.launch();
+    principal=await createB4BrowserRole({browser,fixture,role:'controller'});
+    const {page}=principal;
+    const openAuthority=()=>page.getByRole('button',{name:'Agents',exact:true}).click();
+    const operation=async(name,action)=>{
+      const received=page.waitForResponse(response=>response.url().endsWith('/tenant/v1/operations')&&
+        response.request().postDataJSON()?.operationId===name);
+      await action();
+      const response=await received;
+      const result=await response.json();
+      assert.equal(response.status(),200,`${name}: ${result.code??response.status()}`);
+      return result.response;
+    };
+    await openAuthority();
+    const subjectCreated=await operation('pilotCreateAgentSubject',()=>page.getByRole('button',{name:'Create Agent Subject',exact:true}).click());
+    const subject={resourceType:'subject',resourceId:subjectCreated.subjectId};
+    const account=fixture.accounts.agent;
+    const accountId=`eip155:84532:${account.address}`;
+    await page.getByLabel('EVM account',{exact:true}).fill(account.address);
+    const challenge=await operation('pilotCreateAgentAccountChallenge',()=>page.getByRole('button',{name:'Create signing request',exact:true}).click());
+    await execute('pilotSubmitAgentAccountProof',{challengeId:challenge.challengeId,accountId,signature:await account.signTypedData(challenge.typedData)},subject);
+    await operation('pilotReadAgentAccountBinding',()=>page.getByRole('button',{name:'Refresh binding',exact:true}).click());
+    await page.getByLabel('Per action (USD)',{exact:true}).fill('120');
+    await page.getByLabel('Aggregate (USD)',{exact:true}).fill('120');
+    await page.getByLabel('Validity (days)',{exact:true}).fill('1');
+    const draft=(await operation('pilotReadMandate',()=>page.getByRole('button',{name:'Create Draft Mandate',exact:true}).click())).mandate;
+    assert.equal(draft.perActionLimitMinor,'12000');
+    assert.equal(draft.aggregateLimitMinor,'12000');
+    const manifest=createApplicationReadyAgentHandoffManifest(draft);
+    assert(manifest);
+
+    const {governanceHash:_,...governance}=fixture.governance;
+    const feeOnly=createHostedSyntheticFeeGovernance({...governance,operationsActorId:null,riskReviewerActorId:null,operationsReviewerActorId:null,auditorActorId:null});
+    await fixture.restart({hostedSyntheticFeeGovernance:feeOnly,syntheticFeesEnabled:true,syntheticFeeCorrectionsEnabled:false});
+    const application=new IpoOneAgentMcpClient({handle:createProductionMcpHandle(agent),manifest,transportProfile:'mcp_stdio_local'});
+    const request={workflowId:`b4_fee_only_${randomUUID()}`,creditRequest:{
+      assetId:'urn:ipo-one:sandbox-asset:usd-cent',requestedPrincipalMinor:'12000',purposeCode:'compute',requestedTermDays:60,
+      repaymentFrequency:'monthly',installmentCount:2,collateralProfile:'m2_synthetic_weth_usd_cent.v1'
+    }};
+    const receipt=await application.runCreditOfferWorkflow(request);
+    assert.equal(receipt.offer.approvedPrincipalMinor,'12000');
+    assert.equal(receipt.offer.feeTerms.borrowerFeeAtFullFundingMinor,'12');
+    assert.equal((await application.runCreditOfferWorkflow(request)).offer.creditOfferId,receipt.offer.creditOfferId);
+    const offer={resourceType:'credit_offer',resourceId:receipt.offer.creditOfferId};
+    await execute('pilotPersistAgentContinuationReceipt',{receipt},offer);
+    await page.reload();
+    await openAuthority();
+    const activate=page.getByRole('button',{name:'Activate sandbox Mandate',exact:true});
+    await expect(activate).toBeDisabled();
+    await page.locator('#principalMandateAcknowledge').check();
+    await operation('pilotActivateSandboxMandate',()=>activate.click());
+    const accepted=(await execute('pilotAcceptCreditOffer',{
+      expectedOfferHash:receipt.offer.creditOfferHash,expectedTermsHash:receipt.offer.termsHash,
+      acknowledgementHash:hashId('b4_fee_only_terms',receipt.offer.termsHash)
+    },offer)).response.obligation;
+    const obligation={resourceType:'obligation',resourceId:accepted.obligationId};
+    const terms=accepted.syntheticCollateral.terms;
+    await execute('pilotConfirmSyntheticCollateral',{
+      expectedVersion:0,termsHash:terms.termsHash,chainId:terms.chainId,amountAssets:terms.requiredAssets
+    },obligation);
+    const fund=protectedRequest(envelope('pilotExecuteSandboxObligation',{providerId:'provider_gateway_compute',providerCategory:'compute'},obligation));
+    const funded=(await agent.execute(fund)).response.obligation;
+    assert.equal(funded.syntheticFees.fundedBaseMinor,'12000');
+    assert.equal(funded.syntheticFees.borrowerAssessedMinor,'12');
+    assert.equal((await agent.execute(fund)).replayed,true);
+
+    await fixture.restart({hostedSyntheticFeeGovernance:feeOnly,syntheticFeesEnabled:false,syntheticFeeCorrectionsEnabled:false});
+    const repaid=(await execute('pilotPostSandboxRepayment',{amountMinor:'12012',sourceCode:'synthetic_wallet'},obligation)).response.obligation;
+    assert.equal(repaid.status,'fully_repaid');
+    assert.equal(repaid.syntheticFees.borrowerPaidMinor,'12');
+    await execute('pilotReleaseSyntheticCollateral',{
+      expectedVersion:repaid.syntheticCollateral.version,termsHash:terms.termsHash,chainId:terms.chainId,amountAssets:terms.requiredAssets
+    },obligation);
+    const readBack=(await execute('pilotReadOwnObligation',{},obligation,false)).response.obligation;
+    assert.equal(readBack.syntheticCollateral.state,'released');
+    assert.equal(readBack.totalRepaidMinor,'12012');
+    const databaseClient=await fixture.db.pool.connect();
+    try {
+      await databaseClient.query('BEGIN');
+      await setTenantTransactionContext(databaseClient,createTenantSecurityContext({
+        tenantId:fixture.governance.tenantId,actorId:fixture.input.systemActorId,policyVersion:fixture.input.policyVersion,source:'system_worker'
+      }));
+      const revoked=await databaseClient.query(`UPDATE authentication_credentials SET status='revoked',updated_at=now()
+        WHERE tenant_id=$1 AND actor_id=$2 AND status='active'`,[fixture.governance.tenantId,fixture.actors.agent]);
+      assert.equal(revoked.rowCount,1);
+      await databaseClient.query('COMMIT');
+    } finally {
+      await databaseClient.query('ROLLBACK').catch(()=>{});
+      databaseClient.release();
+    }
+    await assert.rejects(resume(),error=>error.code==='authentication_credential_rejected');
+    assert.deepEqual(principal.errors,[]);
+  } finally {
+    try {
+      if(principal)await closeB4BrowserContext(principal.context);
+      await browser?.close();
+    } finally {
+      await fixture.close();
+    }
+  }
+});
 
 test('B4-H Agent real JWT/DPoP HTTP + SDK/MCP shares hosted fees, protected source credit and OFF servicing', {timeout:150000},async()=>{
  const fixture=await createB4HostedTestRuntime({withAgent:true});const browser=await chromium.launch({headless:true});

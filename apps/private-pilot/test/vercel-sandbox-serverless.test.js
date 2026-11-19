@@ -187,6 +187,18 @@ test("Vercel Primary accepts an exactly bound public-only Golden Flow JWKS suppl
   }));
 });
 
+test("Vercel rejects a malformed supplemental workload signing key during startup", async () => {
+  const { use: _missingSigningUse, ...malformed } = supplementalWorkloadPublicJwk;
+  const supplemental = JSON.stringify({ keys: [malformed] });
+  await assert.rejects(() => loadProductionClosedPilotEnvironment(vercelEnvironment({
+    IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON: supplemental,
+    IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF: secretRef(
+      "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+      supplemental
+    )
+  })), { code: "authentication_key_set_rejected" });
+});
+
 test("Golden Flow JWKS supplement fails closed on digest, private material, duplicate kid, and Risk use", async () => {
   const supplemental = JSON.stringify({ keys: [supplementalWorkloadPublicJwk] });
   for (const overrides of [
